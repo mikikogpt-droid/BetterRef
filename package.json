@@ -1,11 +1,12 @@
 {
   "name": "betterref",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Reference-driven visual QA CLI for screenshots and UI images.",
   "type": "module",
   "private": false,
   "bin": {
     "betterref-chrome": "./bin/betterref-chrome.mjs",
+    "betterref-prd": "./bin/betterref-prd.mjs",
     "betterref-diff": "./bin/betterref-diff.mjs",
     "betterref-capture": "./bin/betterref-capture.mjs",
     "betterref-regions": "./bin/betterref-regions.mjs"
@@ -20,6 +21,7 @@
     "test": "node --test"
   },
   "dependencies": {
+    "pdf-parse": "^2.4.5",
     "pixelmatch": "^7.1.0",
     "pngjs": "^7.0.0",
     "sharp": "^0.34.5",
@@ -34,6 +36,9 @@
     }
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.16.0"
+  },
+  "devDependencies": {
+    "pdfkit": "^0.18.0"
   }
 }

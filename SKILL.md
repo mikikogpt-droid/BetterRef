@@ -55,6 +55,19 @@ If Chrome is not exposing a CDP endpoint, start a dedicated debugging profile be
 Start-Process "$env:ProgramFiles\Google\Chrome\Application\chrome.exe" -ArgumentList '--remote-debugging-port=9222','--user-data-dir=C:\Temp\betterref-chrome'
 ```
 
+Use `betterref-prd` when the visual work starts from a PRD PDF:
+
+```bash
+npx betterref-prd \
+  --pdf path/to/PRD.pdf \
+  --out .betterref-prd \
+  --config-out .betterref.json \
+  --url http://127.0.0.1:3000/ \
+  --ref path/to/reference.png
+```
+
+This connects the PDF skill workflow to BetterRef. It extracts PRD text, writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `betterref-runbook.md`, and a BetterRef config scaffold. If PDF page layout matters, render the PDF pages to PNG with the PDF skill/Poppler and use those PNGs as explicit reference images.
+
 Use `betterref-capture` when the current image must be captured from a URL first:
 
 ```bash
@@ -154,6 +167,12 @@ Before judging reference-matching work as complete, all 14 gates must be checked
 14. The final report must include tool inventory and escalations used, with the visual gap each one addressed.
 
 ## Workflow
+
+0. If the source is a PRD PDF, run the PDF workflow first.
+   - Use the PDF skill to render pages when layout or embedded reference images matter.
+   - Run `betterref-prd --pdf <PRD.pdf> --out .betterref-prd --config-out .betterref.json`.
+   - Read `prd-summary.json`, `visual-checklist.md`, and `betterref-runbook.md`.
+   - Use the generated `.betterref.json` as the control config for Chrome capture and diff.
 
 1. Identify the reference source.
    - Use attached images, local paths, browser screenshots, Figma/exported images, or user-provided URLs.

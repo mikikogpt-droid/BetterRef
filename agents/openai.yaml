@@ -1,4 +1,4 @@
 interface:
   display_name: "BetterRef"
-  short_description: "Match visual references with perceptual, DOM-region-aware CLI checks."
-  default_prompt: "Use BetterRef to match the provided reference image as closely as possible. Use browser or Chrome MCP evidence to capture the right state and DOM boxes when available. If Chrome MCP tools are not exposed, use betterref-chrome against Chrome CDP. Generate region config with betterref-regions or betterref-chrome, then run BetterRef CLI diff checks with perceptual scoring, size normalization, and region reports before reporting the visual verdict."
+  short_description: "Turn PRDs and visual references into measurable UI QA loops."
+  default_prompt: "Use BetterRef to match the provided reference image or PRD as closely as possible. For PRD PDFs, use betterref-prd to generate requirements, checklist, runbook, and region config. Use browser or Chrome MCP evidence to capture the right state and DOM boxes when available. If Chrome MCP tools are not exposed, use betterref-chrome against Chrome CDP. Run BetterRef CLI diff checks with perceptual scoring, size normalization, and region reports before reporting the visual verdict."

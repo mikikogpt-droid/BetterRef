@@ -29,6 +29,14 @@ If Chrome is not already exposing CDP, start a dedicated debugging profile first
 Start-Process "$env:ProgramFiles\Google\Chrome\Application\chrome.exe" -ArgumentList '--remote-debugging-port=9222','--user-data-dir=C:\Temp\betterref-chrome'
 ```
 
+Bridge a PRD PDF into BetterRef control artifacts:
+
+```bash
+npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
+```
+
+This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed.
+
 Generate semantic regions from DOM boxes captured by Chrome MCP or browser tooling:
 
 ```bash
@@ -103,6 +111,22 @@ npx betterref-diff --ref reference.png --actual chrome-screenshot.png --out .bet
 ```
 
 `betterref-regions` clips boxes to the viewport by default and skips zero-size hidden boxes. Add `--strict-bounds` when an overflow box should fail instead of being clipped.
+
+## PRD PDF Workflow
+
+Use `betterref-prd` when the reference work starts from a PRD PDF:
+
+```bash
+npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json
+```
+
+Then use the generated runbook:
+
+```bash
+npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --ref reference.png --regions both --html
+```
+
+For visual PDF review, render the PRD pages with Poppler or the local PDF skill first, then pass the exported reference page or UI screenshot into `betterref-diff`.
 
 Outputs:
 
