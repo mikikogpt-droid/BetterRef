@@ -1,4 +1,4 @@
 interface:
   display_name: "BetterRef"
-  short_description: "Match visual references with maximum fidelity."
-  default_prompt: "Use BetterRef to match the provided reference image as closely as possible using all available tools."
+  short_description: "Match visual references with maximum fidelity and CLI-backed diff checks."
+  default_prompt: "Use BetterRef to match the provided reference image as closely as possible. Run BetterRef CLI pixel diff/capture checks when images or a URL are available, then report the visual verdict."

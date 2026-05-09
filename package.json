@@ -1,0 +1,36 @@
+{
+  "name": "betterref",
+  "version": "0.1.0",
+  "description": "Reference-driven visual QA CLI for screenshots and UI images.",
+  "type": "module",
+  "private": false,
+  "bin": {
+    "betterref-diff": "./bin/betterref-diff.mjs",
+    "betterref-capture": "./bin/betterref-capture.mjs"
+  },
+  "files": [
+    "SKILL.md",
+    "agents",
+    "bin",
+    "lib"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "pixelmatch": "^7.1.0",
+    "pngjs": "^7.0.0",
+    "sharp": "^0.34.5"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

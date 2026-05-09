@@ -1,6 +1,6 @@
 ---
 name: betterref
-description: Use when a user provides or references a visual target, screenshot, mockup, design reference, UI image, brand image, hero image, or says to make the result look the same, match the reference, be pixel-perfect, beautiful, premium, polished, cinematic, visually impressive, or needs screenshot-to-reference visual QA.
+description: Use when a user provides or references a visual target, screenshot, mockup, design reference, UI image, brand image, hero image, or says to make the result look the same, match the reference, be pixel-perfect, beautiful, premium, polished, cinematic, visually impressive, or needs screenshot-to-reference visual QA with optional BetterRef CLI pixel diff/capture tooling.
 ---
 
 # BetterRef
@@ -10,6 +10,40 @@ description: Use when a user provides or references a visual target, screenshot,
 BetterRef is for reference-driven visual work. Treat the reference image as the source of truth and use every available tool needed to make the output match it as closely as possible.
 
 The default goal is maximum visual fidelity, not code-native purity. "Better than the reference" means the same composition and state with equal or higher polish, asset quality, readability, and finish. It does not mean redesigning away from the reference.
+
+## Bundled CLI Tools
+
+When this repository is available as a package, use the CLI before making a final visual claim:
+
+```bash
+npm install
+npx betterref-diff --ref reference.png --actual screenshot.png --out .betterref
+```
+
+Use `betterref-diff` when both images already exist:
+
+```bash
+npx betterref-diff \
+  --ref path/to/reference.png \
+  --actual path/to/current-screenshot.png \
+  --out .betterref \
+  --max-changed 2 \
+  --max-mean 4
+```
+
+Use `betterref-capture` when the current image must be captured from a URL first:
+
+```bash
+npm install -D playwright
+npx playwright install chromium
+npx betterref-capture \
+  --url http://127.0.0.1:3000/ \
+  --ref path/to/reference.png \
+  --out .betterref \
+  --viewport 1440x900
+```
+
+Read `.betterref/report.json` and inspect `.betterref/diff.png`. A nonzero exit from either CLI is a revise signal, not a pass. The CLI is supporting evidence only; hard fail gates still override numeric scores.
 
 ## Core Rules
 
@@ -80,6 +114,7 @@ Before judging reference-matching work as complete, all 14 gates must be checked
 7. Verify visually.
    - Run the app or open the file in the browser.
    - Capture screenshots at the same viewport as the reference.
+   - If `betterref-diff` or `betterref-capture` is available, run it and use `report.json` plus `diff.png` to localize mismatches.
    - Produce a structured visual verdict before deciding the work is complete.
    - Fix mismatches from the verdict: scrollbars, clipping, wrong proportions, wrong spacing, wrong asset quality, text overflow, contrast, and font weight.
 
@@ -249,6 +284,8 @@ Escalation rules:
 | Exact icons in UI controls | SVG/lucide/icon library |
 | Exact typography / Thai rendering | bundled or verified system fonts, `@font-face`, measured text boxes |
 | Pixel/layout verification | browser screenshot/Playwright/visual verdict/pixel diff |
+| Immediate screenshot diff | `betterref-diff --ref reference.png --actual screenshot.png --out .betterref` |
+| URL capture plus diff | `betterref-capture --url <url> --ref reference.png --out .betterref --viewport WxH` |
 | Pixel or perceptual mismatch that is hard to see | pixelmatch/SSIM/perceptual diff; install a scoped tool if missing |
 | Color, shadow, or gradient mismatch | screenshot pixel sampler, browser devtools, image processing script |
 | Background removal, alpha cleanup, bitmap edge issues | image processing library, background-removal tool, or regenerate with `imagegen` |
@@ -320,6 +357,7 @@ Before claiming visual work is complete, report:
 - Reference source and current screenshot source.
 - Viewport/device scale and whether same-state passed.
 - Visual verdict JSON or concise equivalent.
+- BetterRef CLI report path and diff path when available.
 - Top differences that remain.
 - Top next edits if the score is below pass.
 - Tool inventory and any escalations used, with the visual gap each one addressed.

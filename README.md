@@ -1,5 +1,29 @@
 # BetterRef
 
+## CLI Quick Start
+
+BetterRef includes local Node.js CLI tools for immediate screenshot-to-reference checks.
+
+```bash
+npm install
+npx betterref-diff --ref reference.png --actual screenshot.png --out .betterref
+```
+
+Capture a local page and diff it in one command when Playwright is installed:
+
+```bash
+npm install -D playwright
+npx playwright install chromium
+npx betterref-capture --url http://127.0.0.1:3000/ --ref reference.png --out .betterref --viewport 1440x900
+```
+
+Outputs:
+
+- `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
+- `.betterref/diff.png` - pixel hotspot image for the next UI patch
+
+Exit code `0` means the configured thresholds passed. Exit code `1` means revise. Exit code `2` means invalid usage or missing optional tooling.
+
 ## ภาษาไทย
 
 BetterRef คือ skill สำหรับงานที่ต้องทำภาพหรือ UI ให้ตรงกับภาพอ้างอิงมากที่สุด เช่น UI screenshot, mockup, dashboard, hero visual, landing/app redesign หรือ visual QA แบบ screenshot-to-reference
