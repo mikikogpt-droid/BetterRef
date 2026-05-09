@@ -35,6 +35,26 @@ npx betterref-diff \
   --min-ssim 0.99
 ```
 
+Use `betterref-chrome` when Chrome itself should be the capture source:
+
+```bash
+npx betterref-chrome \
+  --endpoint http://127.0.0.1:9222 \
+  --url-match 127.0.0.1:3000 \
+  --out .betterref \
+  --selector header=header \
+  --selector hero='[data-betterref="hero"]' \
+  --ref path/to/reference.png \
+  --regions both \
+  --html
+```
+
+If Chrome is not exposing a CDP endpoint, start a dedicated debugging profile before running the command:
+
+```powershell
+Start-Process "$env:ProgramFiles\Google\Chrome\Application\chrome.exe" -ArgumentList '--remote-debugging-port=9222','--user-data-dir=C:\Temp\betterref-chrome'
+```
+
 Use `betterref-capture` when the current image must be captured from a URL first:
 
 ```bash
@@ -84,6 +104,8 @@ When a Google Chrome MCP server is installed and available, use it before or alo
 - Use Chrome MCP screenshots as `--actual` input for `betterref-diff`, then use `report.regions[]`, `topDifferences`, and `nextEdits` to decide the next patch.
 
 Chrome MCP does not replace pixel/perceptual scoring. It makes the captured state and DOM measurements trustworthy; BetterRef then decides how far the screenshot is from the reference.
+
+If Chrome MCP tools are not exposed in the current Codex session, use `betterref-chrome` as the direct Chrome fallback. It connects to Chrome CDP, selects the target tab, captures `chrome-screenshot.png`, measures DOM boxes, generates `.betterref.json`, and optionally runs `betterref-diff` in one command.
 
 Supported region handoff shape:
 

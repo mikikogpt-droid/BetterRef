@@ -9,6 +9,26 @@ npm install
 npx betterref-diff --ref reference.png --actual screenshot.png --out .betterref
 ```
 
+Capture directly from a running Chrome tab through Chrome DevTools Protocol:
+
+```bash
+npx betterref-chrome \
+  --endpoint http://127.0.0.1:9222 \
+  --url-match 127.0.0.1:3000 \
+  --out .betterref \
+  --selector header=header \
+  --selector hero='[data-betterref="hero"]' \
+  --ref reference.png \
+  --regions both \
+  --html
+```
+
+If Chrome is not already exposing CDP, start a dedicated debugging profile first:
+
+```powershell
+Start-Process "$env:ProgramFiles\Google\Chrome\Application\chrome.exe" -ArgumentList '--remote-debugging-port=9222','--user-data-dir=C:\Temp\betterref-chrome'
+```
+
 Generate semantic regions from DOM boxes captured by Chrome MCP or browser tooling:
 
 ```bash
@@ -54,14 +74,14 @@ npx betterref-diff --ref reference.png --actual screenshot.png --out .betterref 
 
 ## Chrome MCP Workflow
 
-When a Google Chrome MCP server is available, it is useful as the browser truth source before running BetterRef:
+When a Google Chrome MCP server or Chrome plugin is available, it is useful as the browser truth source before running BetterRef:
 
 - capture the same tab the user is actually looking at, instead of a separate headless browser state
 - inspect viewport, zoom, scroll, route, console errors, and DOM bounding boxes before scoring
 - map failing BetterRef regions back to likely UI selectors or panels
 - verify interactive states such as hover, menus, selected tabs, modals, and loaded fonts
 
-Use Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict.
+Use Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict. When the MCP tools are not exposed to the current agent session, use `betterref-chrome` against Chrome CDP; it captures `chrome-screenshot.png`, writes `chrome-dom-boxes.json`, generates `.betterref.json`, and can run the diff in one command.
 
 Recommended handoff shape from Chrome MCP or any browser script:
 
