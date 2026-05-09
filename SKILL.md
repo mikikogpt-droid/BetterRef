@@ -27,8 +27,12 @@ npx betterref-diff \
   --ref path/to/reference.png \
   --actual path/to/current-screenshot.png \
   --out .betterref \
+  --config .betterref.json \
+  --regions both \
+  --html \
   --max-changed 2 \
-  --max-mean 4
+  --max-mean 4 \
+  --min-ssim 0.99
 ```
 
 Use `betterref-capture` when the current image must be captured from a URL first:
@@ -40,10 +44,21 @@ npx betterref-capture \
   --url http://127.0.0.1:3000/ \
   --ref path/to/reference.png \
   --out .betterref \
+  --config .betterref.json \
   --viewport 1440x900
 ```
 
-Read `.betterref/report.json` and inspect `.betterref/diff.png`. A nonzero exit from either CLI is a revise signal, not a pass. The CLI is supporting evidence only; hard fail gates still override numeric scores.
+Use `.betterref.json` for semantic regions and dynamic ignore areas:
+
+```json
+{
+  "thresholds": { "maxChangedPercent": 2, "maxMeanDiff": 4, "minSsim": 0.99 },
+  "regions": [{ "name": "hero", "x": 0, "y": 80, "width": 1440, "height": 520 }],
+  "ignoreRegions": [{ "name": "timestamp", "x": 1200, "y": 24, "width": 120, "height": 24 }]
+}
+```
+
+Read `.betterref/report.json`, inspect `.betterref/diff.png`, and open `.betterref/report.html` when generated. Use `global`, `regions`, `topDifferences`, `nextEdits`, and `hardFailHints` to drive the next patch. A nonzero exit from either CLI is a revise signal, not a pass. The CLI is supporting evidence only; hard fail gates still override numeric scores.
 
 ## Core Rules
 

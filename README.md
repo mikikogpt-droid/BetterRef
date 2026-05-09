@@ -9,6 +9,26 @@ npm install
 npx betterref-diff --ref reference.png --actual screenshot.png --out .betterref
 ```
 
+Use a config file when regions or dynamic ignore areas matter:
+
+```json
+{
+  "viewport": "1440x900",
+  "thresholds": {
+    "maxChangedPercent": 2,
+    "maxMeanDiff": 4,
+    "minSsim": 0.99
+  },
+  "regions": [
+    { "name": "header", "x": 0, "y": 0, "width": 1440, "height": 80 },
+    { "name": "hero", "x": 0, "y": 80, "width": 1440, "height": 520 }
+  ],
+  "ignoreRegions": [
+    { "name": "timestamp", "x": 1200, "y": 24, "width": 120, "height": 24 }
+  ]
+}
+```
+
 Capture a local page and diff it in one command when Playwright is installed:
 
 ```bash
@@ -21,6 +41,7 @@ Outputs:
 
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
 - `.betterref/diff.png` - pixel hotspot image for the next UI patch
+- `.betterref/report.html` - optional visual report with reference/current/diff and region table
 
 Exit code `0` means the configured thresholds passed. Exit code `1` means revise. Exit code `2` means invalid usage or missing optional tooling.
 

@@ -19,7 +19,12 @@ Options:
   --timeout <ms>         Navigation timeout. Default: 30000
   --max-changed <n>      Maximum changed pixel percent for diff. Default: 2
   --max-mean <n>         Maximum mean absolute RGB channel diff for diff. Default: 4
+  --min-ssim <n>         Minimum SSIM perceptual score from 0 to 1. Default: 0.99
   --threshold <n>        Pixelmatch threshold from 0 to 1. Default: 0.1
+  --config <path>        Optional .betterref.json config for diff.
+  --regions <mode>       Region mode: auto, config, or both. Default: config if available, else auto
+  --ignore-region <spec> Ignore dynamic region, format name,x,y,width,height. Repeatable.
+  --html                 Write report.html when diffing.
   --json                 Print full JSON result to stdout.
   --help                 Show this help.
 `;
@@ -128,9 +133,14 @@ async function main() {
       referencePath,
       actualPath: screenshotPath,
       outDir,
-      maxChangedPercent: numberValue(values['max-changed'], 2, '--max-changed'),
-      maxMeanDiff: numberValue(values['max-mean'], 4, '--max-mean'),
-      pixelThreshold: numberValue(values.threshold, 0.1, '--threshold')
+      maxChangedPercent: numberValue(values['max-changed'], undefined, '--max-changed'),
+      maxMeanDiff: numberValue(values['max-mean'], undefined, '--max-mean'),
+      minSsim: numberValue(values['min-ssim'], undefined, '--min-ssim'),
+      pixelThreshold: numberValue(values.threshold, undefined, '--threshold'),
+      configPath: values.config,
+      regionMode: values.regions,
+      ignoreRegions: values['ignore-region'],
+      html: flags.has('html')
     });
   }
 
