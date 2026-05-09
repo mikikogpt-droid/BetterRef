@@ -45,13 +45,15 @@ npx betterref-capture \
   --ref path/to/reference.png \
   --out .betterref \
   --config .betterref.json \
-  --viewport 1440x900
+  --viewport 1440x900 \
+  --match-size strict
 ```
 
 Use `.betterref.json` for semantic regions and dynamic ignore areas:
 
 ```json
 {
+  "matchSize": "strict",
   "thresholds": { "maxChangedPercent": 2, "maxMeanDiff": 4, "minSsim": 0.99 },
   "regions": [{ "name": "hero", "x": 0, "y": 80, "width": 1440, "height": 520 }],
   "ignoreRegions": [{ "name": "timestamp", "x": 1200, "y": 24, "width": 120, "height": 24 }]
@@ -59,6 +61,19 @@ Use `.betterref.json` for semantic regions and dynamic ignore areas:
 ```
 
 Read `.betterref/report.json`, inspect `.betterref/diff.png`, and open `.betterref/report.html` when generated. Use `global`, `regions`, `topDifferences`, `nextEdits`, and `hardFailHints` to drive the next patch. A nonzero exit from either CLI is a revise signal, not a pass. The CLI is supporting evidence only; hard fail gates still override numeric scores.
+
+`--match-size reference` is a diagnostic mode for screenshots captured at a different output size. It resizes the actual screenshot to the reference dimensions, writes `actual-compared.png`, and records original versus compared dimensions in the report. Keep `strict` for final pass gates unless the mismatch is an intentional device-scale normalization.
+
+## Chrome MCP Use
+
+When a Google Chrome MCP server is installed and available, use it before or alongside BetterRef CLI for real-browser evidence:
+
+- Capture the current Chrome tab when the user is looking at the target state. This avoids comparing against a different headless session.
+- Inspect viewport, browser zoom, scroll position, route, selected UI state, loaded fonts, and console errors before scoring.
+- Measure DOM bounding boxes for header, hero, panels, cards, grids, and controls, then map those boxes to BetterRef config regions.
+- Use Chrome MCP screenshots as `--actual` input for `betterref-diff`, then use `report.regions[]`, `topDifferences`, and `nextEdits` to decide the next patch.
+
+Chrome MCP does not replace pixel/perceptual scoring. It makes the captured state and DOM measurements trustworthy; BetterRef then decides how far the screenshot is from the reference.
 
 ## Core Rules
 

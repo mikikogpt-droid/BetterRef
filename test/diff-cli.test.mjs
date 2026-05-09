@@ -94,6 +94,72 @@ test('betterref-diff fails changed images and reports measured mismatch', async 
   assert.ok(report.global.metrics.hashSimilarity <= 1);
 });
 
+test('betterref-diff can normalize actual image size to the reference before diffing', async () => {
+  const dir = await makeCase('match-size-reference');
+  const ref = path.join(dir, 'reference.svg');
+  const actual = path.join(dir, 'actual.svg');
+  const out = path.join(dir, 'out');
+  await writeFile(ref, svg('#111827', 20, 10));
+  await writeFile(actual, svg('#111827', 40, 20));
+
+  const result = spawnSync(process.execPath, [
+    diffBin,
+    '--ref',
+    ref,
+    '--actual',
+    actual,
+    '--out',
+    out,
+    '--match-size',
+    'reference',
+    '--max-changed',
+    '0',
+    '--max-mean',
+    '0',
+    '--min-ssim',
+    '1',
+    '--html'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(await readFile(path.join(out, 'report.json'), 'utf8'));
+  assert.equal(report.passed, true);
+  assert.equal(report.dimensions.reference.width, 20);
+  assert.equal(report.dimensions.actualSource.width, 40);
+  assert.equal(report.dimensions.actualCompared.width, 20);
+  assert.equal(report.normalization.matchSize, 'reference');
+  assert.equal(report.normalization.actualResized, true);
+  assert.match(report.artifacts.actualComparedPath, /actual-compared\.png$/);
+  const html = await readFile(path.join(out, 'report.html'), 'utf8');
+  assert.match(html, /actual-compared\.png/);
+});
+
+test('betterref-diff keeps dimension mismatch as hard fail by default', async () => {
+  const dir = await makeCase('strict-dimension-mismatch');
+  const ref = path.join(dir, 'reference.svg');
+  const actual = path.join(dir, 'actual.svg');
+  const out = path.join(dir, 'out');
+  await writeFile(ref, svg('#111827', 20, 10));
+  await writeFile(actual, svg('#111827', 40, 20));
+
+  const result = spawnSync(process.execPath, [
+    diffBin,
+    '--ref',
+    ref,
+    '--actual',
+    actual,
+    '--out',
+    out
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 1);
+  const report = JSON.parse(await readFile(path.join(out, 'report.json'), 'utf8'));
+  assert.equal(report.passed, false);
+  assert.equal(report.normalization.matchSize, 'strict');
+  assert.equal(report.verdict.same_state, false);
+  assert.match(report.verdict.hardFailHints.join('\n'), /capture size mismatch/);
+});
+
 test('betterref-diff keeps color-only perceptual score useful even when pixel gate fails', async () => {
   const dir = await makeCase('color-only');
   const ref = path.join(dir, 'reference.svg');

@@ -16,6 +16,7 @@ Options:
   --threshold <n>        Pixelmatch threshold from 0 to 1. Default: 0.1
   --config <path>        Optional .betterref.json config.
   --regions <mode>       Region mode: auto, config, or both. Default: config if available, else auto
+  --match-size <mode>    strict or reference. Default: strict
   --ignore-region <spec> Ignore dynamic region, format name,x,y,width,height. Repeatable.
   --html                 Write report.html.
   --json                 Print full JSON report to stdout.
@@ -61,6 +62,7 @@ async function main() {
       pixelThreshold: numberValue(values.threshold, undefined, '--threshold'),
       configPath: values.config,
       regionMode: values.regions,
+      matchSize: values['match-size'],
       ignoreRegions: values['ignore-region'],
       html: flags.has('html')
     });

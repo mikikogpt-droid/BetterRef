@@ -14,6 +14,7 @@ Use a config file when regions or dynamic ignore areas matter:
 ```json
 {
   "viewport": "1440x900",
+  "matchSize": "strict",
   "thresholds": {
     "maxChangedPercent": 2,
     "maxMeanDiff": 4,
@@ -36,6 +37,25 @@ npm install -D playwright
 npx playwright install chromium
 npx betterref-capture --url http://127.0.0.1:3000/ --ref reference.png --out .betterref --viewport 1440x900
 ```
+
+If a real browser capture is off by device scale or viewport output size, keep strict mode for final gates but use this for diagnosis:
+
+```bash
+npx betterref-diff --ref reference.png --actual screenshot.png --out .betterref --match-size reference --regions both --html
+```
+
+`--match-size reference` resizes the actual image to the reference dimensions before scoring, records the original and compared dimensions, and writes `actual-compared.png` for the HTML overlay. Default mode remains `strict`, so accidental viewport mismatch is still a hard fail unless explicitly normalized.
+
+## Chrome MCP Workflow
+
+When a Google Chrome MCP server is available, it is useful as the browser truth source before running BetterRef:
+
+- capture the same tab the user is actually looking at, instead of a separate headless browser state
+- inspect viewport, zoom, scroll, route, console errors, and DOM bounding boxes before scoring
+- map failing BetterRef regions back to likely UI selectors or panels
+- verify interactive states such as hover, menus, selected tabs, modals, and loaded fonts
+
+Use Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict.
 
 Outputs:
 

@@ -17,6 +17,7 @@ test('betterref-capture prints usage and exits with code 2 when required args ar
   assert.match(result.stderr, /--config/);
   assert.match(result.stderr, /--regions/);
   assert.match(result.stderr, /--min-ssim/);
+  assert.match(result.stderr, /--match-size/);
 });
 
 test('betterref-capture explains how to install Playwright when it is unavailable', () => {
