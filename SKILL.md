@@ -49,6 +49,15 @@ npx betterref-capture \
   --match-size strict
 ```
 
+Use `betterref-regions` when Chrome MCP or browser tooling can provide DOM bounding boxes:
+
+```bash
+npx betterref-regions \
+  --input chrome-dom-boxes.json \
+  --out .betterref.json \
+  --threshold minSsim=0.98
+```
+
 Use `.betterref.json` for semantic regions and dynamic ignore areas:
 
 ```json
@@ -71,9 +80,24 @@ When a Google Chrome MCP server is installed and available, use it before or alo
 - Capture the current Chrome tab when the user is looking at the target state. This avoids comparing against a different headless session.
 - Inspect viewport, browser zoom, scroll position, route, selected UI state, loaded fonts, and console errors before scoring.
 - Measure DOM bounding boxes for header, hero, panels, cards, grids, and controls, then map those boxes to BetterRef config regions.
+- Prefer `betterref-regions` for that mapping. Save the Chrome MCP/browser measurement as JSON with `viewport` plus `elements`, `boxes`, `regions`, or `nodes`, then generate `.betterref.json`.
 - Use Chrome MCP screenshots as `--actual` input for `betterref-diff`, then use `report.regions[]`, `topDifferences`, and `nextEdits` to decide the next patch.
 
 Chrome MCP does not replace pixel/perceptual scoring. It makes the captured state and DOM measurements trustworthy; BetterRef then decides how far the screenshot is from the reference.
+
+Supported region handoff shape:
+
+```json
+{
+  "viewport": { "width": 1440, "height": 900 },
+  "elements": [
+    { "name": "header", "selector": "header", "boundingBox": { "x": 0, "y": 0, "width": 1440, "height": 80 } },
+    { "name": "hero", "selector": "[data-betterref='hero']", "rect": { "left": 0, "top": 80, "right": 1440, "bottom": 560 } }
+  ]
+}
+```
+
+Then run `betterref-regions --input chrome-dom-boxes.json --out .betterref.json` before `betterref-diff --config .betterref.json --regions both --html`.
 
 ## Core Rules
 

@@ -1,12 +1,13 @@
 {
   "name": "betterref",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Reference-driven visual QA CLI for screenshots and UI images.",
   "type": "module",
   "private": false,
   "bin": {
     "betterref-diff": "./bin/betterref-diff.mjs",
-    "betterref-capture": "./bin/betterref-capture.mjs"
+    "betterref-capture": "./bin/betterref-capture.mjs",
+    "betterref-regions": "./bin/betterref-regions.mjs"
   },
   "files": [
     "SKILL.md",

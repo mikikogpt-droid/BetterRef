@@ -9,6 +9,12 @@ npm install
 npx betterref-diff --ref reference.png --actual screenshot.png --out .betterref
 ```
 
+Generate semantic regions from DOM boxes captured by Chrome MCP or browser tooling:
+
+```bash
+npx betterref-regions --input chrome-dom-boxes.json --out .betterref.json --threshold minSsim=0.98
+```
+
 Use a config file when regions or dynamic ignore areas matter:
 
 ```json
@@ -56,6 +62,27 @@ When a Google Chrome MCP server is available, it is useful as the browser truth 
 - verify interactive states such as hover, menus, selected tabs, modals, and loaded fonts
 
 Use Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict.
+
+Recommended handoff shape from Chrome MCP or any browser script:
+
+```json
+{
+  "viewport": { "width": 1440, "height": 900 },
+  "elements": [
+    { "name": "header", "selector": "header", "boundingBox": { "x": 0, "y": 0, "width": 1440, "height": 80 } },
+    { "name": "hero", "selector": "[data-betterref='hero']", "rect": { "left": 0, "top": 80, "right": 1440, "bottom": 560 } }
+  ]
+}
+```
+
+Then run:
+
+```bash
+npx betterref-regions --input chrome-dom-boxes.json --out .betterref.json
+npx betterref-diff --ref reference.png --actual chrome-screenshot.png --out .betterref --config .betterref.json --regions both --html
+```
+
+`betterref-regions` clips boxes to the viewport by default and skips zero-size hidden boxes. Add `--strict-bounds` when an overflow box should fail instead of being clipped.
 
 Outputs:
 

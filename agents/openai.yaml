@@ -1,4 +1,4 @@
 interface:
   display_name: "BetterRef"
-  short_description: "Match visual references with perceptual, region-aware, size-aware CLI checks."
-  default_prompt: "Use BetterRef to match the provided reference image as closely as possible. Use browser or Chrome MCP evidence to capture the right state when available, then run BetterRef CLI pixel diff/capture checks with perceptual scoring, size normalization, and region reports before reporting the visual verdict."
+  short_description: "Match visual references with perceptual, DOM-region-aware CLI checks."
+  default_prompt: "Use BetterRef to match the provided reference image as closely as possible. Use browser or Chrome MCP evidence to capture the right state and DOM boxes when available, generate region config with betterref-regions, then run BetterRef CLI pixel diff/capture checks with perceptual scoring, size normalization, and region reports before reporting the visual verdict."
