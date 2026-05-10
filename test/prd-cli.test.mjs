@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import PDFDocument from 'pdfkit';
+import { normalizeExtractedPrdText } from '../lib/prd.mjs';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const prdBin = path.join(repoRoot, 'bin', 'betterref-prd.mjs');
@@ -31,6 +32,38 @@ function writePdf(filePath, lines) {
     doc.end();
   });
 }
+
+test('normalizes Thai PRD text before building prompts and checklists', () => {
+  const mojibakeTopUp = String.fromCodePoint(
+    0x0e40,
+    0x0e19,
+    0x20ac,
+    0x0e40,
+    0x0e18,
+    0x2022,
+    0x0e40,
+    0x0e18,
+    0x0e14,
+    0x0e40,
+    0x0e18,
+    0x0e01,
+    0x0e40,
+    0x0e19,
+    0x20ac,
+    0x0e40,
+    0x0e18,
+    0x81,
+    0x0e40,
+    0x0e18,
+    0x0e01
+  );
+
+  assert.equal(normalizeExtractedPrdText(mojibakeTopUp), 'เติมเกม');
+  assert.equal(
+    normalizeExtractedPrdText('สร้ำงภำพส;ำหรับผู้ใช้งำน ผ่ำนประสบกำรณ์ ลูกค้ำเติมซ;้ำได้ง่ำยใน 5 วินำที'),
+    'สร้างภาพสำหรับผู้ใช้งาน ผ่านประสบการณ์ ลูกค้าเติมซ้ำได้ง่ายใน 5 วินาที'
+  );
+});
 
 test('betterref-prd prints usage and exits with code 2 when required args are missing', () => {
   const result = spawnSync(process.execPath, [prdBin], {
