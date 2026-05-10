@@ -202,6 +202,7 @@ test('betterref-prd keeps code-native visual behavior out of the imagegen asset 
     'Viewport: 1440x900.',
     'Homepage modules: Hero 3D, quick top-up, popular games, promotions, footer.',
     'Header sticky on desktop after scroll through hero.',
+    'Hero Headline: top up fast, 3D logo frame, floating status cards.',
     'Game cards hover with image zoom and border glow.',
     'Fallback: static image required for the animation.',
     '3D Asset Rules: hero premium glass device frame with static fallback image.',
@@ -221,6 +222,7 @@ test('betterref-prd keeps code-native visual behavior out of the imagegen asset 
   const assetPlan = JSON.parse(await readFile(path.join(out, 'asset-plan.json'), 'utf8'));
   assert.equal(assetPlan.imagegenRequired, true);
   assert.equal(assetPlan.assets.some((asset) => /3D Asset Rules/i.test(asset.requirement)), true);
+  assert.equal(assetPlan.assets.find((asset) => /Hero Headline/i.test(asset.requirement))?.role, 'cinematic-hero');
   assert.equal(assetPlan.assets.some((asset) => /Image: game or wallet card art/i.test(asset.requirement)), true);
   assert.equal(assetPlan.assets.some((asset) => /sticky/i.test(asset.requirement)), false);
   assert.equal(assetPlan.assets.some((asset) => /hover|zoom|border glow/i.test(asset.requirement)), false);
