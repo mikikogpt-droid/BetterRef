@@ -1,0 +1,22 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "page": {
+    "scrollHeight": 1200,
+    "bodyTextLength": 1800,
+    "interactiveCount": 12
+  },
+  "fonts": {
+    "ready": true,
+    "status": "loaded"
+  },
+  "images": [],
+  "console": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ]
+}

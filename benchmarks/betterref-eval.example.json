@@ -83,6 +83,21 @@
       }
     },
     {
+      "id": "browser-console-error-pressure",
+      "report": "fixtures/browser-console-error/report.json",
+      "guardConfig": "fixtures/browser-console-error/guard-config.json",
+      "browserEvidence": "fixtures/browser-console-error/browser-evidence.json",
+      "project": "fixtures/browser-console-error/project",
+      "require": "guard,browser",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "blockingReasonIncludes": [
+          "browser_console_error_present"
+        ]
+      }
+    },
+    {
       "id": "asset-quality-pressure",
       "report": "fixtures/asset-quality/report.json",
       "guard": "fixtures/asset-quality/guard-report.json",

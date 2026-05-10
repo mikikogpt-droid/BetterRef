@@ -1,0 +1,5 @@
+{
+  "requireBrowserEvidence": true,
+  "requireDomText": true,
+  "minInteractiveElements": 1
+}
