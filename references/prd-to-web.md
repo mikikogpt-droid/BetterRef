@@ -6,6 +6,7 @@ Use this when a PRD PDF, written product spec, Figma brief, or visual target is 
 
 - `requirements.md`: product, content, interaction, visual, responsive, and asset requirements.
 - `visual-checklist.md`: each visible area, target viewport, typography, asset class, and pass criteria.
+- `prd-checklist.json`: machine-readable checklist consumed by `betterref-verify`.
 - `.betterref.json`: viewport, regions, ignore areas, and thresholds.
 - `betterref.guard.json`: hard-fail config for source scans, long-page mode, and asset scaling.
 - `.betterref/report.json`, `.betterref/browser-evidence.json`, and `.betterref/guard-report.json`: final evidence.
@@ -40,7 +41,7 @@ PDF pages, screenshots, and rendered PRD pages are evidence only. They cannot be
 ```bash
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --ref reference.png --regions both --html
-npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
+npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
 npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json
 ```
 

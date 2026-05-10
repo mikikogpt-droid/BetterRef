@@ -35,7 +35,7 @@ Bridge a PRD PDF into BetterRef control artifacts:
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 ```
 
-This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed.
+This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed.
 
 Audit hard fails that numeric visual scores cannot prove:
 
@@ -153,13 +153,16 @@ Then use the generated runbook:
 
 ```bash
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --ref reference.png --regions both --html
-npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
+npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json
 ```
 
 For visual PDF review, render the PRD pages with Poppler or the local PDF skill first, then pass the exported reference page or UI screenshot into `betterref-diff`.
 
 Outputs:
 
+- `.betterref-prd/prd-checklist.json` - machine-readable PRD checklist consumed by `betterref-verify`
+- `.betterref-prd/betterref.guard.json` - generated guard config for source reuse, long-page, DOM, and asset checks
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
 - `.betterref/browser-evidence.json` - viewport, scroll, DOM text, interactive count, fonts, console, and rendered image dimensions from the real browser
 - `.betterref/guard-report.json` - hard-fail ledger for source reuse, long-page evidence, and asset scaling checks

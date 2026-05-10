@@ -51,6 +51,7 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   await writePdf(pdf, [
     'Summary: Build ONETAPGG landing page from the reference UI.',
     'Viewport: 1672x941.',
+    'Full-page scroll reference: yes.',
     'Required screens: home landing, top up flow, admin orders.',
     'Visual requirements: header, hero, mascot, popular game cards, package cards, news panel, security panel, footer.',
     'Hard fail: no overlap, no horizontal overflow, Thai font must match, text must not clip.',
@@ -73,6 +74,8 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.equal(payload.viewport, '1672x941');
   assert.match(payload.artifacts.summaryPath, /prd-summary\.json$/);
   assert.match(payload.artifacts.configPath, /\.betterref\.json$/);
+  assert.match(payload.artifacts.guardConfigPath, /betterref\.guard\.json$/);
+  assert.match(payload.artifacts.prdChecklistPath, /prd-checklist\.json$/);
   assert.match(payload.artifacts.runbookPath, /betterref-runbook\.md$/);
 
   const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
@@ -90,9 +93,23 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.equal(config.regions.some((region) => region.name === 'cards'), true);
   assert.equal(config.ignoreRegions.some((region) => region.name === 'timestamp'), true);
 
+  const guardConfig = JSON.parse(await readFile(path.join(out, 'betterref.guard.json'), 'utf8'));
+  assert.equal(guardConfig.longReference, true);
+  assert.deepEqual(guardConfig.targetViewport, { width: 1672, height: 941 });
+  assert.equal(guardConfig.requireDomText, true);
+  assert.equal(guardConfig.minInteractiveElements, 1);
+  assert.ok(guardConfig.forbiddenSourcePatterns.includes('pdf-render'));
+
+  const prdChecklist = JSON.parse(await readFile(path.join(out, 'prd-checklist.json'), 'utf8'));
+  assert.equal(prdChecklist.schemaVersion, 'betterref.prd.checklist.v1');
+  assert.equal(prdChecklist.items.some((item) => /Thai font/.test(item.requirement) && item.status === 'pending'), true);
+  assert.equal(prdChecklist.items.every((item) => item.phase && item.category), true);
+
   const runbook = await readFile(path.join(out, 'betterref-runbook.md'), 'utf8');
   assert.match(runbook, /betterref-chrome/);
-  assert.match(runbook, /betterref-diff/);
+  assert.match(runbook, /betterref-guard --project/);
+  assert.match(runbook, /betterref-verify/);
+  assert.match(runbook, /prd-checklist\.json/);
 });
 
 test('betterref-prd allows config output outside the artifact directory', async () => {
