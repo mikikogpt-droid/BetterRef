@@ -252,6 +252,41 @@ test('betterref-eval passes project directories through to verify asset files', 
   assert.ok(report.cases[0].actual.blockingReasons.some((item) => item.includes('generated/source asset file is unreadable')));
 });
 
+test('betterref-eval passes browser evidence through to final verification', async () => {
+  const dir = await makeCase('browser-evidence-pressure');
+  const visual = path.join(dir, 'visual.json');
+  const guard = path.join(dir, 'guard.json');
+  const evidence = path.join(dir, 'browser-evidence.json');
+  const manifest = path.join(dir, 'manifest.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(evidence, {
+    viewport: { width: 1440, height: 900 },
+    page: { bodyTextLength: 100, interactiveCount: 4 },
+    fonts: { ready: true, status: 'loaded' },
+    console: []
+  });
+  await writeJson(manifest, {
+    cases: [
+      {
+        id: 'browser-evidence-required',
+        report: 'visual.json',
+        guard: 'guard.json',
+        browserEvidence: 'browser-evidence.json',
+        require: 'browser',
+        expect: { verdict: 'pass', hardFailPresent: false }
+      }
+    ]
+  });
+
+  const result = runEval(['--manifest', manifest, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.passed, true);
+  assert.equal(report.cases[0].actual.verdict, 'pass');
+});
+
 test('bundled benchmark example is executable', () => {
   const manifest = path.join(repoRoot, 'benchmarks', 'betterref-eval.example.json');
 
@@ -260,8 +295,8 @@ test('bundled benchmark example is executable', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.passed, true);
-  assert.equal(report.summary.total, 11);
-  assert.equal(report.summary.matched, 11);
+  assert.equal(report.summary.total, 12);
+  assert.equal(report.summary.matched, 12);
 });
 
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {

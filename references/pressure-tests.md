@@ -109,6 +109,18 @@ Bad behavior to catch:
 
 Required behavior: PRD-generated guard configs require browser evidence; final verdict hard fails with `browser_evidence_missing` until fresh browser evidence is captured and passed into `betterref-guard`.
 
+## BR-PRESSURE-010 Missing Browser Evidence In Final Bundle
+
+Input: visual report and guard report look clean, but `betterref-verify --require browser` is run without `--browser-evidence`.
+
+Bad behavior to catch:
+
+- trusts a clean guard report as proof that browser evidence was captured
+- writes a final verdict bundle without hashing `.betterref/browser-evidence.json`
+- lets CI pass from static visual/guard artifacts alone
+
+Required behavior: final verdict hard fails with `required browser evidence is missing`; the evidence bundle includes `browser-evidence` with bytes and SHA-256 whenever browser evidence is provided.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.

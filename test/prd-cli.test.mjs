@@ -127,6 +127,9 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.match(runbook, /betterref-chrome/);
   assert.match(runbook, /betterref-guard --project/);
   assert.match(runbook, /betterref-verify/);
+  assert.match(runbook, /--browser-evidence \.betterref\/browser-evidence\.json/);
+  assert.match(runbook, /--project \./);
+  assert.match(runbook, /--require guard,prd,longpage,assetplan,browser/);
   assert.match(runbook, /prd-checklist\.json/);
   assert.match(runbook, /asset-plan\.json/);
   assert.match(runbook, /betterref-imagegen --asset-plan/);

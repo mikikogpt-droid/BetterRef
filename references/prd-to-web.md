@@ -46,11 +46,11 @@ npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .better
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --project . --require guard,prd,longpage,assetplan --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --browser-evidence .betterref/browser-evidence.json --project . --require guard,prd,longpage,assetplan,browser --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
 Use tool scores as evidence, not authority. If the PRD says the page must scroll, have working cards, or include a generated hero asset, a high visual score cannot pass a fake or missing implementation.
-Use `--require guard,prd,longpage,assetplan` in final PRD verification so omitted evidence and pending generated/source assets fail instead of silently passing.
+Use `--require guard,prd,longpage,assetplan,browser` and pass `--browser-evidence .betterref/browser-evidence.json` in final PRD verification so omitted browser evidence and pending generated/source assets fail instead of silently passing.
 
 `betterref-prd` sets `requireBrowserEvidence: true` in the generated guard config. The final phase cannot pass from static screenshots or reports alone.
 
@@ -69,7 +69,8 @@ Keep pressure scenarios in a manifest and run them before publishing BetterRef c
       "report": "fixtures/imagegen-pending/report.json",
       "guard": "fixtures/imagegen-pending/guard-report.json",
       "assetPlan": "fixtures/imagegen-pending/asset-plan.json",
-      "require": "assetplan",
+      "browserEvidence": "fixtures/imagegen-pending/browser-evidence.json",
+      "require": "assetplan,browser",
       "expect": { "verdict": "fail", "hardFailPresent": true }
     }
   ]

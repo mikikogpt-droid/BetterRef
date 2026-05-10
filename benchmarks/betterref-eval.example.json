@@ -5,6 +5,8 @@
       "report": "fixtures/clean/report.json",
       "guard": "fixtures/clean/guard-report.json",
       "prd": "fixtures/clean/prd-checklist.json",
+      "browserEvidence": "fixtures/clean/browser-evidence.json",
+      "require": "guard,prd,browser",
       "expect": {
         "verdict": "pass",
         "hardFailPresent": false,
@@ -40,6 +42,17 @@
         "verdict": "fail",
         "hardFailPresent": true,
         "blockingReasonIncludes": ["browser_evidence_missing"]
+      }
+    },
+    {
+      "id": "verify-missing-browser-evidence-pressure",
+      "report": "fixtures/verify-missing-browser-evidence/report.json",
+      "guard": "fixtures/verify-missing-browser-evidence/guard-report.json",
+      "require": "browser",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "blockingReasonIncludes": ["required browser evidence is missing"]
       }
     },
     {

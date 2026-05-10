@@ -53,11 +53,11 @@ npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .better
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --project . --require guard,prd,longpage,assetplan --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --browser-evidence .betterref/browser-evidence.json --project . --require guard,prd,longpage,assetplan,browser --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
 Do not use final-pass resizing to make screenshots agree. For final verification, compare native target viewport screenshots and report layout drift instead of squeezing images.
-For PRD/full-page verification, require the expected evidence with `--require guard,prd,longpage,assetplan`; missing evidence, pending assets, and fake-passed assets without attach metadata are hard fails.
+For PRD/full-page verification, require the expected evidence with `--require guard,prd,longpage,assetplan,browser`; missing browser evidence, pending assets, and fake-passed assets without attach metadata are hard fails.
 Use built-in `image_gen` for each request from `.betterref-imagegen/imagegen-requests.json`, then run `betterref-imagegen --attach <asset-id>=<file> --project .` so the asset plan records generated path, native size, sharpness, timestamp, and verification metadata before final verification. Do not manually flip asset status to `pass`.
 
 ## Hard-Fail Ledger
@@ -110,7 +110,7 @@ A completion claim must include:
 - Reference source and current screenshot source.
 - Viewport/device scale and same-state status.
 - Visual verdict with score, pass/revise/fail, and hard-fail status.
-- BetterRef report path, guard report path, asset plan path, final JSON verdict path, final HTML verdict path, and evidence bundle path.
+- BetterRef report path, guard report path, browser evidence path, asset plan path, final JSON verdict path, final HTML verdict path, and evidence bundle path.
 - Top remaining differences and next edits when score is below pass.
 - Tool inventory and escalations used.
 

@@ -244,6 +244,46 @@ test('betterref-verify writes an evidence bundle with hashed artifacts', async (
   }
 });
 
+test('betterref-verify writes browser evidence into the final evidence bundle', async () => {
+  const dir = await makeCase('browser-evidence-bundle');
+  const visual = path.join(dir, 'report.json');
+  const guard = path.join(dir, 'guard-report.json');
+  const prd = path.join(dir, 'prd-checklist.json');
+  const browserEvidence = path.join(dir, 'browser-evidence.json');
+  const out = path.join(dir, 'final-verdict.json');
+  const bundle = path.join(dir, 'evidence-bundle.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 97, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(prd, { items: [{ id: 'hero', status: 'pass' }] });
+  await writeJson(browserEvidence, {
+    viewport: { width: 1440, height: 900 },
+    page: { bodyTextLength: 120, interactiveCount: 4 },
+    fonts: { ready: true, status: 'loaded' },
+    console: []
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--guard', guard,
+    '--prd', prd,
+    '--browser-evidence', browserEvidence,
+    '--require', 'guard,prd,browser',
+    '--out', out,
+    '--bundle', bundle,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const verdict = JSON.parse(await readFile(out, 'utf8'));
+  assert.equal(verdict.browserEvidence.present, true);
+  assert.match(verdict.inputs.browserEvidence, /browser-evidence\.json$/);
+
+  const evidence = JSON.parse(await readFile(bundle, 'utf8'));
+  const browserArtifact = evidence.artifacts.find((artifact) => artifact.kind === 'browser-evidence');
+  assert.equal(browserArtifact.present, true);
+  assert.match(browserArtifact.sha256, /^[a-f0-9]{64}$/);
+});
+
 test('betterref-verify fails when required evidence is missing', async () => {
   const dir = await makeCase('required-evidence-missing');
   const visual = path.join(dir, 'report.json');
@@ -261,7 +301,24 @@ test('betterref-verify fails when required evidence is missing', async () => {
   assert.ok(verdict.blockingReasons.some((item) => item.includes('required long-page evidence is missing')));
 });
 
-test('betterref-verify treats all required evidence as including asset plan', async () => {
+test('betterref-verify fails when required browser evidence is missing', async () => {
+  const dir = await makeCase('required-browser-evidence-missing');
+  const visual = path.join(dir, 'report.json');
+  const guard = path.join(dir, 'guard-report.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+
+  const result = runVerify(['--report', visual, '--guard', guard, '--require', 'browser', '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.deepEqual(verdict.requiredEvidence.missing, ['browser']);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('required browser evidence is missing')));
+});
+
+test('betterref-verify treats all required evidence as including asset plan and browser evidence', async () => {
   const dir = await makeCase('required-all-missing-assetplan');
   const visual = path.join(dir, 'report.json');
   const guard = path.join(dir, 'guard-report.json');
@@ -290,9 +347,10 @@ test('betterref-verify treats all required evidence as including asset plan', as
   const verdict = JSON.parse(result.stdout);
   assert.equal(verdict.verdict, 'fail');
   assert.equal(verdict.hardFailPresent, true);
-  assert.deepEqual(verdict.requiredEvidence.required, ['guard', 'prd', 'longpage', 'assetplan']);
-  assert.deepEqual(verdict.requiredEvidence.missing, ['assetplan']);
+  assert.deepEqual(verdict.requiredEvidence.required, ['guard', 'prd', 'longpage', 'assetplan', 'browser']);
+  assert.deepEqual(verdict.requiredEvidence.missing, ['assetplan', 'browser']);
   assert.ok(verdict.blockingReasons.some((item) => item.includes('required asset-plan evidence is missing')));
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('required browser evidence is missing')));
 });
 
 test('betterref-verify passes required evidence when every required report is present', async () => {
@@ -552,5 +610,6 @@ test('betterref-verify prints usage and exits code 2 without a report', () => {
   assert.match(result.stderr, /--bundle/);
   assert.match(result.stderr, /--require/);
   assert.match(result.stderr, /--asset-plan/);
+  assert.match(result.stderr, /--browser-evidence/);
   assert.match(result.stderr, /--project/);
 });

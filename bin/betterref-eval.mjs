@@ -13,7 +13,7 @@ Options:
   --help                Show this help.
 
 Manifest case shape:
-  { "id": "long-page-pressure", "report": "report.json", "guard": "guard.json", "prd": "prd.json", "longpage": "longpage-report.json", "assetPlan": "asset-plan.json", "project": ".", "require": "guard,prd,longpage,assetplan", "expect": { "verdict": "fail", "hardFailPresent": true, "blockingReasonIncludes": ["long-page section hero"] } }
+  { "id": "long-page-pressure", "report": "report.json", "guard": "guard.json", "prd": "prd.json", "longpage": "longpage-report.json", "assetPlan": "asset-plan.json", "browserEvidence": "browser-evidence.json", "project": ".", "require": "guard,prd,longpage,assetplan,browser", "expect": { "verdict": "fail", "hardFailPresent": true, "blockingReasonIncludes": ["long-page section hero"] } }
 `;
 
 function failUsage(message) {
