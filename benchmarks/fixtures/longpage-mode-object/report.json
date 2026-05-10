@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "mode": {
+    "name": "full_page_scroll_reference",
+    "longPage": true,
+    "normalization": "strict-no-fullpage-resize"
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "sections": [
+    {
+      "name": "hero",
+      "score": 97
+    },
+    {
+      "name": "footer",
+      "score": 96
+    }
+  ],
+  "verdict": {
+    "verdict": "pass",
+    "score": 97,
+    "hard_fail_present": false
+  }
+}

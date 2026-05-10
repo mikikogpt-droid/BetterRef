@@ -288,6 +288,55 @@ test('betterref-eval passes browser evidence through to final verification', asy
   assert.equal(report.cases[0].actual.verdict, 'pass');
 });
 
+test('betterref-eval can run guard from a benchmark guard config', async () => {
+  const dir = await makeCase('generated-guard-pressure');
+  const project = path.join(dir, 'project');
+  await mkdir(path.join(project, 'src'), { recursive: true });
+  await writeFile(path.join(project, 'src', 'page.tsx'), 'export default function Page(){return <main><button>Buy</button></main>;}');
+  const visual = path.join(dir, 'visual.json');
+  const guardConfig = path.join(dir, 'guard-config.json');
+  const evidence = path.join(dir, 'browser-evidence.json');
+  const manifest = path.join(dir, 'manifest.json');
+  await writeJson(visual, {
+    passed: true,
+    mode: { name: 'full_page_scroll_reference', longPage: true },
+    viewport: { width: 1440, height: 900 },
+    sections: [{ name: 'hero', score: 97 }],
+    verdict: { verdict: 'pass', score: 97, hard_fail_present: false }
+  });
+  await writeJson(guardConfig, {
+    longReference: true,
+    targetViewport: { width: 1440, height: 900 }
+  });
+  await writeJson(evidence, {
+    viewport: { width: 1440, height: 900, scrollHeight: 1800 },
+    page: { scrollHeight: 1800, bodyTextLength: 100, interactiveCount: 2 },
+    fonts: { ready: true, status: 'loaded' },
+    images: [],
+    console: []
+  });
+  await writeJson(manifest, {
+    cases: [
+      {
+        id: 'longpage-mode-object-clean',
+        report: 'visual.json',
+        guardConfig: 'guard-config.json',
+        browserEvidence: 'browser-evidence.json',
+        project: 'project',
+        require: 'guard,browser',
+        expect: { verdict: 'pass', hardFailPresent: false }
+      }
+    ]
+  });
+
+  const result = runEval(['--manifest', manifest, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.passed, true);
+  assert.equal(report.cases[0].actual.verdict, 'pass');
+});
+
 test('bundled benchmark example is executable', () => {
   const manifest = path.join(repoRoot, 'benchmarks', 'betterref-eval.example.json');
 
@@ -296,8 +345,8 @@ test('bundled benchmark example is executable', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.passed, true);
-  assert.equal(report.summary.total, 15);
-  assert.equal(report.summary.matched, 15);
+  assert.equal(report.summary.total, 16);
+  assert.equal(report.summary.matched, 16);
 });
 
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {

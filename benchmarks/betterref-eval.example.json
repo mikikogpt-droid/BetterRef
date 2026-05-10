@@ -35,6 +35,18 @@
       }
     },
     {
+      "id": "longpage-mode-object-clean",
+      "report": "fixtures/longpage-mode-object/report.json",
+      "guardConfig": "fixtures/longpage-mode-object/guard-config.json",
+      "browserEvidence": "fixtures/longpage-mode-object/browser-evidence.json",
+      "project": "fixtures/longpage-mode-object/project",
+      "require": "guard,browser",
+      "expect": {
+        "verdict": "pass",
+        "hardFailPresent": false
+      }
+    },
+    {
       "id": "missing-browser-evidence-pressure",
       "report": "fixtures/missing-browser-evidence/report.json",
       "guard": "fixtures/missing-browser-evidence/guard-report.json",

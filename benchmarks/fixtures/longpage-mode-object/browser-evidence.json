@@ -1,0 +1,18 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "scrollHeight": 1800
+  },
+  "page": {
+    "scrollHeight": 1800,
+    "bodyTextLength": 4200,
+    "interactiveCount": 32
+  },
+  "fonts": {
+    "ready": true,
+    "status": "loaded"
+  },
+  "images": [],
+  "console": []
+}
