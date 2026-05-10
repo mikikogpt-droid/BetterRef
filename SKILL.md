@@ -39,10 +39,11 @@ Never call the result done when any hard-fail ledger item exists. A score of 98-
 1. Extract PRD requirements and visual references.
 2. Build a checklist that separates product behavior, content, visual style, and assets.
 3. Create phases with explicit pass criteria. Each phase must trace to PRD items.
-4. Implement with code-native UI plus generated/sourced assets where required.
-5. Capture fresh browser screenshots at the target viewport and mobile viewport.
-6. Run BetterRef diff/capture and `betterref-guard`.
-7. Mark phase complete only when PRD checklist passes, BetterRef verdict passes, and hard-fail ledger is empty.
+4. Keep generated guard config intact; if PRD mentions hero/premium/raster assets, `betterref-prd` enables `autoAssetQuality`.
+5. Implement with code-native UI plus generated/sourced assets where required.
+6. Capture fresh browser screenshots at the target viewport and mobile viewport.
+7. Run BetterRef diff/capture and `betterref-guard`.
+8. Mark phase complete only when PRD checklist passes, BetterRef verdict passes, and hard-fail ledger is empty.
 
 Useful commands:
 

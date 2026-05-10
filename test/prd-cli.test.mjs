@@ -99,6 +99,11 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.equal(guardConfig.requireDomText, true);
   assert.equal(guardConfig.minInteractiveElements, 1);
   assert.ok(guardConfig.forbiddenSourcePatterns.includes('pdf-render'));
+  assert.deepEqual(guardConfig.autoAssetQuality, {
+    enabled: true,
+    minSharpness: 20,
+    roots: ['public']
+  });
 
   const prdChecklist = JSON.parse(await readFile(path.join(out, 'prd-checklist.json'), 'utf8'));
   assert.equal(prdChecklist.schemaVersion, 'betterref.prd.checklist.v1');
@@ -110,6 +115,7 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.match(runbook, /betterref-guard --project/);
   assert.match(runbook, /betterref-verify/);
   assert.match(runbook, /prd-checklist\.json/);
+  assert.match(runbook, /autoAssetQuality/);
 });
 
 test('betterref-prd allows config output outside the artifact directory', async () => {

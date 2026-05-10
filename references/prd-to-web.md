@@ -8,7 +8,7 @@ Use this when a PRD PDF, written product spec, Figma brief, or visual target is 
 - `visual-checklist.md`: each visible area, target viewport, typography, asset class, and pass criteria.
 - `prd-checklist.json`: machine-readable checklist consumed by `betterref-verify`.
 - `.betterref.json`: viewport, regions, ignore areas, and thresholds.
-- `betterref.guard.json`: hard-fail config for source scans, long-page mode, and asset scaling.
+- `betterref.guard.json`: hard-fail config for source scans, long-page mode, asset scaling, and auto raster quality when the PRD mentions hero/image/premium assets.
 - `.betterref/report.json`, `.betterref/browser-evidence.json`, and `.betterref/guard-report.json`: final evidence.
 
 ## Phase Gate
@@ -20,6 +20,7 @@ A phase passes only when all are true:
 - Complex raster/3D/cinematic visuals are generated or sourced as production assets.
 - Fresh browser screenshots exist for desktop and mobile target states.
 - Browser evidence exists for viewport, scroll, fonts, DOM text, interactive elements, console, and image scale.
+- Hero, mascot, cinematic, premium, raster, or other image-heavy assets are checked by `autoAssetQuality` or explicit `assetQualityChecks`.
 - BetterRef visual verdict passes the configured threshold.
 - `betterref-guard` passes.
 - No hard-fail ledger item remains.
@@ -47,6 +48,8 @@ npx betterref-verify --report .betterref/report.json --guard .betterref/guard-re
 ```
 
 Use tool scores as evidence, not authority. If the PRD says the page must scroll, have working cards, or include a generated hero asset, a high visual score cannot pass a fake or missing implementation.
+
+When PRD text mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, `betterref-prd` enables `autoAssetQuality` in the generated guard config. That makes blurry local browser assets fail automatically once `browser-evidence.json` is captured.
 
 ## Benchmark Manifests
 

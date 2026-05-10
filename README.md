@@ -37,7 +37,7 @@ Bridge a PRD PDF into BetterRef control artifacts:
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 ```
 
-This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed.
+This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed. If the PRD mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, the generated guard config enables `autoAssetQuality`.
 
 Audit hard fails that numeric visual scores cannot prove:
 
@@ -175,7 +175,7 @@ For visual PDF review, render the PRD pages with Poppler or the local PDF skill 
 Outputs:
 
 - `.betterref-prd/prd-checklist.json` - machine-readable PRD checklist consumed by `betterref-verify`
-- `.betterref-prd/betterref.guard.json` - generated guard config for source reuse, long-page, DOM, and asset checks
+- `.betterref-prd/betterref.guard.json` - generated guard config for source reuse, long-page, DOM, asset scaling, and PRD-inferred raster sharpness checks
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
 - `.betterref/chrome-full-page.png` and `.betterref/sections/*.png` - native browser evidence for long-page and section review when requested
 - `.betterref-longpage/longpage-report.json` - auto-cropped reference, full-page structure score, and per-section diff verdicts
