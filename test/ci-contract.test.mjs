@@ -9,4 +9,6 @@ test('CI opts JavaScript actions into the Node 24 runtime before GitHub forces i
   const workflow = await readFile(path.join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8');
 
   assert.match(workflow, /FORCE_JAVASCRIPT_ACTIONS_TO_NODE24:\s*true/);
+  assert.match(workflow, /uses:\s*actions\/checkout@v5/);
+  assert.match(workflow, /uses:\s*actions\/setup-node@v5/);
 });
