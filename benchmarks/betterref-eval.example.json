@@ -83,6 +83,22 @@
       }
     },
     {
+      "id": "imagegen-dimension-mismatch-pressure",
+      "report": "fixtures/imagegen-dimension-mismatch/report.json",
+      "guard": "fixtures/imagegen-dimension-mismatch/guard-report.json",
+      "assetPlan": "fixtures/imagegen-dimension-mismatch/asset-plan.json",
+      "project": "fixtures/imagegen-dimension-mismatch/project",
+      "require": "assetplan",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "blockingReasonIncludes": [
+          "claimed native width 128 does not match file width 64",
+          "claimed native height 96 does not match file height 64"
+        ]
+      }
+    },
+    {
       "id": "missing-mobile-prd-pressure",
       "report": "fixtures/missing-mobile/report.json",
       "guard": "fixtures/missing-mobile/guard-report.json",

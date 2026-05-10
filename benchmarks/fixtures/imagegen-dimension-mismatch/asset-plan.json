@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "betterref.asset.plan.v1",
+  "imagegenRequired": true,
+  "assets": [
+    {
+      "id": "asset-001",
+      "status": "pass",
+      "requirement": "Asset plan native dimensions must match the project asset file.",
+      "targetPath": "public/betterref-assets/hero.svg",
+      "generatedPath": "public/betterref-assets/hero.svg",
+      "nativeWidth": 128,
+      "nativeHeight": 96,
+      "measuredSharpness": 25,
+      "minNativeWidth": 64,
+      "minNativeHeight": 64,
+      "minSharpness": 20,
+      "verifiedAt": "2026-05-10T00:00:00.000Z",
+      "verification": "betterref-imagegen attach"
+    }
+  ]
+}

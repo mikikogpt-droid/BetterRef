@@ -432,6 +432,54 @@ test('betterref-verify validates generated asset files when project path is supp
   assert.equal(verdict.assetPlan.invalid.length, 0);
 });
 
+test('betterref-verify fails when asset plan native dimensions do not match the project file', async () => {
+  const dir = await makeCase('asset-plan-dimension-mismatch');
+  const project = path.join(dir, 'project');
+  const assetPath = path.join(project, 'public', 'betterref-assets', 'hero.png');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  await mkdir(path.dirname(assetPath), { recursive: true });
+  await writeTinyPng(assetPath, 64, 64);
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pass',
+        requirement: 'Hero native dimensions must describe the actual project file.',
+        targetPath: 'public/betterref-assets/hero.png',
+        generatedPath: 'public/betterref-assets/hero.png',
+        nativeWidth: 128,
+        nativeHeight: 96,
+        measuredSharpness: 25,
+        minNativeWidth: 64,
+        minNativeHeight: 64,
+        minSharpness: 20,
+        verifiedAt: '2026-05-10T00:00:00.000Z',
+        verification: 'betterref-imagegen attach'
+      }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--project', project,
+    '--require', 'assetplan',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.equal(verdict.assetPlan.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('claimed native width 128 does not match file width 64')));
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('claimed native height 96 does not match file height 64')));
+});
+
 test('betterref-verify prints usage and exits code 2 without a report', () => {
   const result = runVerify([]);
 
