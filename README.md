@@ -56,7 +56,7 @@ Use `betterref-guard` before any final pass claim. It can fail screenshot-as-UI 
 Combine visual, guard, and PRD checklist evidence into one final verdict:
 
 ```bash
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json
 ```
 
 Run benchmark manifests to catch regressions in pressure scenarios:
@@ -155,8 +155,9 @@ Then use the generated runbook:
 
 ```bash
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
+npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json
 ```
 
 For visual PDF review, render the PRD pages with Poppler or the local PDF skill first, then pass the exported reference page or UI screenshot into `betterref-diff`.
@@ -167,6 +168,7 @@ Outputs:
 - `.betterref-prd/betterref.guard.json` - generated guard config for source reuse, long-page, DOM, and asset checks
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
 - `.betterref/chrome-full-page.png` and `.betterref/sections/*.png` - native browser evidence for long-page and section review when requested
+- `.betterref-longpage/longpage-report.json` - auto-cropped reference, full-page structure score, and per-section diff verdicts
 - `.betterref/browser-evidence.json` - viewport, scroll, DOM text, interactive count, fonts, console, and rendered image dimensions from the real browser
 - `.betterref/guard-report.json` - hard-fail ledger for source reuse, long-page evidence, and asset scaling checks
 - `.betterref/final-verdict.json` - single PRD + visual + guard verdict from `betterref-verify`

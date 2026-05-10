@@ -16,9 +16,10 @@ Use Chrome CDP capture when available:
 
 ```bash
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
+npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 ```
 
-This writes `.betterref/chrome-full-page.png`, `.betterref/sections/*.png`, `.betterref/chrome-dom-boxes.json`, and `.betterref/browser-evidence.json`.
+This writes `.betterref/chrome-full-page.png`, `.betterref/sections/*.png`, `.betterref/chrome-dom-boxes.json`, `.betterref/browser-evidence.json`, and `.betterref-longpage/longpage-report.json`.
 
 ## Minimum Sections
 
@@ -58,6 +59,7 @@ The verdict must include:
 - full-page structure score
 - per-section scores
 - section height drift
+- `.betterref-longpage/longpage-report.json`
 - hard-fail ledger
 - `betterref-guard` result
 

@@ -21,6 +21,16 @@
       }
     },
     {
+      "id": "longpage-section-pressure",
+      "report": "fixtures/longpage-section/report.json",
+      "guard": "fixtures/longpage-section/guard-report.json",
+      "longpage": "fixtures/longpage-section/longpage-report.json",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true
+      }
+    },
+    {
       "id": "missing-mobile-prd-pressure",
       "report": "fixtures/missing-mobile/report.json",
       "guard": "fixtures/missing-mobile/guard-report.json",

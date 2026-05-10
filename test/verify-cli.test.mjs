@@ -89,6 +89,34 @@ test('betterref-verify keeps PRD gaps as revise even when visual and guard pass'
   assert.ok(verdict.blockingReasons.some((item) => item.includes('mobile-menu')));
 });
 
+test('betterref-verify fails when long-page section report has blocking differences', async () => {
+  const dir = await makeCase('longpage-fail');
+  const visual = path.join(dir, 'report.json');
+  const guard = path.join(dir, 'guard-report.json');
+  const prd = path.join(dir, 'prd-checklist.json');
+  const longpage = path.join(dir, 'longpage-report.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 98, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(prd, { items: [{ id: 'hero', status: 'pass' }] });
+  await writeJson(longpage, {
+    passed: false,
+    hardFailPresent: true,
+    fullPageStructure: { passed: true, score: 98 },
+    sections: [
+      { name: 'hero', passed: false, score: 62, dimensionDrift: { width: 0, height: 120 } }
+    ]
+  });
+
+  const result = runVerify(['--report', visual, '--guard', guard, '--prd', prd, '--longpage', longpage, '--json']);
+
+  assert.equal(result.status, 1);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.equal(verdict.longPage.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('long-page section hero')));
+});
+
 test('betterref-verify prints usage and exits code 2 without a report', () => {
   const result = runVerify([]);
 

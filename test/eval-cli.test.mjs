@@ -85,6 +85,41 @@ test('betterref-eval fails when a pressure case unexpectedly passes', async () =
   assert.equal(report.cases[0].actual.verdict, 'pass');
 });
 
+test('betterref-eval includes long-page reports in pressure expectations', async () => {
+  const dir = await makeCase('longpage-pressure');
+  const visual = path.join(dir, 'visual.json');
+  const guard = path.join(dir, 'guard.json');
+  const longpage = path.join(dir, 'longpage.json');
+  const manifest = path.join(dir, 'manifest.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 98, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(longpage, {
+    passed: false,
+    hardFailPresent: true,
+    fullPageStructure: { passed: true, score: 98 },
+    sections: [{ name: 'promotions', passed: false, score: 58 }]
+  });
+  await writeJson(manifest, {
+    cases: [
+      {
+        id: 'longpage-section-pressure',
+        report: 'visual.json',
+        guard: 'guard.json',
+        longpage: 'longpage.json',
+        expect: { verdict: 'fail', hardFailPresent: true }
+      }
+    ]
+  });
+
+  const result = runEval(['--manifest', manifest, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.passed, true);
+  assert.equal(report.cases[0].actual.verdict, 'fail');
+  assert.equal(report.cases[0].actual.hardFailPresent, true);
+});
+
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {
   const result = runEval([]);
 
