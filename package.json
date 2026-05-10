@@ -5,7 +5,9 @@
   "type": "module",
   "private": false,
   "bin": {
+    "betterref-eval": "./bin/betterref-eval.mjs",
     "betterref-guard": "./bin/betterref-guard.mjs",
+    "betterref-verify": "./bin/betterref-verify.mjs",
     "betterref-chrome": "./bin/betterref-chrome.mjs",
     "betterref-prd": "./bin/betterref-prd.mjs",
     "betterref-diff": "./bin/betterref-diff.mjs",
@@ -15,6 +17,7 @@
   "files": [
     "SKILL.md",
     "agents",
+    "benchmarks",
     "bin",
     "lib",
     "references"

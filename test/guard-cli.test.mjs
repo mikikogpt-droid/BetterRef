@@ -115,6 +115,108 @@ test('betterref-guard hard fails images rendered larger than native dimensions',
   assert.ok(guardReport.hardFails.some((item) => item.code === 'asset_scaled_beyond_native_size'));
 });
 
+test('betterref-guard consumes browser evidence for scroll, image, font, console, and DOM hard fails', async () => {
+  const dir = await makeCase('browser-evidence');
+  const project = path.join(dir, 'project');
+  await mkdir(path.join(project, 'src'), { recursive: true });
+  await writeFile(path.join(project, 'src', 'page.tsx'), 'export default function Page(){return <main />;}');
+  const report = path.join(dir, 'report.json');
+  const config = path.join(dir, 'guard.json');
+  const evidence = path.join(dir, 'browser-evidence.json');
+  await writeJson(report, {
+    passed: true,
+    mode: 'full_page_scroll_reference',
+    sections: [{ name: 'hero', score: 97 }],
+    verdict: { verdict: 'pass', score: 97, hard_fail_present: false }
+  });
+  await writeJson(config, {
+    longReference: true,
+    requireDomText: true,
+    minInteractiveElements: 1,
+    targetViewport: { width: 1440, height: 900 }
+  });
+  await writeJson(evidence, {
+    viewport: { width: 1440, height: 900, scrollHeight: 900 },
+    page: { bodyTextLength: 0, interactiveCount: 0 },
+    fonts: { ready: false, status: 'loading' },
+    console: [{ type: 'error', text: 'Hydration failed' }],
+    images: [
+      {
+        src: '/hero.png',
+        naturalWidth: 640,
+        naturalHeight: 360,
+        renderedWidth: 1280,
+        renderedHeight: 720
+      }
+    ]
+  });
+
+  const result = runGuard([
+    '--project',
+    project,
+    '--report',
+    report,
+    '--config',
+    config,
+    '--browser-evidence',
+    evidence,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const guardReport = JSON.parse(result.stdout);
+  for (const code of [
+    'browser_missing_scroll_evidence',
+    'asset_scaled_beyond_native_size',
+    'browser_fonts_not_ready',
+    'browser_console_error_present',
+    'browser_missing_dom_text',
+    'browser_missing_interactive_elements'
+  ]) {
+    assert.ok(guardReport.hardFails.some((item) => item.code === code), `${code} should hard fail`);
+  }
+});
+
+test('betterref-guard accepts unsupported browser font status when fonts are not reported as unready', async () => {
+  const dir = await makeCase('font-unsupported');
+  const project = path.join(dir, 'project');
+  await mkdir(path.join(project, 'src'), { recursive: true });
+  await writeFile(path.join(project, 'src', 'page.tsx'), 'export default function Page(){return <main><button>Buy</button></main>;}');
+  const report = path.join(dir, 'report.json');
+  const config = path.join(dir, 'guard.json');
+  const evidence = path.join(dir, 'browser-evidence.json');
+  await writeJson(report, {
+    passed: true,
+    mode: 'single_viewport',
+    verdict: { verdict: 'pass', score: 96, hard_fail_present: false, hardFailHints: [] }
+  });
+  await writeJson(config, { forbiddenSourcePatterns: ['assets/reference'] });
+  await writeJson(evidence, {
+    viewport: { width: 1440, height: 900 },
+    fonts: { ready: true, status: 'unsupported' },
+    page: { bodyTextLength: 12, interactiveCount: 1 },
+    images: [],
+    console: []
+  });
+
+  const result = runGuard([
+    '--project',
+    project,
+    '--report',
+    report,
+    '--config',
+    config,
+    '--browser-evidence',
+    evidence,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const guardReport = JSON.parse(result.stdout);
+  assert.equal(guardReport.passed, true);
+  assert.ok(!guardReport.hardFails.some((item) => item.code === 'browser_fonts_not_ready'));
+});
+
 test('betterref-guard passes clean reports with no hard-fail evidence', async () => {
   const dir = await makeCase('clean');
   const project = path.join(dir, 'project');

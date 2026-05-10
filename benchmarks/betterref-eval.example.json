@@ -1,0 +1,34 @@
+{
+  "cases": [
+    {
+      "id": "clean-prd-page",
+      "report": "fixtures/clean/report.json",
+      "guard": "fixtures/clean/guard-report.json",
+      "prd": "fixtures/clean/prd-checklist.json",
+      "expect": {
+        "verdict": "pass",
+        "hardFailPresent": false,
+        "minPrdCompliance": 100
+      }
+    },
+    {
+      "id": "screenshot-as-ui-pressure",
+      "report": "fixtures/screenshot-as-ui/report.json",
+      "guard": "fixtures/screenshot-as-ui/guard-report.json",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true
+      }
+    },
+    {
+      "id": "missing-mobile-prd-pressure",
+      "report": "fixtures/missing-mobile/report.json",
+      "guard": "fixtures/missing-mobile/guard-report.json",
+      "prd": "fixtures/missing-mobile/prd-checklist.json",
+      "expect": {
+        "verdict": "revise",
+        "hardFailPresent": false
+      }
+    }
+  ]
+}

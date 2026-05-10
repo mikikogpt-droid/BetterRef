@@ -43,7 +43,27 @@ Audit hard fails that numeric visual scores cannot prove:
 npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --out .betterref/guard-report.json
 ```
 
-Use `betterref-guard` before any final pass claim. It can fail screenshot-as-UI source usage, long-page references missing scroll/section evidence, reported hard fails, failed visual reports, and rendered image assets that are larger than their native dimensions.
+Add browser evidence when available:
+
+```bash
+npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
+```
+
+Use `betterref-guard` before any final pass claim. It can fail screenshot-as-UI source usage, long-page references missing scroll/section evidence, reported hard fails, failed visual reports, rendered image assets that are larger than their native dimensions, missing scroll from the real browser, unloaded fonts, console errors, missing DOM text, and missing interactive elements.
+
+Combine visual, guard, and PRD checklist evidence into one final verdict:
+
+```bash
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json
+```
+
+Run benchmark manifests to catch regressions in pressure scenarios:
+
+```bash
+npx betterref-eval --manifest benchmarks/betterref-eval.json --out .betterref/eval-report.json
+```
+
+Start from `benchmarks/betterref-eval.example.json` when creating a new benchmark suite.
 
 Generate semantic regions from DOM boxes captured by Chrome MCP or browser tooling:
 
@@ -91,17 +111,23 @@ When a Google Chrome MCP server or Chrome plugin is available, it is useful as t
 - map failing BetterRef regions back to likely UI selectors or panels
 - verify interactive states such as hover, menus, selected tabs, modals, and loaded fonts
 
-Use Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict. When the MCP tools are not exposed to the current agent session, use `betterref-chrome` against Chrome CDP; it captures `chrome-screenshot.png`, writes `chrome-dom-boxes.json`, generates `.betterref.json`, and can run the diff in one command.
+Use Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict. When the MCP tools are not exposed to the current agent session, use `betterref-chrome` against Chrome CDP; it captures `chrome-screenshot.png`, writes `chrome-dom-boxes.json` and `browser-evidence.json`, generates `.betterref.json`, and can run the diff in one command.
 
 Recommended handoff shape from Chrome MCP or any browser script:
 
 ```json
 {
   "viewport": { "width": 1440, "height": 900 },
+  "page": { "scrollHeight": 1780, "bodyTextLength": 4200, "interactiveCount": 32 },
+  "fonts": { "ready": true, "status": "loaded" },
   "elements": [
     { "name": "header", "selector": "header", "boundingBox": { "x": 0, "y": 0, "width": 1440, "height": 80 } },
     { "name": "hero", "selector": "[data-betterref='hero']", "rect": { "left": 0, "top": 80, "right": 1440, "bottom": 560 } }
-  ]
+  ],
+  "images": [
+    { "src": "/assets/hero.png", "naturalWidth": 1920, "naturalHeight": 1080, "renderedWidth": 840, "renderedHeight": 520 }
+  ],
+  "console": []
 }
 ```
 
@@ -110,6 +136,7 @@ Then run:
 ```bash
 npx betterref-regions --input chrome-dom-boxes.json --out .betterref.json
 npx betterref-diff --ref reference.png --actual chrome-screenshot.png --out .betterref --config .betterref.json --regions both --html
+npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
 ```
 
 `betterref-regions` clips boxes to the viewport by default and skips zero-size hidden boxes. Add `--strict-bounds` when an overflow box should fail instead of being clipped.
@@ -126,6 +153,7 @@ Then use the generated runbook:
 
 ```bash
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --ref reference.png --regions both --html
+npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
 ```
 
 For visual PDF review, render the PRD pages with Poppler or the local PDF skill first, then pass the exported reference page or UI screenshot into `betterref-diff`.
@@ -133,7 +161,10 @@ For visual PDF review, render the PRD pages with Poppler or the local PDF skill 
 Outputs:
 
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
+- `.betterref/browser-evidence.json` - viewport, scroll, DOM text, interactive count, fonts, console, and rendered image dimensions from the real browser
 - `.betterref/guard-report.json` - hard-fail ledger for source reuse, long-page evidence, and asset scaling checks
+- `.betterref/final-verdict.json` - single PRD + visual + guard verdict from `betterref-verify`
+- `.betterref/eval-report.json` - benchmark summary from `betterref-eval`
 - `.betterref/diff.png` - pixel hotspot image for the next UI patch
 - `.betterref/report.html` - optional visual report with reference/current/diff and region table
 

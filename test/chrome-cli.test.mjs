@@ -99,11 +99,29 @@ async function makeFakeChrome({ withWebSocket = false } = {}) {
                     width: 100,
                     height: 80,
                     deviceScaleFactor: 1,
+                    scrollHeight: 160,
                     scrollX: 0,
                     scrollY: 0,
                     url: 'http://example.test/dashboard',
                     title: 'Example Page'
                   },
+                  page: {
+                    scrollWidth: 100,
+                    scrollHeight: 160,
+                    bodyTextLength: 24,
+                    interactiveCount: 2
+                  },
+                  fonts: { ready: true, status: 'loaded' },
+                  images: [
+                    {
+                      src: 'http://example.test/hero.png',
+                      naturalWidth: 200,
+                      naturalHeight: 100,
+                      renderedWidth: 100,
+                      renderedHeight: 50
+                    }
+                  ],
+                  console: [],
                   elements: [
                     {
                       name: 'header',
@@ -196,12 +214,17 @@ test('betterref-chrome captures screenshot and DOM boxes from selected Chrome ta
     assert.equal(payload.target.id, 'page-1');
     assert.match(payload.artifacts.screenshotPath, /chrome-screenshot\.png$/);
     assert.match(payload.artifacts.domBoxesPath, /chrome-dom-boxes\.json$/);
+    assert.match(payload.artifacts.browserEvidencePath, /browser-evidence\.json$/);
     assert.match(payload.artifacts.configPath, /\.betterref\.json$/);
     const screenshot = await readFile(path.join(out, 'chrome-screenshot.png'));
     assert.ok(screenshot.length > 0);
     const domBoxes = JSON.parse(await readFile(path.join(out, 'chrome-dom-boxes.json'), 'utf8'));
     assert.equal(domBoxes.viewport.width, 100);
     assert.equal(domBoxes.elements.length, 2);
+    const evidence = JSON.parse(await readFile(path.join(out, 'browser-evidence.json'), 'utf8'));
+    assert.equal(evidence.page.scrollHeight, 160);
+    assert.equal(evidence.fonts.ready, true);
+    assert.equal(evidence.images[0].naturalWidth, 200);
     const config = JSON.parse(await readFile(path.join(out, '.betterref.json'), 'utf8'));
     assert.equal(config.viewport, '100x80');
     assert.equal(config.regions[0].name, 'header');

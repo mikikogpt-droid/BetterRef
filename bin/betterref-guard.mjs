@@ -10,6 +10,7 @@ Required:
 Options:
   --project             Project directory to scan for reference-only assets used as UI.
   --config              Guard config JSON.
+  --browser-evidence    Browser evidence JSON from betterref-chrome or browser tooling.
   --out                 Write guard report JSON.
   --json                Print guard report JSON to stdout.
   --help                Show this help.
@@ -20,6 +21,8 @@ Guard config fields:
   actualFullPageHeight: 1800
   forbiddenSourcePatterns: ["assets/reference", "homepage-reference", "pdf-render"]
   sourceExtensions: [".tsx", ".jsx", ".css"]
+  requireDomText: true
+  minInteractiveElements: 1
   renderedAssets: [{ "src": "/hero.png", "nativeWidth": 640, "nativeHeight": 360, "renderedWidth": 1280, "renderedHeight": 720 }]
 `;
 
@@ -55,6 +58,7 @@ async function main() {
       reportPath,
       projectDir: values.project,
       configPath: values.config,
+      browserEvidencePath: values['browser-evidence'],
       outPath: values.out
     });
 

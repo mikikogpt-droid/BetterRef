@@ -13,6 +13,11 @@ The hard-fail ledger is the authority that numeric scores cannot override.
 | `long_reference_missing_section_scores` | Long reference lacks per-section verdicts. |
 | `actual_page_missing_scroll_evidence` | No native full-page screenshot taller than the viewport. |
 | `asset_scaled_beyond_native_size` | Rendered image is larger than its native dimensions. |
+| `browser_missing_scroll_evidence` | Browser evidence shows a long-page reference is being checked against a non-scrollable page. |
+| `browser_fonts_not_ready` | Browser evidence shows fonts were not ready during capture. |
+| `browser_console_error_present` | Browser evidence contains console errors or exceptions. |
+| `browser_missing_dom_text` | Guard requires DOM text but browser evidence shows none. |
+| `browser_missing_interactive_elements` | Guard requires interactive elements but browser evidence shows too few. |
 
 ## Guard Config Example
 
@@ -21,6 +26,8 @@ The hard-fail ledger is the authority that numeric scores cannot override.
   "longReference": true,
   "targetViewport": { "width": 1440, "height": 900 },
   "actualFullPageHeight": 1780,
+  "requireDomText": true,
+  "minInteractiveElements": 1,
   "forbiddenSourcePatterns": [
     "assets/reference",
     "homepage-reference",
@@ -45,6 +52,7 @@ Run:
 
 ```bash
 npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --out .betterref/guard-report.json
+npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
 ```
 
 If guard fails, the phase fails even when the pixel score is high.
