@@ -109,6 +109,18 @@ Bad behavior to catch:
 
 Required behavior: PRD-generated guard configs require browser evidence; final verdict hard fails with `browser_evidence_missing` until fresh browser evidence is captured and passed into `betterref-guard`.
 
+## BR-PRESSURE-009A Imagegen False Positives
+
+Input: a PRD says "Header sticky after scrolling through hero", "Game cards hover with image zoom", "static fallback image", and separately requires a "3D hero logo frame" and "game banner image".
+
+Bad behavior to catch:
+
+- creates imagegen tasks for sticky headers, hover states, zoom effects, parallax limits, or fallback-only rules
+- lets generic style language such as "premium neon motion" become a standalone raster request
+- loses the real 3D hero/logo/game image requirements while filtering the false positives
+
+Required behavior: keep code-native behavior in `prd-checklist.json`, create imagegen/production-asset tasks only for concrete visual assets, and keep the pending asset plan blocking final completion until generated/source assets are attached and rendered.
+
 ## BR-PRESSURE-010 Missing Browser Evidence In Final Bundle
 
 Input: visual report and guard report look clean, but `betterref-verify --require browser` is run without `--browser-evidence`.

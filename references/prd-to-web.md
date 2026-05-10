@@ -34,6 +34,7 @@ Separate requirements before implementation:
 - Content: copy, labels, pricing, game names, promotions, badges, legal text.
 - Visual style: layout, hierarchy, colors, typography, animation, motion density.
 - Asset needs: logo, hero, icons, game art, payments, social proof.
+- Code-native visual behavior: sticky headers, hover zoom, border glow, parallax limits, responsive menus, and fallback-only rules. These belong in `prd-checklist.json`, not `asset-plan.json`.
 - Verification: commands, screenshots, selectors, section names, mobile states.
 
 PDF pages, screenshots, and rendered PRD pages are evidence only. They cannot be shipped as page UI.
@@ -58,7 +59,7 @@ Use `--require guard,prd,longpage,assetplan,browser` and pass `--browser-evidenc
 
 `betterref-prd` sets `requireBrowserEvidence: true` in the generated guard config. The final phase cannot pass from static screenshots, reports alone, or placeholder browser evidence; final verification requires browser evidence with viewport, scroll, DOM text, interactive count, font, console, and image-scale fields.
 
-When PRD text mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, `betterref-prd` enables `autoAssetQuality`, sets `minRenderedAssets`, and writes `asset-plan.json`. Each pending asset must be generated with `imagegen` or sourced as a production asset, saved to its target path, wired into the app, verified with browser evidence, and marked `pass` only after scale and sharpness checks pass.
+When PRD text mentions concrete hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered asset work, `betterref-prd` enables `autoAssetQuality`, sets `minRenderedAssets`, and writes `asset-plan.json`. Each pending asset must be generated with `imagegen` or sourced as a production asset, saved to its target path, wired into the app, verified with browser evidence, and marked `pass` only after scale and sharpness checks pass. Generic style language such as "premium neon motion" is not by itself an imagegen task unless it is attached to a specific asset subject.
 Use `betterref-imagegen --asset-plan ... --out .betterref-imagegen` to create built-in `image_gen` requests, then `betterref-imagegen --attach <asset-id>=<file> --project .` after generation so final verification can trust the asset plan. A manually edited `status: pass` is not evidence.
 
 ## Benchmark Manifests

@@ -160,3 +160,40 @@ test('betterref-prd allows config output outside the artifact directory', async 
   assert.equal(config.viewport, '1440x900');
   assert.equal(config.regions.some((region) => region.name === 'footer'), true);
 });
+
+test('betterref-prd keeps code-native visual behavior out of the imagegen asset plan', async () => {
+  const dir = await makeCase('asset-extraction');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(dir, 'prd-out');
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Homepage modules: Hero 3D, quick top-up, popular games, promotions, footer.',
+    'Header sticky on desktop after scroll through hero.',
+    'Game cards hover with image zoom and border glow.',
+    'Fallback: static image required for the animation.',
+    '3D Asset Rules: hero premium glass device frame with static fallback image.',
+    'Image: game or wallet card art.',
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const assetPlan = JSON.parse(await readFile(path.join(out, 'asset-plan.json'), 'utf8'));
+  assert.equal(assetPlan.imagegenRequired, true);
+  assert.equal(assetPlan.assets.some((asset) => /3D Asset Rules/i.test(asset.requirement)), true);
+  assert.equal(assetPlan.assets.some((asset) => /Image: game or wallet card art/i.test(asset.requirement)), true);
+  assert.equal(assetPlan.assets.some((asset) => /sticky/i.test(asset.requirement)), false);
+  assert.equal(assetPlan.assets.some((asset) => /hover|zoom|border glow/i.test(asset.requirement)), false);
+  assert.equal(assetPlan.assets.some((asset) => /^Fallback:/i.test(asset.requirement)), false);
+
+  const prdChecklist = JSON.parse(await readFile(path.join(out, 'prd-checklist.json'), 'utf8'));
+  assert.equal(prdChecklist.items.some((item) => /sticky/i.test(item.requirement)), true);
+  assert.equal(prdChecklist.items.some((item) => /hover/i.test(item.requirement)), true);
+});
