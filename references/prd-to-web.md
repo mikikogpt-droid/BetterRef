@@ -44,10 +44,14 @@ PDF pages, screenshots, and rendered PRD pages are evidence only. They cannot be
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
+# No-CDP local alternative when Playwright is installed in the project:
+npx betterref-capture --url http://127.0.0.1:3000 --out .betterref --ref reference.png --viewport 1440x900 --full-page --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
 npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --browser-evidence .betterref/browser-evidence.json --project . --require guard,prd,longpage,assetplan,browser --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
+
+If you use `betterref-capture --full-page` instead of `betterref-chrome`, pass `.betterref/screenshot.png` as `--actual-full` to `betterref-longpage`.
 
 Use tool scores as evidence, not authority. If the PRD says the page must scroll, have working cards, or include a generated hero asset, a high visual score cannot pass a fake or missing implementation.
 Use `--require guard,prd,longpage,assetplan,browser` and pass `--browser-evidence .betterref/browser-evidence.json` in final PRD verification so omitted browser evidence and pending generated/source assets fail instead of silently passing.

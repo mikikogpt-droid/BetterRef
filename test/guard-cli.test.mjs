@@ -105,6 +105,50 @@ test('betterref-guard hard fails long-page references without scroll mode and se
   assert.ok(guardReport.hardFails.some((item) => item.code === 'actual_page_missing_scroll_evidence'));
 });
 
+test('betterref-guard accepts full-page report mode metadata objects', async () => {
+  const dir = await makeCase('long-page-mode-object');
+  const project = path.join(dir, 'project');
+  await mkdir(path.join(project, 'src'), { recursive: true });
+  await writeFile(path.join(project, 'src', 'page.tsx'), 'export default function Page(){return <main><button>Buy</button></main>;}');
+  const report = path.join(dir, 'report.json');
+  const config = path.join(dir, 'guard.json');
+  const evidence = path.join(dir, 'browser-evidence.json');
+  await writeJson(report, {
+    passed: true,
+    mode: {
+      name: 'full_page_scroll_reference',
+      longPage: true,
+      normalization: 'strict-no-fullpage-resize'
+    },
+    viewport: { width: 1440, height: 900 },
+    sections: [{ name: 'hero', score: 97 }],
+    verdict: { verdict: 'pass', score: 97, hard_fail_present: false, hardFailHints: [] }
+  });
+  await writeJson(config, { longReference: true, targetViewport: { width: 1440, height: 900 } });
+  await writeJson(evidence, {
+    viewport: { width: 1440, height: 900, scrollHeight: 1800 },
+    page: { scrollHeight: 1800, bodyTextLength: 64, interactiveCount: 1 },
+    fonts: { ready: true, status: 'loaded' },
+    console: []
+  });
+
+  const result = runGuard([
+    '--project',
+    project,
+    '--report',
+    report,
+    '--config',
+    config,
+    '--browser-evidence',
+    evidence,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const guardReport = JSON.parse(result.stdout);
+  assert.equal(guardReport.passed, true);
+});
+
 test('betterref-guard hard fails images rendered larger than native dimensions', async () => {
   const dir = await makeCase('asset-scale');
   const project = path.join(dir, 'project');
