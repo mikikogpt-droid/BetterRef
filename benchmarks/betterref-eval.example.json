@@ -17,7 +17,8 @@
       "guard": "fixtures/screenshot-as-ui/guard-report.json",
       "expect": {
         "verdict": "fail",
-        "hardFailPresent": true
+        "hardFailPresent": true,
+        "blockingReasonIncludes": ["reference_asset_used_in_source"]
       }
     },
     {
@@ -27,7 +28,8 @@
       "longpage": "fixtures/longpage-section/longpage-report.json",
       "expect": {
         "verdict": "fail",
-        "hardFailPresent": true
+        "hardFailPresent": true,
+        "blockingReasonIncludes": ["long-page section promotions"]
       }
     },
     {
@@ -36,7 +38,8 @@
       "guard": "fixtures/asset-quality/guard-report.json",
       "expect": {
         "verdict": "fail",
-        "hardFailPresent": true
+        "hardFailPresent": true,
+        "blockingReasonIncludes": ["asset_quality_below_threshold"]
       }
     },
     {
@@ -47,7 +50,8 @@
       "require": "assetplan",
       "expect": {
         "verdict": "fail",
-        "hardFailPresent": true
+        "hardFailPresent": true,
+        "blockingReasonIncludes": ["asset plan item asset-001 is pending"]
       }
     },
     {
@@ -58,7 +62,11 @@
       "require": "assetplan",
       "expect": {
         "verdict": "fail",
-        "hardFailPresent": true
+        "hardFailPresent": true,
+        "blockingReasonIncludes": [
+          "lacks generated/source asset evidence",
+          "lacks verification metadata"
+        ]
       }
     },
     {
@@ -70,7 +78,8 @@
       "require": "assetplan",
       "expect": {
         "verdict": "fail",
-        "hardFailPresent": true
+        "hardFailPresent": true,
+        "blockingReasonIncludes": ["generated/source asset file is unreadable"]
       }
     },
     {
@@ -80,7 +89,8 @@
       "prd": "fixtures/missing-mobile/prd-checklist.json",
       "expect": {
         "verdict": "revise",
-        "hardFailPresent": false
+        "hardFailPresent": false,
+        "blockingReasonIncludes": ["mobile-viewport"]
       }
     }
   ]

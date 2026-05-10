@@ -11,6 +11,8 @@
 - `imagegen-missing-file-pressure`: the asset plan metadata looks complete, but the project asset file is missing.
 - `missing-mobile-prd-pressure`: no hard fail, but PRD evidence is incomplete, so the verdict is `revise`.
 
+Each pressure case asserts both the verdict and at least one expected blocking-reason substring, so a case cannot pass by failing for an unrelated reason.
+
 Run it from this directory with:
 
 ```bash

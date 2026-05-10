@@ -85,6 +85,41 @@ test('betterref-eval fails when a pressure case unexpectedly passes', async () =
   assert.equal(report.cases[0].actual.verdict, 'pass');
 });
 
+test('betterref-eval fails when a pressure case fails for the wrong reason', async () => {
+  const dir = await makeCase('wrong-blocking-reason');
+  const visual = path.join(dir, 'visual.json');
+  const guard = path.join(dir, 'guard.json');
+  const manifest = path.join(dir, 'manifest.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, {
+    passed: false,
+    hardFailPresent: true,
+    hardFails: [{ code: 'asset_quality_below_threshold', message: 'Hero asset is blurry.' }]
+  });
+  await writeJson(manifest, {
+    cases: [
+      {
+        id: 'screenshot-as-ui-pressure',
+        report: 'visual.json',
+        guard: 'guard.json',
+        expect: {
+          verdict: 'fail',
+          hardFailPresent: true,
+          blockingReasonIncludes: ['reference_asset_used_in_source']
+        }
+      }
+    ]
+  });
+
+  const result = runEval(['--manifest', manifest, '--json']);
+
+  assert.equal(result.status, 1);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.passed, false);
+  assert.equal(report.summary.mismatched, 1);
+  assert.match(report.cases[0].mismatches.join('\n'), /expected blocking reason to include reference_asset_used_in_source/);
+});
+
 test('betterref-eval includes long-page reports in pressure expectations', async () => {
   const dir = await makeCase('longpage-pressure');
   const visual = path.join(dir, 'visual.json');
