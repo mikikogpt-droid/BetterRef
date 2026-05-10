@@ -46,6 +46,8 @@ npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .better
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --attach asset-001=path/to/generated.png --project . --json
 ```
 
+The generated queue includes each asset's role, phase, requirement, target path, native-size minimums, sharpness minimum, and acceptance criteria so an agent can generate the right file without guessing from prose.
+
 Audit hard fails that numeric visual scores cannot prove:
 
 ```bash

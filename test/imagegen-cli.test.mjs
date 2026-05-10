@@ -65,6 +65,7 @@ test('betterref-imagegen writes built-in image_gen requests for pending assets',
         targetPath: 'public/betterref-assets/hero.png',
         minNativeWidth: 128,
         minNativeHeight: 96,
+        acceptanceCriteria: ['Native asset is sharp.', 'UI text remains code-native.'],
         prompt: 'Create a premium ONETAPGG neon 3D hero asset.'
       },
       {
@@ -85,6 +86,9 @@ test('betterref-imagegen writes built-in image_gen requests for pending assets',
   assert.equal(payload.requests[0].id, 'asset-001');
   assert.equal(payload.requests[0].tool, 'image_gen');
   assert.equal(payload.requests[0].mode, 'built-in');
+  assert.equal(payload.requests[0].role, 'cinematic-hero');
+  assert.equal(payload.requests[0].phase, null);
+  assert.equal(payload.requests[0].acceptanceCriteria.length, 2);
   assert.equal(payload.requests[0].targetPath, 'public/betterref-assets/hero.png');
   assert.match(payload.requests[0].prompt, /Create a premium ONETAPGG/);
   assert.match(payload.requests[0].prompt, /Do not include browser chrome/);
@@ -93,6 +97,8 @@ test('betterref-imagegen writes built-in image_gen requests for pending assets',
   assert.equal(queue.requests.length, 1);
   const prompts = await readFile(path.join(out, 'imagegen-prompts.md'), 'utf8');
   assert.match(prompts, /built-in `image_gen`/);
+  assert.match(prompts, /Role: cinematic-hero/);
+  assert.match(prompts, /Native asset is sharp/);
   assert.match(prompts, /public\/betterref-assets\/hero\.png/);
   assert.match(prompts, /Do not leave project assets under/);
 });
