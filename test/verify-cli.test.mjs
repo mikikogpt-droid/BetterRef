@@ -326,6 +326,37 @@ test('betterref-verify hard fails malformed required browser evidence', async ()
   assert.ok(verdict.blockingReasons.some((item) => item.includes('browser evidence DOM text length is missing or zero')));
 });
 
+test('betterref-verify hard fails @chrome metadata-only browser evidence', async () => {
+  const dir = await makeCase('metadata-only-browser-evidence');
+  const visual = path.join(dir, 'report.json');
+  const guard = path.join(dir, 'guard-report.json');
+  const browserEvidence = path.join(dir, 'browser-evidence.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(browserEvidence, {
+    source: { tool: '@chrome' },
+    viewport: { width: 1440, height: 900 },
+    page: { scrollHeight: 1200, bodyTextLength: 100, interactiveCount: 4 },
+    fonts: { ready: true, status: 'loaded' },
+    console: [],
+    images: []
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--guard', guard,
+    '--browser-evidence', browserEvidence,
+    '--require', 'browser',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('metadata-only browser evidence is not allowed')));
+});
+
 test('betterref-verify fails when required evidence is missing', async () => {
   const dir = await makeCase('required-evidence-missing');
   const visual = path.join(dir, 'report.json');

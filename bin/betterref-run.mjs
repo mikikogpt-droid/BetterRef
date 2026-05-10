@@ -12,6 +12,7 @@ Required:
 Options:
   --url                  Target app URL or URL fragment to select in Chrome.
   --endpoint <url>       Chrome DevTools endpoint. When omitted, run blocks with @chrome handoff.
+  --browser-handoff      JSON handoff captured by @chrome, Chrome MCP, or browser tooling.
   --out <dir>            Output directory for run-state artifacts. Default: <project>/.betterref-run
   --viewport <WxH>       Override viewport when the PRD does not specify one.
   --selector <name=css>  DOM region selector for browser evidence. Repeatable.
@@ -55,6 +56,7 @@ async function main() {
       referencePath,
       url: values.url,
       endpoint: values.endpoint,
+      browserHandoffPath: values['browser-handoff'],
       runDir: values.out,
       viewport: values.viewport,
       selector: values.selector,

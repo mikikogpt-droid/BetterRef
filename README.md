@@ -35,10 +35,11 @@ Bridge a PRD PDF into BetterRef control artifacts:
 
 ```bash
 npx betterref-run --pdf PRD.pdf --project . --url http://127.0.0.1:3000/ --ref reference.png --endpoint http://127.0.0.1:9222 --json
+npx betterref-run --pdf PRD.pdf --project . --url http://127.0.0.1:3000/ --ref reference.png --browser-handoff .betterref-run/chrome-handoff.json --json
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 ```
 
-`betterref-run` is the hybrid orchestrator for PRD-to-web work. It bootstraps PRD artifacts and `AGENTS.md`, writes imagegen/HyperFrames request queues when external asset work is pending, captures CDP browser evidence when `--endpoint` is provided, runs long-page/guard/final verification when evidence is available, and writes `.betterref-run/run-state.json`, `.betterref-run/next-actions.md`, and `.betterref-run/final-summary.json`. Exit code `3` means the run is blocked by required external action, not complete.
+`betterref-run` is the hybrid orchestrator for PRD-to-web work. It bootstraps PRD artifacts and `AGENTS.md`, writes imagegen/HyperFrames request queues when external asset work is pending, captures CDP browser evidence when `--endpoint` is provided, ingests `@chrome`/Chrome MCP evidence when `--browser-handoff` is provided, runs long-page/guard/final verification when evidence is available, and writes `.betterref-run/run-state.json`, `.betterref-run/next-actions.md`, and `.betterref-run/final-summary.json`. Exit code `3` means the run is blocked by required external action, not complete.
 
 This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `asset-plan.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. With `--project .`, it also creates or updates `AGENTS.md` at the project root with a managed BetterRef/Karpathy/Superpowers contract while preserving existing project instructions outside the managed block. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed. If the PRD mentions concrete static hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered still-asset work, the generated guard config enables `autoAssetQuality` and the asset plan lists imagegen/production-asset prompts, target paths, native-size minimums, and acceptance criteria. If it mentions animated, motion, reveal, loop, WebM/MP4, shader transition, or HyperFrames work, the asset plan routes that item to HyperFrames and requires CLI render evidence plus browser video evidence. Code-native behavior such as sticky headers, hover zoom, parallax limits, mobile menus, and fallback-only rules stays in the PRD checklist instead of becoming generated asset tasks.
 
@@ -161,12 +162,20 @@ Browser evidence source order:
 3. `betterref-chrome` against Chrome CDP when the extension backend is not available.
 4. `betterref-capture` through project-local Playwright when neither Chrome path is available.
 
-Use `@chrome` or Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict. When the extension/MCP path is not available, use `betterref-chrome` against Chrome CDP; it captures `chrome-screenshot.png`, can capture `chrome-full-page.png` and per-selector `sections/*.png`, writes `chrome-dom-boxes.json` and `browser-evidence.json`, generates `.betterref.json`, and can run the diff in one command.
+Use `@chrome` or Chrome MCP for state, screenshots, and DOM evidence, then hand the evidence back to `betterref-run --browser-handoff`. Metadata-only browser evidence is a hard fail: the handoff must include real screenshot file paths. When the extension/MCP path is not available, use `betterref-chrome` against Chrome CDP; it captures `chrome-screenshot.png`, can capture `chrome-full-page.png` and per-selector `sections/*.png`, writes `chrome-dom-boxes.json` and `browser-evidence.json`, generates `.betterref.json`, and can run the diff in one command.
 
 Recommended handoff shape from Chrome MCP or any browser script:
 
 ```json
 {
+  "source": { "tool": "@chrome" },
+  "screenshots": {
+    "viewport": "chrome-viewport.png",
+    "fullPage": "chrome-full-page.png",
+    "sections": [
+      { "name": "hero", "selector": "[data-betterref='hero']", "path": "sections/hero.png" }
+    ]
+  },
   "viewport": { "width": 1440, "height": 900 },
   "page": { "scrollHeight": 1780, "bodyTextLength": 4200, "interactiveCount": 32 },
   "fonts": { "ready": true, "status": "loaded" },
@@ -184,15 +193,18 @@ Recommended handoff shape from Chrome MCP or any browser script:
 }
 ```
 
+Relative screenshot paths are resolved from the handoff JSON directory. If the handoff is `.betterref-run/chrome-handoff.json`, `chrome-viewport.png` means `.betterref-run/chrome-viewport.png`.
+
 Then run:
 
 ```bash
+npx betterref-run --pdf PRD.pdf --project . --ref reference.png --url http://127.0.0.1:3000/ --browser-handoff .betterref-run/chrome-handoff.json --json
 npx betterref-chrome-bridge --input chrome-handoff.json --out .betterref --config-out .betterref.json --json
 npx betterref-diff --ref reference.png --actual chrome-screenshot.png --out .betterref --config .betterref.json --regions both --html
 npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
 ```
 
-`betterref-chrome-bridge` converts `@chrome`/Chrome MCP handoff JSON into `.betterref/browser-evidence.json`, `.betterref/chrome-dom-boxes.json`, and optional `.betterref.json` regions. It clips boxes to the viewport through the same region rules as `betterref-regions`; add `--strict-bounds` when an overflow box should fail instead of being clipped.
+`betterref-chrome-bridge` converts `@chrome`/Chrome MCP handoff JSON into `.betterref/browser-evidence.json`, `.betterref/chrome-dom-boxes.json`, and optional `.betterref.json` regions. It validates that viewport screenshots exist, carries full-page/section screenshot paths into browser evidence, and rejects handoffs that contain metadata without real screenshot files. It clips boxes to the viewport through the same region rules as `betterref-regions`; add `--strict-bounds` when an overflow box should fail instead of being clipped.
 
 ## PRD PDF Workflow
 
@@ -200,6 +212,7 @@ Use `betterref-prd` when the reference work starts from a PRD PDF:
 
 ```bash
 npx betterref-run --pdf PRD.pdf --project . --url http://127.0.0.1:3000/ --ref reference.png --endpoint http://127.0.0.1:9222 --json
+npx betterref-run --pdf PRD.pdf --project . --url http://127.0.0.1:3000/ --ref reference.png --browser-handoff .betterref-run/chrome-handoff.json --json
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .betterref.json
 ```
 

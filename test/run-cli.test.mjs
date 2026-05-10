@@ -301,10 +301,79 @@ test('betterref-run blocks with @chrome handoff when no endpoint is supplied', a
   assert.equal(payload.status, 'blocked');
   assert.equal(payload.phase, 'browser');
   assert.ok(payload.blockers.some((item) => item.code === 'blocked_browser_evidence'));
+  assert.match(payload.artifacts.chromeHandoffRequestPath, /chrome-handoff-request\.json$/);
+  assert.match(payload.artifacts.chromeHandoffPromptPath, /chrome-handoff-prompt\.md$/);
+  assert.equal(await pathExists(path.join(project, '.betterref-run', 'chrome-handoff-request.json')), true);
+  assert.equal(await pathExists(path.join(project, '.betterref-run', 'chrome-handoff-prompt.md')), true);
   const actions = await readFile(path.join(project, '.betterref-run', 'next-actions.md'), 'utf8');
   assert.match(actions, /@chrome/);
+  assert.match(actions, /--browser-handoff/);
+  assert.match(actions, /chrome-handoff-request\.json/);
   assert.match(actions, /betterref-chrome/);
   assert.match(actions, /browser-evidence\.json/);
+});
+
+test('betterref-run accepts @chrome handoff evidence and completes final verification', async () => {
+  const dir = await makeCase('browser-handoff-pass');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  const screenshot = path.join(dir, 'chrome-viewport.png');
+  const fullPage = path.join(dir, 'chrome-full-page.png');
+  const handoff = path.join(dir, 'chrome-handoff.json');
+  const screenshotBase64 = await solidPngBase64(100, 80, { r: 255, g: 255, b: 255 });
+  await mkdir(project, { recursive: true });
+  await writePng(ref, screenshotBase64);
+  await writePng(screenshot, screenshotBase64);
+  await writePng(fullPage, screenshotBase64);
+  await writePdf(pdf, ['Viewport: 100x80.']);
+  await writeFile(handoff, JSON.stringify({
+    source: { tool: '@chrome' },
+    screenshots: {
+      viewport: screenshot,
+      fullPage,
+      sections: [
+        { name: 'hero', selector: '.hero', path: screenshot, clip: { x: 0, y: 0, width: 100, height: 80 } }
+      ]
+    },
+    viewport: { width: 100, height: 80, deviceScaleFactor: 1 },
+    page: {
+      url: 'http://127.0.0.1:3000/',
+      title: 'ONETAPGG Local',
+      scrollHeight: 80,
+      bodyTextLength: 24,
+      interactiveCount: 2
+    },
+    fonts: { ready: true, status: 'loaded' },
+    console: [],
+    network: { errors: [] },
+    images: [],
+    elements: [
+      { name: 'hero', selector: '.hero', boundingBox: { x: 0, y: 0, width: 100, height: 80 } }
+    ]
+  }, null, 2));
+
+  const result = runCli([
+    '--pdf', pdf,
+    '--project', project,
+    '--ref', ref,
+    '--url', 'http://127.0.0.1:3000/',
+    '--browser-handoff', handoff,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.status, 'pass');
+  assert.equal(payload.exitCode, 0);
+  assert.equal(payload.finalVerdict.verdict, 'pass');
+  assert.match(payload.inputs.browserHandoff, /chrome-handoff\.json$/);
+  assert.match(payload.artifacts.screenshotPath, /chrome-viewport\.png$/);
+  assert.match(payload.artifacts.browserEvidencePath, /browser-evidence\.json$/);
+
+  const evidence = JSON.parse(await readFile(path.join(project, '.betterref', 'browser-evidence.json'), 'utf8'));
+  assert.equal(evidence.source.tool, '@chrome');
+  assert.match(evidence.screenshotPath, /chrome-viewport\.png$/);
 });
 
 test('betterref-run returns pass after browser capture, guard, and final verify all pass', async () => {
