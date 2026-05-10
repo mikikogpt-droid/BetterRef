@@ -37,7 +37,7 @@ Bridge a PRD PDF into BetterRef control artifacts:
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 ```
 
-This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed. If the PRD mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, the generated guard config enables `autoAssetQuality`.
+This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `asset-plan.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed. If the PRD mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, the generated guard config enables `autoAssetQuality` and the asset plan lists imagegen/production-asset prompts, target paths, native-size minimums, and acceptance criteria.
 
 Audit hard fails that numeric visual scores cannot prove:
 
@@ -66,7 +66,7 @@ This maps browser evidence such as `/assets/hero.png` back to `public/assets/her
 Combine visual, guard, and PRD checklist evidence into one final verdict:
 
 ```bash
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --require guard,prd,longpage --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --require guard,prd,longpage,assetplan --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
 Run benchmark manifests to catch regressions in pressure scenarios:
@@ -167,7 +167,7 @@ Then use the generated runbook:
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --require guard,prd,longpage --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --require guard,prd,longpage,assetplan --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
 For visual PDF review, render the PRD pages with Poppler or the local PDF skill first, then pass the exported reference page or UI screenshot into `betterref-diff`.
@@ -175,6 +175,7 @@ For visual PDF review, render the PRD pages with Poppler or the local PDF skill 
 Outputs:
 
 - `.betterref-prd/prd-checklist.json` - machine-readable PRD checklist consumed by `betterref-verify`
+- `.betterref-prd/asset-plan.json` - machine-readable generated/source asset plan with imagegen prompts, target paths, native-size minimums, and pass/pending status
 - `.betterref-prd/betterref.guard.json` - generated guard config for source reuse, long-page, DOM, asset scaling, and PRD-inferred raster sharpness checks
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
 - `.betterref/chrome-full-page.png` and `.betterref/sections/*.png` - native browser evidence for long-page and section review when requested
@@ -188,7 +189,7 @@ Outputs:
 - `.betterref/diff.png` - pixel hotspot image for the next UI patch
 - `.betterref/report.html` - optional visual report with reference/current/diff and region table
 
-Use `--require guard,prd,longpage` for PRD/full-page workflows. Missing required evidence is a hard fail even when the visual score passes.
+Use `--require guard,prd,longpage,assetplan` for PRD/full-page workflows. Missing required evidence or pending generated/source assets are hard fails even when the visual score passes.
 
 Exit code `0` means the configured thresholds passed. Exit code `1` means revise. Exit code `2` means invalid usage or missing optional tooling.
 

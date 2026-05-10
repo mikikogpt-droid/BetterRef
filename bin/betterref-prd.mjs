@@ -58,6 +58,7 @@ async function main() {
       console.log(`[betterref-prd] summary=${result.artifacts.summaryPath}`);
       console.log(`[betterref-prd] config=${result.artifacts.configPath}`);
       console.log(`[betterref-prd] checklist=${result.artifacts.checklistPath}`);
+      console.log(`[betterref-prd] assetPlan=${result.artifacts.assetPlanPath}`);
       console.log(`[betterref-prd] runbook=${result.artifacts.runbookPath}`);
     }
   } catch (error) {

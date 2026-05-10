@@ -7,6 +7,7 @@ Use this when a PRD PDF, written product spec, Figma brief, or visual target is 
 - `requirements.md`: product, content, interaction, visual, responsive, and asset requirements.
 - `visual-checklist.md`: each visible area, target viewport, typography, asset class, and pass criteria.
 - `prd-checklist.json`: machine-readable checklist consumed by `betterref-verify`.
+- `asset-plan.json`: machine-readable generated/source asset plan with imagegen prompts, target paths, native-size minimums, and pass/pending status.
 - `.betterref.json`: viewport, regions, ignore areas, and thresholds.
 - `betterref.guard.json`: hard-fail config for source scans, long-page mode, asset scaling, and auto raster quality when the PRD mentions hero/image/premium assets.
 - `.betterref/report.json`, `.betterref/browser-evidence.json`, `.betterref/guard-report.json`, `.betterref/final-verdict.json`, `.betterref/final-verdict.html`, and `.betterref/evidence-bundle.json`: final evidence.
@@ -44,13 +45,13 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.jso
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --require guard,prd,longpage --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --require guard,prd,longpage,assetplan --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
 Use tool scores as evidence, not authority. If the PRD says the page must scroll, have working cards, or include a generated hero asset, a high visual score cannot pass a fake or missing implementation.
-Use `--require guard,prd,longpage` in final PRD verification so omitted evidence fails instead of silently passing.
+Use `--require guard,prd,longpage,assetplan` in final PRD verification so omitted evidence and pending generated/source assets fail instead of silently passing.
 
-When PRD text mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, `betterref-prd` enables `autoAssetQuality` in the generated guard config. That makes blurry local browser assets fail automatically once `browser-evidence.json` is captured.
+When PRD text mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, `betterref-prd` enables `autoAssetQuality` in the generated guard config and writes `asset-plan.json`. Each pending asset must be generated with `imagegen` or sourced as a production asset, saved to its target path, wired into the app, verified with browser evidence, and marked `pass` only after scale and sharpness checks pass.
 
 ## Benchmark Manifests
 

@@ -11,6 +11,7 @@ Options:
   --guard               betterref-guard report JSON.
   --prd                 PRD checklist JSON with items[].status.
   --longpage            betterref-longpage report JSON.
+  --asset-plan          betterref-prd asset-plan JSON.
   --out                 Write final verdict JSON.
   --html                Write final verdict HTML report.
   --bundle              Write evidence bundle JSON with artifact hashes.
@@ -52,6 +53,7 @@ async function main() {
       guardPath: values.guard,
       prdPath: values.prd,
       longPagePath: values.longpage,
+      assetPlanPath: values['asset-plan'],
       outPath: values.out,
       htmlPath: values.html,
       bundlePath: values.bundle,

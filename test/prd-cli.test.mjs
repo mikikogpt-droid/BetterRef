@@ -76,6 +76,7 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.match(payload.artifacts.configPath, /\.betterref\.json$/);
   assert.match(payload.artifacts.guardConfigPath, /betterref\.guard\.json$/);
   assert.match(payload.artifacts.prdChecklistPath, /prd-checklist\.json$/);
+  assert.match(payload.artifacts.assetPlanPath, /asset-plan\.json$/);
   assert.match(payload.artifacts.runbookPath, /betterref-runbook\.md$/);
 
   const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
@@ -110,11 +111,24 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.equal(prdChecklist.items.some((item) => /Thai font/.test(item.requirement) && item.status === 'pending'), true);
   assert.equal(prdChecklist.items.every((item) => item.phase && item.category), true);
 
+  const assetPlan = JSON.parse(await readFile(path.join(out, 'asset-plan.json'), 'utf8'));
+  assert.equal(assetPlan.schemaVersion, 'betterref.asset.plan.v1');
+  assert.equal(assetPlan.imagegenRequired, true);
+  assert.equal(assetPlan.assets.length > 0, true);
+  assert.equal(assetPlan.assets[0].status, 'pending');
+  assert.equal(assetPlan.assets[0].implementation, 'imagegen-or-production-asset');
+  assert.match(assetPlan.assets[0].targetPath, /^public\/betterref-assets\//);
+  assert.equal(assetPlan.assets[0].minNativeWidth >= 3344, true);
+  assert.match(assetPlan.assets[0].prompt, /ONETAPGG/i);
+  assert.equal(assetPlan.assets[0].acceptanceCriteria.some((item) => /reference crop/i.test(item)), true);
+
   const runbook = await readFile(path.join(out, 'betterref-runbook.md'), 'utf8');
   assert.match(runbook, /betterref-chrome/);
   assert.match(runbook, /betterref-guard --project/);
   assert.match(runbook, /betterref-verify/);
   assert.match(runbook, /prd-checklist\.json/);
+  assert.match(runbook, /asset-plan\.json/);
+  assert.match(runbook, /imagegen/);
   assert.match(runbook, /autoAssetQuality/);
 });
 

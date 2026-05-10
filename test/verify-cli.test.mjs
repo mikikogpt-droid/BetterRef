@@ -267,6 +267,42 @@ test('betterref-verify passes required evidence when every required report is pr
   assert.deepEqual(verdict.requiredEvidence.required, ['guard', 'prd', 'longpage']);
 });
 
+test('betterref-verify fails when a required asset plan still has pending generated assets', async () => {
+  const dir = await makeCase('asset-plan-pending');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pending',
+        requirement: 'Hero cinematic 3D mascot background',
+        targetPath: 'public/betterref-assets/hero-cinematic.png'
+      }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--require', 'assetplan',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.deepEqual(verdict.requiredEvidence.missing, []);
+  assert.equal(verdict.assetPlan.present, true);
+  assert.equal(verdict.assetPlan.passed, false);
+  assert.equal(verdict.assetPlan.pending[0].id, 'asset-001');
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('asset plan item asset-001 is pending')));
+});
+
 test('betterref-verify prints usage and exits code 2 without a report', () => {
   const result = runVerify([]);
 
@@ -275,4 +311,5 @@ test('betterref-verify prints usage and exits code 2 without a report', () => {
   assert.match(result.stderr, /--html/);
   assert.match(result.stderr, /--bundle/);
   assert.match(result.stderr, /--require/);
+  assert.match(result.stderr, /--asset-plan/);
 });
