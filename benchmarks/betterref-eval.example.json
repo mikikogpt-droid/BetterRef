@@ -56,6 +56,21 @@
       }
     },
     {
+      "id": "malformed-browser-evidence-pressure",
+      "report": "fixtures/malformed-browser-evidence/report.json",
+      "guard": "fixtures/malformed-browser-evidence/guard-report.json",
+      "browserEvidence": "fixtures/malformed-browser-evidence/browser-evidence.json",
+      "require": "browser",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "blockingReasonIncludes": [
+          "browser evidence viewport is missing or invalid",
+          "browser evidence DOM text length is missing or zero"
+        ]
+      }
+    },
+    {
       "id": "asset-quality-pressure",
       "report": "fixtures/asset-quality/report.json",
       "guard": "fixtures/asset-quality/guard-report.json",

@@ -257,8 +257,9 @@ test('betterref-verify writes browser evidence into the final evidence bundle', 
   await writeJson(prd, { items: [{ id: 'hero', status: 'pass' }] });
   await writeJson(browserEvidence, {
     viewport: { width: 1440, height: 900 },
-    page: { bodyTextLength: 120, interactiveCount: 4 },
+    page: { scrollHeight: 1600, bodyTextLength: 120, interactiveCount: 4 },
     fonts: { ready: true, status: 'loaded' },
+    images: [],
     console: []
   });
 
@@ -282,6 +283,33 @@ test('betterref-verify writes browser evidence into the final evidence bundle', 
   const browserArtifact = evidence.artifacts.find((artifact) => artifact.kind === 'browser-evidence');
   assert.equal(browserArtifact.present, true);
   assert.match(browserArtifact.sha256, /^[a-f0-9]{64}$/);
+});
+
+test('betterref-verify hard fails malformed required browser evidence', async () => {
+  const dir = await makeCase('malformed-browser-evidence');
+  const visual = path.join(dir, 'report.json');
+  const guard = path.join(dir, 'guard-report.json');
+  const browserEvidence = path.join(dir, 'browser-evidence.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(browserEvidence, {});
+
+  const result = runVerify([
+    '--report', visual,
+    '--guard', guard,
+    '--browser-evidence', browserEvidence,
+    '--require', 'browser',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.equal(verdict.browserEvidence.present, true);
+  assert.equal(verdict.browserEvidence.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('browser evidence viewport is missing or invalid')));
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('browser evidence DOM text length is missing or zero')));
 });
 
 test('betterref-verify fails when required evidence is missing', async () => {

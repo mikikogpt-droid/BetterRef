@@ -121,6 +121,18 @@ Bad behavior to catch:
 
 Required behavior: final verdict hard fails with `required browser evidence is missing`; the evidence bundle includes `browser-evidence` with bytes and SHA-256 whenever browser evidence is provided.
 
+## BR-PRESSURE-011 Malformed Browser Evidence
+
+Input: `betterref-verify --require browser` receives `.betterref/browser-evidence.json`, but the file is `{}` or lacks viewport, scroll, DOM text, interactive count, font status, console array, or image-scale evidence.
+
+Bad behavior to catch:
+
+- accepts browser evidence because the file exists
+- lets a hand-written placeholder satisfy final verification
+- treats browser evidence as metadata instead of proof from the real browser
+
+Required behavior: final verdict hard fails with specific browser evidence blocking reasons until the evidence includes real viewport, scroll, DOM, font, console, and image-scale fields.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.

@@ -198,7 +198,7 @@ Outputs:
 - `.betterref/diff.png` - pixel hotspot image for the next UI patch
 - `.betterref/report.html` - optional visual report with reference/current/diff and region table
 
-Use `--require guard,prd,longpage,assetplan,browser`, `--browser-evidence .betterref/browser-evidence.json`, and `--project .` for PRD/full-page workflows. Missing required browser evidence, pending generated/source assets, or fake-passed assets without attach metadata are hard fails even when the visual score passes.
+Use `--require guard,prd,longpage,assetplan,browser`, `--browser-evidence .betterref/browser-evidence.json`, and `--project .` for PRD/full-page workflows. Missing or malformed browser evidence, pending generated/source assets, or fake-passed assets without attach metadata are hard fails even when the visual score passes.
 
 Exit code `0` means the configured thresholds passed. Exit code `1` means revise. Exit code `2` means invalid usage or missing optional tooling.
 

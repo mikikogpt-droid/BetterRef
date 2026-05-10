@@ -262,8 +262,9 @@ test('betterref-eval passes browser evidence through to final verification', asy
   await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
   await writeJson(evidence, {
     viewport: { width: 1440, height: 900 },
-    page: { bodyTextLength: 100, interactiveCount: 4 },
+    page: { scrollHeight: 1600, bodyTextLength: 100, interactiveCount: 4 },
     fonts: { ready: true, status: 'loaded' },
+    images: [],
     console: []
   });
   await writeJson(manifest, {
@@ -295,8 +296,8 @@ test('bundled benchmark example is executable', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.passed, true);
-  assert.equal(report.summary.total, 12);
-  assert.equal(report.summary.matched, 12);
+  assert.equal(report.summary.total, 13);
+  assert.equal(report.summary.matched, 13);
 });
 
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {
