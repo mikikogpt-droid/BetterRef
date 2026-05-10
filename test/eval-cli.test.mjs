@@ -252,6 +252,63 @@ test('betterref-eval can pressure-check asset plan extraction false positives', 
   assert.deepEqual(report.cases[0].actual.assetPlan.roles, ['cinematic-hero', 'game-card-art']);
 });
 
+test('betterref-eval can pressure-check asset plan prompt language and roles', async () => {
+  const dir = await makeCase('assetplan-prompt-pressure');
+  const visual = path.join(dir, 'visual.json');
+  const guard = path.join(dir, 'guard.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const manifest = path.join(dir, 'manifest.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pending',
+        role: 'cinematic-hero',
+        requirement: 'Homepage สร้าง first impression และพาผู้ใช้ไปเติมเกม Hero 3D',
+        prompt: 'Create ONETAPGG cinematic hero. Requirement: Homepage สร้าง first impression และพาผู้ใช้ไปเติมเกม Hero 3D.',
+        targetPath: 'public/betterref-assets/hero.png'
+      },
+      {
+        id: 'asset-002',
+        status: 'pending',
+        role: 'game-card-art',
+        requirement: 'Image ภาพเกมหรือ wallet card',
+        prompt: 'Create ONETAPGG game-card art. Requirement: Image ภาพเกมหรือ wallet card.',
+        targetPath: 'public/betterref-assets/game-card.png'
+      }
+    ]
+  });
+  await writeJson(manifest, {
+    cases: [
+      {
+        id: 'prd-thai-imagegen-pressure',
+        report: 'visual.json',
+        guard: 'guard.json',
+        assetPlan: 'asset-plan.json',
+        expect: {
+          verdict: 'fail',
+          hardFailPresent: true,
+          assetPlanRequiredPromptIncludes: ['สร้าง first impression', 'ภาพเกมหรือ wallet card'],
+          assetPlanForbiddenPromptIncludes: ['สร้ำง', 'เธ', ';ำ'],
+          assetPlanRequiredRoleIncludes: ['cinematic-hero', 'game-card-art'],
+          assetPlanForbiddenRoleIncludes: ['brand-logo']
+        }
+      }
+    ]
+  });
+
+  const result = runEval(['--manifest', manifest, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.passed, true);
+  assert.deepEqual(report.cases[0].actual.assetPlan.roles, ['cinematic-hero', 'game-card-art']);
+});
+
 test('betterref-eval fails asset plan lint when code-native behavior leaks into imagegen tasks', async () => {
   const dir = await makeCase('assetplan-lint-fail');
   const visual = path.join(dir, 'visual.json');
@@ -443,8 +500,8 @@ test('bundled benchmark example is executable', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.passed, true);
-  assert.equal(report.summary.total, 20);
-  assert.equal(report.summary.matched, 20);
+  assert.equal(report.summary.total, 21);
+  assert.equal(report.summary.matched, 21);
 });
 
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {

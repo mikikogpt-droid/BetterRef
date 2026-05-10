@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "betterref.asset.plan.v1",
+  "imagegenRequired": true,
+  "assets": [
+    {
+      "id": "asset-001",
+      "status": "pending",
+      "phase": "header-hero",
+      "role": "cinematic-hero",
+      "requirement": "Homepage สร้าง first impression และพาผู้ใช้ไปเติมเกม Hero 3D, เกมด่วน, เกมยอดนิยม, โปรโมชัน, วิธีเติม",
+      "prompt": "Create a production-ready ONETAPGG cinematic-hero asset for a 1440x900 web UI. Requirement: Homepage สร้าง first impression และพาผู้ใช้ไปเติมเกม Hero 3D, เกมด่วน, เกมยอดนิยม, โปรโมชัน, วิธีเติม. Do not include browser chrome, UI text blocks, screenshots, PDF renders, watermarks, or reference-image borders.",
+      "targetPath": "public/betterref-assets/cinematic-hero-01.png"
+    },
+    {
+      "id": "asset-002",
+      "status": "pending",
+      "phase": "quick-topup",
+      "role": "game-card-art",
+      "requirement": "Image ภาพเกมหรือ wallet card",
+      "prompt": "Create a production-ready ONETAPGG game-card-art asset for a 1440x900 web UI. Requirement: Image ภาพเกมหรือ wallet card. Do not include browser chrome, UI text blocks, screenshots, PDF renders, watermarks, or reference-image borders.",
+      "targetPath": "public/betterref-assets/game-card-art-02.png"
+    }
+  ]
+}

@@ -241,6 +241,32 @@
       }
     },
     {
+      "id": "prd-thai-imagegen-pressure",
+      "report": "fixtures/clean/report.json",
+      "guard": "fixtures/clean/guard-report.json",
+      "assetPlan": "fixtures/prd-thai-imagegen/asset-plan.json",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "assetPlanRequiredPromptIncludes": [
+          "สร้าง first impression",
+          "ภาพเกมหรือ wallet card"
+        ],
+        "assetPlanForbiddenPromptIncludes": [
+          "สร้ำง",
+          "เธ",
+          ";ำ"
+        ],
+        "assetPlanRequiredRoleIncludes": [
+          "cinematic-hero",
+          "game-card-art"
+        ],
+        "assetPlanForbiddenRoleIncludes": [
+          "brand-logo"
+        ]
+      }
+    },
+    {
       "id": "missing-rendered-assets-pressure",
       "report": "fixtures/missing-rendered-assets/report.json",
       "guard": "fixtures/missing-rendered-assets/guard-report.json",
