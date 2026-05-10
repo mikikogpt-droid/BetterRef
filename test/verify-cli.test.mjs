@@ -533,6 +533,123 @@ test('betterref-verify validates generated asset files when project path is supp
   assert.equal(verdict.assetPlan.invalid.length, 0);
 });
 
+test('betterref-verify fails when a passed generated asset is not rendered in browser evidence', async () => {
+  const dir = await makeCase('asset-plan-not-rendered');
+  const project = path.join(dir, 'project');
+  const assetPath = path.join(project, 'public', 'betterref-assets', 'hero.png');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const browserEvidence = path.join(dir, 'browser-evidence.json');
+  await mkdir(path.dirname(assetPath), { recursive: true });
+  await writeCheckerPng(assetPath, 128, 96);
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pass',
+        requirement: 'Hero cinematic 3D mascot background must be wired into the app.',
+        targetPath: 'public/betterref-assets/hero.png',
+        generatedPath: 'public/betterref-assets/hero.png',
+        nativeWidth: 128,
+        nativeHeight: 96,
+        measuredSharpness: 25,
+        minNativeWidth: 128,
+        minNativeHeight: 96,
+        minSharpness: 20,
+        verifiedAt: '2026-05-10T00:00:00.000Z',
+        verification: 'betterref-imagegen attach'
+      }
+    ]
+  });
+  await writeJson(browserEvidence, {
+    viewport: { width: 1440, height: 900 },
+    page: { scrollHeight: 1200, bodyTextLength: 100, interactiveCount: 4 },
+    fonts: { ready: true, status: 'loaded' },
+    console: [],
+    images: [{ src: '/assets/placeholder.png', naturalWidth: 128, naturalHeight: 96, renderedWidth: 128, renderedHeight: 96 }]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--browser-evidence', browserEvidence,
+    '--project', project,
+    '--require', 'assetplan,browser',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('asset plan item asset-001 is not rendered in browser evidence')));
+});
+
+test('betterref-verify accepts passed generated assets when browser evidence renders the target asset', async () => {
+  const dir = await makeCase('asset-plan-rendered');
+  const project = path.join(dir, 'project');
+  const assetPath = path.join(project, 'public', 'betterref-assets', 'hero.png');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const browserEvidence = path.join(dir, 'browser-evidence.json');
+  await mkdir(path.dirname(assetPath), { recursive: true });
+  await writeCheckerPng(assetPath, 128, 96);
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pass',
+        requirement: 'Hero cinematic 3D mascot background must be wired into the app.',
+        targetPath: 'public/betterref-assets/hero.png',
+        generatedPath: 'public/betterref-assets/hero.png',
+        nativeWidth: 128,
+        nativeHeight: 96,
+        measuredSharpness: 25,
+        minNativeWidth: 128,
+        minNativeHeight: 96,
+        minSharpness: 20,
+        verifiedAt: '2026-05-10T00:00:00.000Z',
+        verification: 'betterref-imagegen attach'
+      }
+    ]
+  });
+  await writeJson(browserEvidence, {
+    viewport: { width: 1440, height: 900 },
+    page: { scrollHeight: 1200, bodyTextLength: 100, interactiveCount: 4 },
+    fonts: { ready: true, status: 'loaded' },
+    console: [],
+    images: [
+      {
+        src: 'http://127.0.0.1:3000/_next/image?url=%2Fbetterref-assets%2Fhero.png&w=640&q=75',
+        naturalWidth: 128,
+        naturalHeight: 96,
+        renderedWidth: 128,
+        renderedHeight: 96
+      }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--browser-evidence', browserEvidence,
+    '--project', project,
+    '--require', 'assetplan,browser',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'pass');
+  assert.equal(verdict.assetPlan.passed, true);
+});
+
 test('betterref-verify fails when asset plan native dimensions do not match the project file', async () => {
   const dir = await makeCase('asset-plan-dimension-mismatch');
   const project = path.join(dir, 'project');

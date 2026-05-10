@@ -133,6 +133,18 @@ Bad behavior to catch:
 
 Required behavior: final verdict hard fails with specific browser evidence blocking reasons until the evidence includes real viewport, scroll, DOM, font, console, and image-scale fields.
 
+## BR-PRESSURE-012 Generated Asset Not Rendered
+
+Input: `asset-plan.json` has an imagegen-required asset marked `pass` with valid file, native dimensions, sharpness, and attach metadata, but fresh browser evidence shows the actual page still renders placeholders or unrelated images.
+
+Bad behavior to catch:
+
+- accepts the generated asset because the file exists
+- verifies sharpness/dimensions but never checks whether the app uses the asset
+- leaves code-native placeholder cards or hero art in place after imagegen finishes
+
+Required behavior: final verdict hard fails with `asset_pass_not_rendered` or equivalent; completion is blocked until browser evidence shows the generated/source asset is rendered in the actual app. CSS background assets must be captured in browser evidence, not hidden from verification.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.

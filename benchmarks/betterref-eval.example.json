@@ -152,6 +152,22 @@
       }
     },
     {
+      "id": "imagegen-not-rendered-pressure",
+      "report": "fixtures/imagegen-not-rendered/report.json",
+      "guard": "fixtures/imagegen-not-rendered/guard-report.json",
+      "assetPlan": "fixtures/imagegen-not-rendered/asset-plan.json",
+      "browserEvidence": "fixtures/imagegen-not-rendered/browser-evidence.json",
+      "project": "fixtures/imagegen-not-rendered/project",
+      "require": "assetplan,browser",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "blockingReasonIncludes": [
+          "is not rendered in browser evidence"
+        ]
+      }
+    },
+    {
       "id": "missing-mobile-prd-pressure",
       "report": "fixtures/missing-mobile/report.json",
       "guard": "fixtures/missing-mobile/guard-report.json",
