@@ -32,6 +32,7 @@ Never call the result done when any hard-fail ledger item exists. A score of 98-
 | High BetterRef score | Run hard-fail ledger first; score is secondary. |
 | Source imports reference/PDF/crop | Fail; replace with code-native UI or generated/source asset. |
 | Asset rendered larger than native size | Fail; regenerate/source higher resolution or reduce display size. |
+| Hero/premium raster looks soft | Add `assetQualityChecks` and fail if sharpness is below threshold. |
 
 ## PRD To Web Loop
 
@@ -66,7 +67,7 @@ The verdict must be `fail` or `revise` if any item is true:
 - Browser or OS chrome remains inside the web reference crop.
 - Typography changes hierarchy, Thai glyph style, line breaks, clipping, or text rhythm.
 - Important content is clipped, overlapped, hidden, or blocked.
-- A complex hero/raster asset is visibly lower quality, has rectangular edges, wrong crop, weak lighting/depth, or blurred scaling.
+- A complex hero/raster asset is visibly lower quality, has rectangular edges, wrong crop, weak lighting/depth, low measured sharpness, or blurred scaling.
 - Rendered asset dimensions exceed native image dimensions.
 - The report uses a high score to override a PRD gap or real UI defect.
 - No fresh screenshot from the actual app was used.
@@ -91,7 +92,7 @@ Capture both a native full-page screenshot and section/viewport screenshots. Com
 
 ## Tool Use
 
-Start with local assets, project scripts, browser tools, DOM measurement, screenshot capture, pixel/SSIM diff, image dimensions, fonts, and icon libraries. If a measured gap remains, create or install scoped tooling, or use `imagegen` for complex raster work. Name the gap before adding a tool.
+Start with local assets, project scripts, browser tools, DOM measurement, screenshot capture, pixel/SSIM diff, image dimensions, asset sharpness checks, fonts, and icon libraries. If a measured gap remains, create or install scoped tooling, or use `imagegen` for complex raster work. Name the gap before adding a tool.
 
 Chrome MCP or browser automation can establish route, viewport, scroll, console, font, image scale, DOM text, interactive count, and DOM box truth. `betterref-chrome --full-page --section-screenshots` writes `.betterref/browser-evidence.json`, `.betterref/chrome-full-page.png`, and `.betterref/sections/*.png`; `betterref-longpage` auto-crops browser chrome from the reference and diffs full-page plus sections. Pass browser evidence and long-page report into `betterref-guard`/`betterref-verify` so browser hard fails cannot be hidden by a high pixel score.
 

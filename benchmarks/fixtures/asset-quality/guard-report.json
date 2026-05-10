@@ -1,0 +1,17 @@
+{
+  "passed": false,
+  "hardFailPresent": true,
+  "hardFails": [
+    {
+      "code": "asset_quality_below_threshold",
+      "message": "Raster asset sharpness 8.42 is below the configured minimum 20.",
+      "asset": {
+        "path": "public/hero-blur.png",
+        "role": "hero",
+        "minSharpness": 20
+      },
+      "measuredSharpness": 8.42,
+      "minSharpness": 20
+    }
+  ]
+}

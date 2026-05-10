@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import sharp from 'sharp';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const guardBin = path.join(repoRoot, 'bin', 'betterref-guard.mjs');
@@ -23,6 +24,27 @@ function runGuard(args) {
     cwd: repoRoot,
     encoding: 'utf8'
   });
+}
+
+async function writeCheckerPng(filePath, options = {}) {
+  const size = 96;
+  const channels = 3;
+  const data = Buffer.alloc(size * size * channels);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const offset = (y * size + x) * channels;
+      const value = (Math.floor(x / 8) + Math.floor(y / 8)) % 2 === 0 ? 24 : 232;
+      data[offset] = value;
+      data[offset + 1] = value;
+      data[offset + 2] = value;
+    }
+  }
+
+  let image = sharp(data, { raw: { width: size, height: size, channels } });
+  if (options.blur) {
+    image = image.blur(8);
+  }
+  await image.png().toFile(filePath);
 }
 
 test('betterref-guard hard fails when source uses reference assets despite a passing score', async () => {
@@ -113,6 +135,38 @@ test('betterref-guard hard fails images rendered larger than native dimensions',
   assert.equal(result.status, 1, result.stderr || result.stdout);
   const guardReport = JSON.parse(result.stdout);
   assert.ok(guardReport.hardFails.some((item) => item.code === 'asset_scaled_beyond_native_size'));
+});
+
+test('betterref-guard hard fails blurry raster assets below the configured sharpness threshold', async () => {
+  const dir = await makeCase('asset-quality');
+  const project = path.join(dir, 'project');
+  const publicDir = path.join(project, 'public');
+  await mkdir(path.join(project, 'src'), { recursive: true });
+  await mkdir(publicDir, { recursive: true });
+  await writeFile(path.join(project, 'src', 'page.tsx'), 'export default function Page(){return <main />;}');
+  await writeCheckerPng(path.join(publicDir, 'hero-sharp.png'));
+  await writeCheckerPng(path.join(publicDir, 'hero-blur.png'), { blur: true });
+  const report = path.join(dir, 'report.json');
+  const config = path.join(dir, 'guard.json');
+  await writeJson(report, {
+    passed: true,
+    mode: 'single_viewport',
+    verdict: { verdict: 'pass', score: 99, hard_fail_present: false, hardFailHints: [] }
+  });
+  await writeJson(config, {
+    assetQualityChecks: [
+      { path: 'public/hero-sharp.png', role: 'hero', minSharpness: 20 },
+      { path: 'public/hero-blur.png', role: 'hero', minSharpness: 20 }
+    ]
+  });
+
+  const result = runGuard(['--project', project, '--report', report, '--config', config, '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const guardReport = JSON.parse(result.stdout);
+  const qualityFails = guardReport.hardFails.filter((item) => item.code === 'asset_quality_below_threshold');
+  assert.equal(qualityFails.length, 1);
+  assert.equal(qualityFails[0].asset.path, 'public/hero-blur.png');
 });
 
 test('betterref-guard consumes browser evidence for scroll, image, font, console, and DOM hard fails', async () => {

@@ -13,6 +13,9 @@ The hard-fail ledger is the authority that numeric scores cannot override.
 | `long_reference_missing_section_scores` | Long reference lacks per-section verdicts. |
 | `actual_page_missing_scroll_evidence` | No native full-page screenshot taller than the viewport. |
 | `asset_scaled_beyond_native_size` | Rendered image is larger than its native dimensions. |
+| `asset_quality_below_threshold` | Raster asset is blurrier or lower-detail than the configured sharpness threshold. |
+| `asset_quality_missing_path` | Configured asset quality check has no local image path. |
+| `asset_quality_unreadable` | Configured asset quality image cannot be read. |
 | `browser_missing_scroll_evidence` | Browser evidence shows a long-page reference is being checked against a non-scrollable page. |
 | `browser_fonts_not_ready` | Browser evidence shows fonts were not ready during capture. |
 | `browser_console_error_present` | Browser evidence contains console errors or exceptions. |
@@ -43,6 +46,13 @@ The hard-fail ledger is the authority that numeric scores cannot override.
       "nativeHeight": 1080,
       "renderedWidth": 900,
       "renderedHeight": 520
+    }
+  ],
+  "assetQualityChecks": [
+    {
+      "path": "public/assets/hero.png",
+      "role": "hero",
+      "minSharpness": 20
     }
   ]
 }

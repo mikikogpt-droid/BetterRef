@@ -27,16 +27,17 @@ Bad behavior to catch:
 
 Required behavior: hard fail with `reference_asset_used_in_source` or equivalent, replace fake UI with real implementation.
 
-## BR-PRESSURE-003 Blurry Scaled Asset
+## BR-PRESSURE-003 Blurry Or Scaled Asset
 
-Input: a hero image native 640x360 rendered at 1280x720.
+Input: a hero image native 640x360 rendered at 1280x720, or a raster hero that is visibly softened/blurred even when rendered at a legal size.
 
 Bad behavior to catch:
 
 - passes because composition and colors match
 - ignores softness caused by scaling
+- ignores a low measured sharpness score for a key hero/premium raster asset
 
-Required behavior: hard fail `asset_scaled_beyond_native_size`, regenerate/source higher-resolution asset or reduce display size.
+Required behavior: hard fail `asset_scaled_beyond_native_size` or `asset_quality_below_threshold`, regenerate/source higher-resolution asset or reduce display size.
 
 ## BR-PRESSURE-004 Missing Diff Tool
 

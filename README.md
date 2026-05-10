@@ -51,7 +51,7 @@ Add browser evidence when available:
 npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
 ```
 
-Use `betterref-guard` before any final pass claim. It can fail screenshot-as-UI source usage, long-page references missing scroll/section evidence, reported hard fails, failed visual reports, rendered image assets that are larger than their native dimensions, missing scroll from the real browser, unloaded fonts, console errors, missing DOM text, and missing interactive elements.
+Use `betterref-guard` before any final pass claim. It can fail screenshot-as-UI source usage, long-page references missing scroll/section evidence, reported hard fails, failed visual reports, rendered image assets that are larger than their native dimensions, blurry raster assets below a configured sharpness threshold, missing scroll from the real browser, unloaded fonts, console errors, missing DOM text, and missing interactive elements.
 
 Combine visual, guard, and PRD checklist evidence into one final verdict:
 
