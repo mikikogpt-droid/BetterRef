@@ -117,9 +117,64 @@ test('betterref-verify fails when long-page section report has blocking differen
   assert.ok(verdict.blockingReasons.some((item) => item.includes('long-page section hero')));
 });
 
+test('betterref-verify writes a readable HTML verdict with blocking evidence', async () => {
+  const dir = await makeCase('html-verdict');
+  const visual = path.join(dir, 'report.json');
+  const guard = path.join(dir, 'guard-report.json');
+  const prd = path.join(dir, 'prd-checklist.json');
+  const longpage = path.join(dir, 'longpage-report.json');
+  const html = path.join(dir, 'final-verdict.html');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, {
+    passed: false,
+    hardFailPresent: true,
+    hardFails: [{ code: 'asset_quality_below_threshold', message: 'Hero asset sharpness is too low.' }]
+  });
+  await writeJson(prd, {
+    items: [
+      { id: 'desktop-home', status: 'pass' },
+      { id: 'mobile-menu', status: 'missing', requirement: 'Mobile navigation opens and closes.' }
+    ]
+  });
+  await writeJson(longpage, {
+    passed: false,
+    hardFailPresent: true,
+    fullPageStructure: { passed: true, score: 91 },
+    sections: [
+      { name: 'promotions', passed: false, score: 74, dimensionDrift: { width: 0, height: 88 } }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--guard', guard,
+    '--prd', prd,
+    '--longpage', longpage,
+    '--html', html,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+
+  const htmlBody = await readFile(html, 'utf8');
+  assert.match(htmlBody, /<title>BetterRef Final Verdict<\/title>/);
+  assert.match(htmlBody, /Final Verdict/);
+  assert.match(htmlBody, /FAIL/);
+  assert.match(htmlBody, /Visual Score/);
+  assert.match(htmlBody, /PRD Compliance/);
+  assert.match(htmlBody, /Long-Page Score/);
+  assert.match(htmlBody, /91/);
+  assert.match(htmlBody, /asset_quality_below_threshold/);
+  assert.match(htmlBody, /mobile-menu/);
+  assert.match(htmlBody, /long-page section promotions/);
+});
+
 test('betterref-verify prints usage and exits code 2 without a report', () => {
   const result = runVerify([]);
 
   assert.equal(result.status, 2);
   assert.match(result.stderr, /Usage: betterref-verify/);
+  assert.match(result.stderr, /--html/);
 });

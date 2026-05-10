@@ -52,7 +52,7 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.jso
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json --html .betterref/final-verdict.html
 ```
 
 Do not use final-pass resizing to make screenshots agree. For final verification, compare native target viewport screenshots and report layout drift instead of squeezing images.
@@ -107,7 +107,7 @@ A completion claim must include:
 - Reference source and current screenshot source.
 - Viewport/device scale and same-state status.
 - Visual verdict with score, pass/revise/fail, and hard-fail status.
-- BetterRef report path, guard report path, and final verdict path.
+- BetterRef report path, guard report path, final JSON verdict path, and final HTML verdict path.
 - Top remaining differences and next edits when score is below pass.
 - Tool inventory and escalations used.
 

@@ -12,6 +12,7 @@ Options:
   --prd                 PRD checklist JSON with items[].status.
   --longpage            betterref-longpage report JSON.
   --out                 Write final verdict JSON.
+  --html                Write final verdict HTML report.
   --json                Print final verdict JSON to stdout.
   --help                Show this help.
 `;
@@ -49,7 +50,8 @@ async function main() {
       guardPath: values.guard,
       prdPath: values.prd,
       longPagePath: values.longpage,
-      outPath: values.out
+      outPath: values.out,
+      htmlPath: values.html
     });
 
     if (flags.has('json')) {
