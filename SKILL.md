@@ -49,6 +49,7 @@ Useful commands:
 
 ```bash
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
+npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
@@ -57,6 +58,7 @@ npx betterref-verify --report .betterref/report.json --guard .betterref/guard-re
 
 Do not use final-pass resizing to make screenshots agree. For final verification, compare native target viewport screenshots and report layout drift instead of squeezing images.
 For PRD/full-page verification, require the expected evidence with `--require guard,prd,longpage,assetplan`; missing evidence or pending generated/source assets are hard fails.
+Use built-in `image_gen` for each request from `.betterref-imagegen/imagegen-requests.json`, then run `betterref-imagegen --attach <asset-id>=<file> --project .` so the asset plan records native size and sharpness before final verification.
 
 ## Hard-Fail Ledger
 

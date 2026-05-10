@@ -128,6 +128,7 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.match(runbook, /betterref-verify/);
   assert.match(runbook, /prd-checklist\.json/);
   assert.match(runbook, /asset-plan\.json/);
+  assert.match(runbook, /betterref-imagegen --asset-plan/);
   assert.match(runbook, /imagegen/);
   assert.match(runbook, /autoAssetQuality/);
 });

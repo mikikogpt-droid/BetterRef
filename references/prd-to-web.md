@@ -42,6 +42,7 @@ PDF pages, screenshots, and rendered PRD pages are evidence only. They cannot be
 
 ```bash
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
+npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
@@ -52,6 +53,7 @@ Use tool scores as evidence, not authority. If the PRD says the page must scroll
 Use `--require guard,prd,longpage,assetplan` in final PRD verification so omitted evidence and pending generated/source assets fail instead of silently passing.
 
 When PRD text mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, `betterref-prd` enables `autoAssetQuality` in the generated guard config and writes `asset-plan.json`. Each pending asset must be generated with `imagegen` or sourced as a production asset, saved to its target path, wired into the app, verified with browser evidence, and marked `pass` only after scale and sharpness checks pass.
+Use `betterref-imagegen --asset-plan ... --out .betterref-imagegen` to create built-in `image_gen` requests, then `betterref-imagegen --attach <asset-id>=<file> --project .` after generation so final verification can trust the asset plan.
 
 ## Benchmark Manifests
 

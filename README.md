@@ -39,6 +39,13 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.jso
 
 This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `asset-plan.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed. If the PRD mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, the generated guard config enables `autoAssetQuality` and the asset plan lists imagegen/production-asset prompts, target paths, native-size minimums, and acceptance criteria.
 
+Generate built-in `image_gen` requests for pending assets and attach generated files back into the plan:
+
+```bash
+npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
+npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --attach asset-001=path/to/generated.png --project . --json
+```
+
 Audit hard fails that numeric visual scores cannot prove:
 
 ```bash
@@ -164,6 +171,7 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.jso
 Then use the generated runbook:
 
 ```bash
+npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
@@ -176,6 +184,7 @@ Outputs:
 
 - `.betterref-prd/prd-checklist.json` - machine-readable PRD checklist consumed by `betterref-verify`
 - `.betterref-prd/asset-plan.json` - machine-readable generated/source asset plan with imagegen prompts, target paths, native-size minimums, and pass/pending status
+- `.betterref-imagegen/imagegen-requests.json` and `.betterref-imagegen/imagegen-prompts.md` - built-in `image_gen` request queue for pending asset plan items
 - `.betterref-prd/betterref.guard.json` - generated guard config for source reuse, long-page, DOM, asset scaling, and PRD-inferred raster sharpness checks
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
 - `.betterref/chrome-full-page.png` and `.betterref/sections/*.png` - native browser evidence for long-page and section review when requested

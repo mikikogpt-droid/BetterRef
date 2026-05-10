@@ -10,6 +10,7 @@
     "betterref-longpage": "./bin/betterref-longpage.mjs",
     "betterref-verify": "./bin/betterref-verify.mjs",
     "betterref-chrome": "./bin/betterref-chrome.mjs",
+    "betterref-imagegen": "./bin/betterref-imagegen.mjs",
     "betterref-prd": "./bin/betterref-prd.mjs",
     "betterref-diff": "./bin/betterref-diff.mjs",
     "betterref-capture": "./bin/betterref-capture.mjs",
