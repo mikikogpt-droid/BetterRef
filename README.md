@@ -337,6 +337,10 @@ Bundle ต้องมี input paths, required evidence status, artifact hashes
 ```
 
 ```text
+use $betterref start project
+```
+
+```text
 ใช้ BetterRef เทียบ current กับ reference แล้วสรุป score, hard fail, PRD gap, browser evidence, asset plan, และสิ่งที่ต้องแก้ต่อ
 ```
 
@@ -447,6 +451,10 @@ Before claiming completion, report:
 
 ```text
 Use BetterRef to make this screen match the reference as closely as possible, and do not pass while hard fails remain.
+```
+
+```text
+use $betterref start project
 ```
 
 ```text

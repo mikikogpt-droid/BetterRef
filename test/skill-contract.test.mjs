@@ -39,6 +39,22 @@ test('SKILL.md contains the mandatory operating contract and future-proof PRD lo
   assert.match(skill, /hard-fail ledger/i);
 });
 
+test('SKILL.md expands the start project command into the full BetterRef bootstrap contract', async () => {
+  const skill = await readFile(skillPath, 'utf8');
+  assert.match(skill, /## Start Project Command/);
+  assert.match(skill, /use \$betterref start project/i);
+  assert.match(skill, /project supervisor/i);
+  assert.match(skill, /betterref-run|betterref-prd --project \./);
+  assert.match(skill, /using-superpowers/);
+  assert.match(skill, /karpathy-guidelines/);
+  assert.match(skill, /code-native UI/);
+  assert.match(skill, /imagegen asset/);
+  assert.match(skill, /HyperFrames asset/);
+  assert.match(skill, /reference-only/);
+  assert.match(skill, /PDF render, screenshot, reference crop/);
+  assert.match(skill, /final verdict/);
+});
+
 test('SKILL.md does not show dangerous final-pass match-size commands', async () => {
   const skill = await readFile(skillPath, 'utf8');
   assert.doesNotMatch(skill, /--match-size\s+reference/);

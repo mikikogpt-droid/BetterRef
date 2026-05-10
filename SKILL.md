@@ -38,6 +38,20 @@ Never call the result done when any hard-fail ledger item exists. A score of 98-
 | Asset-heavy PRD renders only placeholders | Use `minRenderedAssets`; fail until real generated/source assets render. |
 | Generated/source asset file exists but is not rendered | Fail; wire it into the actual UI and recapture browser evidence. |
 
+## Start Project Command
+
+When the user says `use $betterref start project`, `use BetterRef start project`, or an equivalent start-project phrase, expand it into this contract instead of asking them to paste a long prompt again:
+
+1. Treat BetterRef as the project supervisor from the first turn.
+2. Read the PRD and run `betterref-run` or `betterref-prd --project .` to create `.betterref-prd/*` and `AGENTS.md`.
+3. Use `using-superpowers` and `karpathy-guidelines` together with this skill; prefer installed skill names or `CODEX_HOME`, not a machine-specific absolute path.
+4. Classify every visual as `code-native UI`, `imagegen asset`, `HyperFrames asset`, `existing asset`, or `reference-only`.
+5. Never ship a PDF render, screenshot, reference crop, or browser chrome as UI.
+6. For 3D, glass, cinematic, hero, texture, or premium raster work, create an imagegen handoff and use built-in `image_gen`.
+7. For motion, animated, WebM/MP4, cinematic reveal, or shader work, use HyperFrames with CLI and browser evidence.
+8. Require fresh browser evidence before calling a phase complete.
+9. Follow `.betterref-run/next-actions.md` until final verdict passes; never say 100% until PRD checklist, browser evidence, asset evidence, guard, and final verify all pass.
+
 ## PRD To Web Loop
 
 1. Extract PRD requirements and visual references.
