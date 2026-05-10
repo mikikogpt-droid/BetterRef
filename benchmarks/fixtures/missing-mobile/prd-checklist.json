@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "id": "desktop-viewport",
+      "status": "pass",
+      "requirement": "Desktop viewport evidence exists."
+    },
+    {
+      "id": "mobile-viewport",
+      "status": "missing",
+      "requirement": "Mobile viewport evidence exists before phase completion."
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "passed": false,
+  "hardFailPresent": true,
+  "score": 91,
+  "fullPageStructure": {
+    "passed": true,
+    "score": 96
+  },
+  "sections": [
+    {
+      "name": "header + hero",
+      "passed": true,
+      "score": 97
+    },
+    {
+      "name": "promotions",
+      "passed": false,
+      "score": 62,
+      "blockingReasons": [
+        "Section height drifted from the reference slice.",
+        "Actual evidence did not include the correct scrolled state."
+      ]
+    }
+  ]
+}

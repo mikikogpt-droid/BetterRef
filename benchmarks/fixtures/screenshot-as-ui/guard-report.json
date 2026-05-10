@@ -1,0 +1,10 @@
+{
+  "passed": false,
+  "hardFailPresent": true,
+  "hardFails": [
+    {
+      "code": "reference_asset_used_in_source",
+      "message": "Source imports or renders the reference/PDF/crop as shipped UI."
+    }
+  ]
+}

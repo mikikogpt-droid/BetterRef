@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "id": "code-native-ui",
+      "status": "pass",
+      "requirement": "Navigation, layout, cards, and controls are built as real UI."
+    },
+    {
+      "id": "desktop-viewport",
+      "status": "pass",
+      "requirement": "Desktop viewport evidence exists at the target width."
+    },
+    {
+      "id": "mobile-viewport",
+      "status": "pass",
+      "requirement": "Mobile viewport evidence exists."
+    },
+    {
+      "id": "asset-quality",
+      "status": "pass",
+      "requirement": "Rendered assets are not blurry or upscaled beyond native dimensions."
+    }
+  ]
+}

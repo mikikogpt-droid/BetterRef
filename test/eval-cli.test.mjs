@@ -120,6 +120,18 @@ test('betterref-eval includes long-page reports in pressure expectations', async
   assert.equal(report.cases[0].actual.hardFailPresent, true);
 });
 
+test('bundled benchmark example is executable', () => {
+  const manifest = path.join(repoRoot, 'benchmarks', 'betterref-eval.example.json');
+
+  const result = runEval(['--manifest', manifest, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.passed, true);
+  assert.equal(report.summary.total, 4);
+  assert.equal(report.summary.matched, 4);
+});
+
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {
   const result = runEval([]);
 

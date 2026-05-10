@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "verdict": {
+    "verdict": "pass",
+    "score": 98,
+    "hard_fail_present": false
+  },
+  "summary": "Fixture deliberately passes the coarse visual report so section-level long-page evidence must decide."
+}

@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "verdict": {
+    "verdict": "pass",
+    "score": 98,
+    "hard_fail_present": false
+  },
+  "summary": "Fixture for a code-native page whose visual evidence supports the PRD checklist."
+}
