@@ -200,6 +200,7 @@ test('betterref-prd infers canonical screens without noisy requirement lines', a
   const out = path.join(dir, 'prd-out');
   await writePdf(pdf, [
     'Page Purpose Core Modules',
+    'Requirement Details',
     'Homepage Build first impression with hero 3D and quick top-up cards.',
     'Catalog Let users find all games and wallet items.',
     'Checkout Let customers pay quickly with packages and payment methods.',
@@ -219,6 +220,8 @@ test('betterref-prd infers canonical screens without noisy requirement lines', a
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
   assert.deepEqual(summary.screens, ['Homepage', 'Catalog', 'Checkout', 'Promotions', 'Account Dashboard']);
+  assert.equal(summary.requirements.some((item) => /^Page Purpose Core Modules$/i.test(item)), false);
+  assert.equal(summary.requirements.some((item) => /^Requirement Details$/i.test(item)), false);
 });
 
 test('betterref-prd keeps code-native visual behavior out of the imagegen asset plan', async () => {
