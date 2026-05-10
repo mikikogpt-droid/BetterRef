@@ -66,7 +66,7 @@ This maps browser evidence such as `/assets/hero.png` back to `public/assets/her
 Combine visual, guard, and PRD checklist evidence into one final verdict:
 
 ```bash
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --require guard,prd,longpage --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
 Run benchmark manifests to catch regressions in pressure scenarios:
@@ -167,7 +167,7 @@ Then use the generated runbook:
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --require guard,prd,longpage --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
 For visual PDF review, render the PRD pages with Poppler or the local PDF skill first, then pass the exported reference page or UI screenshot into `betterref-diff`.
@@ -187,6 +187,8 @@ Outputs:
 - `.betterref/eval-report.json` - benchmark summary from `betterref-eval`
 - `.betterref/diff.png` - pixel hotspot image for the next UI patch
 - `.betterref/report.html` - optional visual report with reference/current/diff and region table
+
+Use `--require guard,prd,longpage` for PRD/full-page workflows. Missing required evidence is a hard fail even when the visual score passes.
 
 Exit code `0` means the configured thresholds passed. Exit code `1` means revise. Exit code `2` means invalid usage or missing optional tooling.
 

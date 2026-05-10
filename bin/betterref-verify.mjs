@@ -14,6 +14,7 @@ Options:
   --out                 Write final verdict JSON.
   --html                Write final verdict HTML report.
   --bundle              Write evidence bundle JSON with artifact hashes.
+  --require             Required evidence list: guard,prd,longpage or all.
   --json                Print final verdict JSON to stdout.
   --help                Show this help.
 `;
@@ -53,7 +54,8 @@ async function main() {
       longPagePath: values.longpage,
       outPath: values.out,
       htmlPath: values.html,
-      bundlePath: values.bundle
+      bundlePath: values.bundle,
+      requiredEvidence: values.require
     });
 
     if (flags.has('json')) {

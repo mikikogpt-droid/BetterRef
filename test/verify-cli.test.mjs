@@ -218,6 +218,55 @@ test('betterref-verify writes an evidence bundle with hashed artifacts', async (
   }
 });
 
+test('betterref-verify fails when required evidence is missing', async () => {
+  const dir = await makeCase('required-evidence-missing');
+  const visual = path.join(dir, 'report.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+
+  const result = runVerify(['--report', visual, '--require', 'guard,prd,longpage', '--json']);
+
+  assert.equal(result.status, 1);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.deepEqual(verdict.requiredEvidence.missing, ['guard', 'prd', 'longpage']);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('required guard evidence is missing')));
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('required PRD evidence is missing')));
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('required long-page evidence is missing')));
+});
+
+test('betterref-verify passes required evidence when every required report is present', async () => {
+  const dir = await makeCase('required-evidence-present');
+  const visual = path.join(dir, 'report.json');
+  const guard = path.join(dir, 'guard-report.json');
+  const prd = path.join(dir, 'prd-checklist.json');
+  const longpage = path.join(dir, 'longpage-report.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(prd, { items: [{ id: 'hero', status: 'pass' }] });
+  await writeJson(longpage, {
+    passed: true,
+    hardFailPresent: false,
+    fullPageStructure: { passed: true, score: 99 },
+    sections: [{ name: 'hero', passed: true, score: 99 }]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--guard', guard,
+    '--prd', prd,
+    '--longpage', longpage,
+    '--require', 'guard,prd,longpage',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'pass');
+  assert.deepEqual(verdict.requiredEvidence.missing, []);
+  assert.deepEqual(verdict.requiredEvidence.required, ['guard', 'prd', 'longpage']);
+});
+
 test('betterref-verify prints usage and exits code 2 without a report', () => {
   const result = runVerify([]);
 
@@ -225,4 +274,5 @@ test('betterref-verify prints usage and exits code 2 without a report', () => {
   assert.match(result.stderr, /Usage: betterref-verify/);
   assert.match(result.stderr, /--html/);
   assert.match(result.stderr, /--bundle/);
+  assert.match(result.stderr, /--require/);
 });

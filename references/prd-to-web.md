@@ -44,10 +44,11 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.jso
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --require guard,prd,longpage --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
 Use tool scores as evidence, not authority. If the PRD says the page must scroll, have working cards, or include a generated hero asset, a high visual score cannot pass a fake or missing implementation.
+Use `--require guard,prd,longpage` in final PRD verification so omitted evidence fails instead of silently passing.
 
 When PRD text mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, `betterref-prd` enables `autoAssetQuality` in the generated guard config. That makes blurry local browser assets fail automatically once `browser-evidence.json` is captured.
 

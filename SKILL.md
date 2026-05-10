@@ -52,10 +52,11 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.jso
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --require guard,prd,longpage --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
 Do not use final-pass resizing to make screenshots agree. For final verification, compare native target viewport screenshots and report layout drift instead of squeezing images.
+For PRD/full-page verification, require the expected evidence with `--require guard,prd,longpage`; missing required evidence is a hard fail.
 
 ## Hard-Fail Ledger
 
