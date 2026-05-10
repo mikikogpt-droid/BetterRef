@@ -53,12 +53,12 @@ npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .better
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --require guard,prd,longpage,assetplan --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --project . --require guard,prd,longpage,assetplan --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
 Do not use final-pass resizing to make screenshots agree. For final verification, compare native target viewport screenshots and report layout drift instead of squeezing images.
-For PRD/full-page verification, require the expected evidence with `--require guard,prd,longpage,assetplan`; missing evidence or pending generated/source assets are hard fails.
-Use built-in `image_gen` for each request from `.betterref-imagegen/imagegen-requests.json`, then run `betterref-imagegen --attach <asset-id>=<file> --project .` so the asset plan records native size and sharpness before final verification.
+For PRD/full-page verification, require the expected evidence with `--require guard,prd,longpage,assetplan`; missing evidence, pending assets, and fake-passed assets without attach metadata are hard fails.
+Use built-in `image_gen` for each request from `.betterref-imagegen/imagegen-requests.json`, then run `betterref-imagegen --attach <asset-id>=<file> --project .` so the asset plan records generated path, native size, sharpness, timestamp, and verification metadata before final verification. Do not manually flip asset status to `pass`.
 
 ## Hard-Fail Ledger
 
@@ -100,7 +100,7 @@ Start with local assets, project scripts, browser tools, DOM measurement, screen
 
 Chrome MCP or browser automation can establish route, viewport, scroll, console, font, image scale, DOM text, interactive count, and DOM box truth. `betterref-chrome --full-page --section-screenshots` writes `.betterref/browser-evidence.json`, `.betterref/chrome-full-page.png`, and `.betterref/sections/*.png`; `betterref-guard` can use `autoAssetQuality` to map browser image URLs back to local `public` assets for sharpness checks. `betterref-longpage` auto-crops browser chrome from the reference and diffs full-page plus sections. Pass browser evidence and long-page report into `betterref-guard`/`betterref-verify` so browser hard fails cannot be hidden by a high pixel score.
 
-Use `betterref-eval` for benchmark suites. A pressure fixture should declare the expected verdict, then fail CI if the actual verdict changes in a way that lets fake UI, blurred assets, missing scroll, pending imagegen assets, or PRD gaps pass.
+Use `betterref-eval` for benchmark suites. A pressure fixture should declare the expected verdict, then fail CI if the actual verdict changes in a way that lets fake UI, blurred assets, missing scroll, pending or fake-passed imagegen assets, or PRD gaps pass.
 
 ## Final Report
 
@@ -118,4 +118,4 @@ Do not say "100%" unless all PRD criteria, visual criteria, and hard-fail ledger
 
 ## Pressure Tests
 
-Use `references/pressure-tests.md` when editing or validating this skill. The required scenarios cover long-page screenshots, screenshot-as-UI, blurry scaled assets, missing diff tooling, PRD compliance being overruled by score, and pending imagegen assets.
+Use `references/pressure-tests.md` when editing or validating this skill. The required scenarios cover long-page screenshots, screenshot-as-UI, blurry scaled assets, missing diff tooling, PRD compliance being overruled by score, and pending or fake-passed imagegen assets.

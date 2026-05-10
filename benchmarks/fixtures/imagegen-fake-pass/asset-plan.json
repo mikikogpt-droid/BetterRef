@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "betterref.asset.plan.v1",
+  "imagegenRequired": true,
+  "assets": [
+    {
+      "id": "asset-001",
+      "status": "pass",
+      "requirement": "Premium cinematic hero raster must have real attach evidence, not a manually flipped status.",
+      "targetPath": "public/betterref-assets/hero-cinematic.png",
+      "minNativeWidth": 1920,
+      "minNativeHeight": 1080,
+      "minSharpness": 20
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import sharp from 'sharp';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const verifyBin = path.join(repoRoot, 'bin', 'betterref-verify.mjs');
@@ -16,6 +17,17 @@ async function makeCase(name) {
 
 async function writeJson(filePath, value) {
   await writeFile(filePath, JSON.stringify(value, null, 2));
+}
+
+async function writeTinyPng(filePath, width = 64, height = 64) {
+  await sharp({
+    create: {
+      width,
+      height,
+      channels: 3,
+      background: { r: 24, g: 180, b: 220 }
+    }
+  }).png().toFile(filePath);
 }
 
 function runVerify(args) {
@@ -303,6 +315,89 @@ test('betterref-verify fails when a required asset plan still has pending genera
   assert.ok(verdict.blockingReasons.some((item) => item.includes('asset plan item asset-001 is pending')));
 });
 
+test('betterref-verify fails when a passed imagegen asset lacks attach evidence', async () => {
+  const dir = await makeCase('asset-plan-fake-pass');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pass',
+        requirement: 'Hero cinematic 3D mascot background',
+        targetPath: 'public/betterref-assets/hero-cinematic.png',
+        minNativeWidth: 1920,
+        minNativeHeight: 1080,
+        minSharpness: 20
+      }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--require', 'assetplan',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.equal(verdict.assetPlan.passed, false);
+  assert.equal(verdict.assetPlan.invalid[0].id, 'asset-001');
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('asset plan item asset-001 lacks generated/source asset evidence')));
+});
+
+test('betterref-verify validates generated asset files when project path is supplied', async () => {
+  const dir = await makeCase('asset-plan-project-pass');
+  const project = path.join(dir, 'project');
+  const assetPath = path.join(project, 'public', 'betterref-assets', 'hero.png');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  await mkdir(path.dirname(assetPath), { recursive: true });
+  await writeTinyPng(assetPath, 128, 96);
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pass',
+        requirement: 'Hero cinematic 3D mascot background',
+        targetPath: 'public/betterref-assets/hero.png',
+        generatedPath: 'public/betterref-assets/hero.png',
+        nativeWidth: 128,
+        nativeHeight: 96,
+        measuredSharpness: 25,
+        minNativeWidth: 128,
+        minNativeHeight: 96,
+        minSharpness: 20,
+        verifiedAt: '2026-05-10T00:00:00.000Z',
+        verification: 'betterref-imagegen attach'
+      }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--project', project,
+    '--require', 'assetplan',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'pass');
+  assert.equal(verdict.assetPlan.passed, true);
+  assert.equal(verdict.assetPlan.invalid.length, 0);
+});
+
 test('betterref-verify prints usage and exits code 2 without a report', () => {
   const result = runVerify([]);
 
@@ -312,4 +407,5 @@ test('betterref-verify prints usage and exits code 2 without a report', () => {
   assert.match(result.stderr, /--bundle/);
   assert.match(result.stderr, /--require/);
   assert.match(result.stderr, /--asset-plan/);
+  assert.match(result.stderr, /--project/);
 });

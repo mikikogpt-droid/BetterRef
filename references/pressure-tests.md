@@ -73,6 +73,18 @@ Bad behavior to catch:
 
 Required behavior: final verdict hard fails with the pending asset listed; completion is blocked until the generated/source asset is saved, verified for native size and sharpness, wired into the app, and marked `pass`.
 
+## BR-PRESSURE-007 Fake Passed Asset Evidence
+
+Input: `asset-plan.json` has an imagegen-required asset marked `pass`, but the item has no `generatedPath`, no verified native dimensions, no measured sharpness, and no `betterref-imagegen --attach` verification metadata.
+
+Bad behavior to catch:
+
+- trusts `status: pass` because the JSON says so
+- does not inspect whether a generated/source asset exists
+- accepts manual asset-plan edits as equivalent to evidence
+
+Required behavior: final verdict hard fails; a passed asset must include generated/source evidence, verified native dimensions, required sharpness evidence, and attach/production verification metadata. When a project path is available, verify the actual file.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.
