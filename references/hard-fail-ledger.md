@@ -22,6 +22,7 @@ The hard-fail ledger is the authority that numeric scores cannot override.
 | `browser_console_error_present` | Browser evidence contains console errors or exceptions. |
 | `browser_missing_dom_text` | Guard requires DOM text but browser evidence shows none. |
 | `browser_missing_interactive_elements` | Guard requires interactive elements but browser evidence shows too few. |
+| `browser_missing_rendered_assets` | Asset-heavy PRD/browser config requires production image assets, but browser evidence shows too few rendered assets. |
 
 ## Guard Config Example
 
@@ -33,6 +34,7 @@ The hard-fail ledger is the authority that numeric scores cannot override.
   "requireBrowserEvidence": true,
   "requireDomText": true,
   "minInteractiveElements": 1,
+  "minRenderedAssets": 1,
   "forbiddenSourcePatterns": [
     "assets/reference",
     "homepage-reference",

@@ -303,6 +303,106 @@ test('betterref-guard consumes browser evidence for scroll, image, font, console
   }
 });
 
+test('betterref-guard hard fails asset-heavy pages with no rendered production assets', async () => {
+  const dir = await makeCase('missing-rendered-assets');
+  const project = path.join(dir, 'project');
+  await mkdir(path.join(project, 'src'), { recursive: true });
+  await writeFile(path.join(project, 'src', 'page.tsx'), 'export default function Page(){return <main><button>Buy</button></main>;}');
+  const report = path.join(dir, 'report.json');
+  const config = path.join(dir, 'guard.json');
+  const evidence = path.join(dir, 'browser-evidence.json');
+  await writeJson(report, {
+    passed: true,
+    mode: 'single_viewport',
+    verdict: { verdict: 'pass', score: 98, hard_fail_present: false }
+  });
+  await writeJson(config, {
+    requireBrowserEvidence: true,
+    requireDomText: true,
+    minInteractiveElements: 1,
+    minRenderedAssets: 1
+  });
+  await writeJson(evidence, {
+    viewport: { width: 1440, height: 900 },
+    page: { scrollHeight: 900, bodyTextLength: 24, interactiveCount: 1 },
+    fonts: { ready: true, status: 'loaded' },
+    console: [],
+    images: [],
+    assets: { rendered: [] }
+  });
+
+  const result = runGuard([
+    '--project',
+    project,
+    '--report',
+    report,
+    '--config',
+    config,
+    '--browser-evidence',
+    evidence,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const guardReport = JSON.parse(result.stdout);
+  assert.ok(guardReport.hardFails.some((item) => item.code === 'browser_missing_rendered_assets'));
+  assert.equal(guardReport.summary.renderedProductionAssets, 0);
+});
+
+test('betterref-guard counts rendered CSS background assets toward asset-heavy evidence', async () => {
+  const dir = await makeCase('css-background-assets');
+  const project = path.join(dir, 'project');
+  await mkdir(path.join(project, 'src'), { recursive: true });
+  await writeFile(path.join(project, 'src', 'page.tsx'), 'export default function Page(){return <main><button>Buy</button></main>;}');
+  const report = path.join(dir, 'report.json');
+  const config = path.join(dir, 'guard.json');
+  const evidence = path.join(dir, 'browser-evidence.json');
+  await writeJson(report, {
+    passed: true,
+    mode: 'single_viewport',
+    verdict: { verdict: 'pass', score: 98, hard_fail_present: false }
+  });
+  await writeJson(config, {
+    requireBrowserEvidence: true,
+    requireDomText: true,
+    minInteractiveElements: 1,
+    minRenderedAssets: 1
+  });
+  await writeJson(evidence, {
+    viewport: { width: 1440, height: 900 },
+    page: { scrollHeight: 900, bodyTextLength: 24, interactiveCount: 1 },
+    fonts: { ready: true, status: 'loaded' },
+    console: [],
+    images: [],
+    assets: {
+      rendered: [
+        {
+          src: '/assets/hero-generated.png',
+          renderedWidth: 720,
+          renderedHeight: 420,
+          sourceType: 'css-background'
+        }
+      ]
+    }
+  });
+
+  const result = runGuard([
+    '--project',
+    project,
+    '--report',
+    report,
+    '--config',
+    config,
+    '--browser-evidence',
+    evidence,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const guardReport = JSON.parse(result.stdout);
+  assert.equal(guardReport.summary.renderedProductionAssets, 1);
+});
+
 test('betterref-guard hard fails when required browser evidence is missing', async () => {
   const dir = await makeCase('missing-browser-evidence');
   const project = path.join(dir, 'project');

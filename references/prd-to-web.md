@@ -9,7 +9,7 @@ Use this when a PRD PDF, written product spec, Figma brief, or visual target is 
 - `prd-checklist.json`: machine-readable checklist consumed by `betterref-verify`.
 - `asset-plan.json`: machine-readable generated/source asset plan with imagegen prompts, target paths, native-size minimums, and pass/pending status.
 - `.betterref.json`: viewport, regions, ignore areas, and thresholds.
-- `betterref.guard.json`: hard-fail config for source scans, long-page mode, asset scaling, and auto raster quality when the PRD mentions hero/image/premium assets.
+- `betterref.guard.json`: hard-fail config for source scans, long-page mode, asset scaling, rendered asset coverage, and auto raster quality when the PRD mentions hero/image/premium assets.
 - `.betterref/report.json`, `.betterref/browser-evidence.json`, `.betterref/guard-report.json`, `.betterref/final-verdict.json`, `.betterref/final-verdict.html`, and `.betterref/evidence-bundle.json`: final evidence.
 
 ## Phase Gate
@@ -54,7 +54,7 @@ Use `--require guard,prd,longpage,assetplan,browser` and pass `--browser-evidenc
 
 `betterref-prd` sets `requireBrowserEvidence: true` in the generated guard config. The final phase cannot pass from static screenshots, reports alone, or placeholder browser evidence; final verification requires browser evidence with viewport, scroll, DOM text, interactive count, font, console, and image-scale fields.
 
-When PRD text mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, `betterref-prd` enables `autoAssetQuality` in the generated guard config and writes `asset-plan.json`. Each pending asset must be generated with `imagegen` or sourced as a production asset, saved to its target path, wired into the app, verified with browser evidence, and marked `pass` only after scale and sharpness checks pass.
+When PRD text mentions hero, mascot, image, raster, 3D, glass, cinematic, premium, texture, background, illustration, or rendered assets, `betterref-prd` enables `autoAssetQuality`, sets `minRenderedAssets`, and writes `asset-plan.json`. Each pending asset must be generated with `imagegen` or sourced as a production asset, saved to its target path, wired into the app, verified with browser evidence, and marked `pass` only after scale and sharpness checks pass.
 Use `betterref-imagegen --asset-plan ... --out .betterref-imagegen` to create built-in `image_gen` requests, then `betterref-imagegen --attach <asset-id>=<file> --project .` after generation so final verification can trust the asset plan. A manually edited `status: pass` is not evidence.
 
 ## Benchmark Manifests

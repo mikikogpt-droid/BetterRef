@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "mode": "full_page_scroll_reference",
+  "verdict": {
+    "verdict": "pass",
+    "score": 99,
+    "hard_fail_present": false
+  }
+}

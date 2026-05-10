@@ -168,6 +168,18 @@
       }
     },
     {
+      "id": "missing-rendered-assets-pressure",
+      "report": "fixtures/missing-rendered-assets/report.json",
+      "guard": "fixtures/missing-rendered-assets/guard-report.json",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "blockingReasonIncludes": [
+          "browser_missing_rendered_assets"
+        ]
+      }
+    },
+    {
       "id": "missing-mobile-prd-pressure",
       "report": "fixtures/missing-mobile/report.json",
       "guard": "fixtures/missing-mobile/guard-report.json",

@@ -1,0 +1,10 @@
+{
+  "passed": false,
+  "hardFailPresent": true,
+  "hardFails": [
+    {
+      "code": "browser_missing_rendered_assets",
+      "message": "Browser evidence shows 0 rendered production assets, below required minimum 1."
+    }
+  ]
+}

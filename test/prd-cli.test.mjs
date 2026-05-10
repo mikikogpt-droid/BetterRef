@@ -100,6 +100,7 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.equal(guardConfig.requireBrowserEvidence, true);
   assert.equal(guardConfig.requireDomText, true);
   assert.equal(guardConfig.minInteractiveElements, 1);
+  assert.equal(guardConfig.minRenderedAssets, 1);
   assert.ok(guardConfig.forbiddenSourcePatterns.includes('pdf-render'));
   assert.deepEqual(guardConfig.autoAssetQuality, {
     enabled: true,

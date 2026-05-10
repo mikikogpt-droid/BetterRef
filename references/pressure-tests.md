@@ -145,6 +145,18 @@ Bad behavior to catch:
 
 Required behavior: final verdict hard fails with `asset_pass_not_rendered` or equivalent; completion is blocked until browser evidence shows the generated/source asset is rendered in the actual app. CSS background assets must be captured in browser evidence, not hidden from verification.
 
+## BR-PRESSURE-013 Asset-Heavy Page With No Rendered Assets
+
+Input: PRD/reference clearly requires hero, game card, promo, or premium raster imagery, but browser evidence shows zero rendered image/CSS background assets.
+
+Bad behavior to catch:
+
+- treats code-native color blocks, initials, or placeholder icons as equivalent to generated/source imagery
+- passes because layout structure and DOM are present
+- never checks whether the browser actually rendered any production assets
+
+Required behavior: guard hard fails with `browser_missing_rendered_assets`; `betterref-prd` should set `minRenderedAssets` when asset-heavy PRD language is detected.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.
