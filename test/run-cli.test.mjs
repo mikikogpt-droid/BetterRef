@@ -53,6 +53,22 @@ async function solidPngBase64(width, height, color) {
   return buffer.toString('base64');
 }
 
+async function writeCheckerPng(filePath, width = 1920, height = 1080) {
+  const channels = 3;
+  const data = Buffer.alloc(width * height * channels);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * channels;
+      const value = (Math.floor(x / 4) + Math.floor(y / 4)) % 2 === 0 ? 24 : 232;
+      data[offset] = value;
+      data[offset + 1] = value;
+      data[offset + 2] = value;
+    }
+  }
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await sharp(data, { raw: { width, height, channels } }).png().toFile(filePath);
+}
+
 async function pathExists(filePath) {
   try {
     await access(filePath);
@@ -236,14 +252,59 @@ test('betterref-run bootstraps PRD artifacts and blocks on pending imagegen asse
   assert.ok(payload.blockers.some((item) => item.code === 'blocked_external_asset_generation'));
   assert.match(payload.artifacts.agentsPath, /AGENTS\.md$/);
   assert.match(payload.artifacts.imagegenQueuePath, /imagegen-requests\.json$/);
+  assert.match(payload.artifacts.imagegenHandoffRequestPath, /imagegen-handoff-request\.json$/);
+  assert.match(payload.artifacts.imagegenHandoffPromptPath, /imagegen-handoff-prompt\.md$/);
+  assert.match(payload.artifacts.imagegenStatusPath, /imagegen-status\.json$/);
+  assert.match(payload.artifacts.imagegenGeneratedDir, /generated$/);
   assert.equal(await pathExists(path.join(project, 'AGENTS.md')), true);
+  assert.equal(await pathExists(path.join(project, '.betterref-run', 'imagegen-handoff-request.json')), true);
+  assert.equal(await pathExists(path.join(project, '.betterref-run', 'imagegen-handoff-prompt.md')), true);
 
   const queue = JSON.parse(await readFile(path.join(project, '.betterref-imagegen', 'imagegen-requests.json'), 'utf8'));
   assert.equal(queue.requests.length, 1);
+  assert.match(queue.requests[0].outputSlot, /generated[\\/]asset-001\.png$/);
+  const status = JSON.parse(await readFile(path.join(project, '.betterref-imagegen', 'imagegen-status.json'), 'utf8'));
+  assert.equal(status.counts.pending, 1);
   const actions = await readFile(path.join(project, '.betterref-run', 'next-actions.md'), 'utf8');
   assert.match(actions, /image_gen/);
+  assert.match(actions, /imagegen-handoff-request\.json/);
+  assert.match(actions, /imagegen-status\.json/);
   assert.match(actions, /betterref-imagegen --asset-plan/);
-  assert.match(actions, /--attach asset-001=/);
+  assert.match(actions, /--auto-attach-dir/);
+});
+
+test('betterref-run auto-attaches generated imagegen slots before browser evidence gate', async () => {
+  const dir = await makeCase('imagegen-auto-resume');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  const generated = path.join(project, '.betterref-imagegen', 'generated', 'asset-001.png');
+  await mkdir(project, { recursive: true });
+  await writePng(ref);
+  await writeCheckerPng(generated);
+  await writePdf(pdf, [
+    'Viewport: 960x900.',
+    'Hero Image: premium 3D glass hero raster for the landing page.'
+  ]);
+
+  const result = runCli([
+    '--pdf', pdf,
+    '--project', project,
+    '--ref', ref,
+    '--url', 'http://127.0.0.1:3000/',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 3, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.phase, 'browser');
+  assert.ok(payload.steps.some((step) => step.name === 'imagegen-auto-attach' && step.attached === 1));
+  assert.match(payload.artifacts.imagegenAutoAttach.attached[0].targetPath, /public\/betterref-assets\/cinematic-hero-01\.png/);
+  assert.equal(await pathExists(path.join(project, 'public', 'betterref-assets', 'cinematic-hero-01.png')), true);
+
+  const updatedPlan = JSON.parse(await readFile(path.join(project, '.betterref-prd', 'asset-plan.json'), 'utf8'));
+  assert.equal(updatedPlan.assets[0].status, 'pass');
+  assert.equal(updatedPlan.assets[0].verification, 'betterref-imagegen attach');
 });
 
 test('betterref-run writes HyperFrames requests and blocks without CLI evidence', async () => {

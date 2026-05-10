@@ -90,14 +90,25 @@ test('betterref-imagegen writes built-in image_gen requests for pending assets',
   assert.equal(payload.requests[0].phase, null);
   assert.equal(payload.requests[0].acceptanceCriteria.length, 2);
   assert.equal(payload.requests[0].targetPath, 'public/betterref-assets/hero.png');
+  assert.match(payload.requests[0].outputSlot, /generated[\\/]asset-001\.png$/);
+  assert.match(payload.requests[0].attachCommand, /--attach asset-001=/);
+  assert.match(payload.requests[0].autoAttachCommand, /--auto-attach-dir/);
+  assert.match(payload.requests[0].wireIntoAppReminder, /wire public\/betterref-assets\/hero\.png into the actual app/);
+  assert.deepEqual(payload.requests[0].publicUrlCandidates.slice(0, 2), [
+    '/betterref-assets/hero.png',
+    'betterref-assets/hero.png'
+  ]);
   assert.match(payload.requests[0].prompt, /Create a premium ONETAPGG/);
   assert.match(payload.requests[0].prompt, /Do not include browser chrome/);
 
   const queue = JSON.parse(await readFile(path.join(out, 'imagegen-requests.json'), 'utf8'));
   assert.equal(queue.requests.length, 1);
+  assert.match(queue.generatedDir, /generated$/);
   const prompts = await readFile(path.join(out, 'imagegen-prompts.md'), 'utf8');
   assert.match(prompts, /built-in `image_gen`/);
   assert.match(prompts, /Role: cinematic-hero/);
+  assert.match(prompts, /Output slot:/);
+  assert.match(prompts, /Attach command:/);
   assert.match(prompts, /Native asset is sharp/);
   assert.match(prompts, /public\/betterref-assets\/hero\.png/);
   assert.match(prompts, /Do not leave project assets under/);
@@ -231,4 +242,88 @@ test('betterref-imagegen auto-attaches generated files by asset id from a direct
   const updatedPlan = JSON.parse(await readFile(assetPlan, 'utf8'));
   assert.equal(updatedPlan.assets[0].status, 'pass');
   assert.equal(updatedPlan.assets[0].verification, 'betterref-imagegen attach');
+});
+
+test('betterref-imagegen status separates pending, generated, rendered, and not-rendered states', async () => {
+  const dir = await makeCase('status');
+  const project = path.join(dir, 'project');
+  const out = path.join(dir, 'imagegen');
+  const generatedDir = path.join(out, 'generated');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const browserEvidence = path.join(dir, 'browser-evidence.json');
+  const attachedAsset = path.join(project, 'public', 'betterref-assets', 'attached.png');
+  const missingRenderedAsset = path.join(project, 'public', 'betterref-assets', 'missing-rendered.png');
+  await mkdir(path.dirname(attachedAsset), { recursive: true });
+  await mkdir(generatedDir, { recursive: true });
+  await writeCheckerPng(path.join(generatedDir, 'asset-002.png'));
+  await writeCheckerPng(attachedAsset);
+  await writeCheckerPng(missingRenderedAsset);
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pending',
+        targetPath: 'public/betterref-assets/pending.png'
+      },
+      {
+        id: 'asset-002',
+        status: 'pending',
+        targetPath: 'public/betterref-assets/generated.png'
+      },
+      {
+        id: 'asset-003',
+        status: 'pass',
+        targetPath: 'public/betterref-assets/attached.png',
+        generatedPath: 'public/betterref-assets/attached.png',
+        nativeWidth: 128,
+        nativeHeight: 128,
+        measuredSharpness: 25,
+        verifiedAt: '2026-05-10T00:00:00.000Z',
+        verification: 'betterref-imagegen attach'
+      },
+      {
+        id: 'asset-004',
+        status: 'pass',
+        targetPath: 'public/betterref-assets/missing-rendered.png',
+        generatedPath: 'public/betterref-assets/missing-rendered.png',
+        nativeWidth: 128,
+        nativeHeight: 128,
+        measuredSharpness: 25,
+        verifiedAt: '2026-05-10T00:00:00.000Z',
+        verification: 'betterref-imagegen attach'
+      }
+    ]
+  });
+  await writeJson(browserEvidence, {
+    viewport: { width: 1440, height: 900 },
+    page: { scrollHeight: 1200, bodyTextLength: 100, interactiveCount: 4 },
+    fonts: { ready: true, status: 'loaded' },
+    console: [],
+    images: [{ src: '/betterref-assets/attached.png', naturalWidth: 128, naturalHeight: 128, renderedWidth: 128, renderedHeight: 128 }]
+  });
+
+  const result = runImagegen([
+    '--asset-plan', assetPlan,
+    '--status',
+    '--out', out,
+    '--auto-attach-dir', generatedDir,
+    '--project', project,
+    '--browser-evidence', browserEvidence,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.schemaVersion, 'betterref.imagegen.status.v1');
+  assert.equal(payload.counts.pending, 1);
+  assert.equal(payload.counts.generated_not_attached, 1);
+  assert.equal(payload.counts.pass, 1);
+  assert.equal(payload.counts.attached_not_rendered, 1);
+  assert.equal(payload.items.find((item) => item.id === 'asset-002').status, 'generated_not_attached');
+  assert.equal(payload.items.find((item) => item.id === 'asset-004').status, 'attached_not_rendered');
+
+  const written = JSON.parse(await readFile(path.join(out, 'imagegen-status.json'), 'utf8'));
+  assert.equal(written.counts.generated_not_attached, 1);
 });

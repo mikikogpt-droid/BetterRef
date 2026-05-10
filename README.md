@@ -43,14 +43,17 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .b
 
 This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `asset-plan.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. With `--project .`, it also creates or updates `AGENTS.md` at the project root with a managed BetterRef/Karpathy/Superpowers contract while preserving existing project instructions outside the managed block. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed. If the PRD mentions concrete static hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered still-asset work, the generated guard config enables `autoAssetQuality` and the asset plan lists imagegen/production-asset prompts, target paths, native-size minimums, and acceptance criteria. If it mentions animated, motion, reveal, loop, WebM/MP4, shader transition, or HyperFrames work, the asset plan routes that item to HyperFrames and requires CLI render evidence plus browser video evidence. Code-native behavior such as sticky headers, hover zoom, parallax limits, mobile menus, and fallback-only rules stays in the PRD checklist instead of becoming generated asset tasks.
 
-Generate built-in `image_gen` requests for pending assets and attach generated files back into the plan:
+Generate built-in `image_gen` requests for pending assets. Each request includes an output slot, target path, attach command, auto-attach command, and public URL candidates:
 
 ```bash
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
-npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --attach asset-001=path/to/generated.png --project . --json
+# Use built-in image_gen for each request, then place the selected file at request.outputSlot:
+# .betterref-imagegen/generated/<asset-id>.png
+npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --status --out .betterref-imagegen --project . --json
+npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --auto-attach-dir .betterref-imagegen/generated --project . --json
 ```
 
-The generated queue includes each asset's role, phase, requirement, target path, native-size minimums, sharpness minimum, and acceptance criteria so an agent can generate the right file without guessing from prose.
+`betterref-run` writes `.betterref-run/imagegen-handoff-request.json`, `.betterref-run/imagegen-handoff-prompt.md`, and `.betterref-imagegen/imagegen-status.json` when image generation blocks the run. Do not leave project assets only under `$CODEX_HOME/generated_images`, and do not manually mark assets pass in `asset-plan.json`. Final verification passes only after attach metadata exists and fresh browser evidence renders the asset in the actual app.
 
 Generate HyperFrames requests for pending motion/video assets and attach rendered files back into the plan:
 
@@ -220,7 +223,8 @@ Then use the generated runbook:
 
 ```bash
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
-# After using built-in image_gen and saving files as <asset-id>.* in .betterref-imagegen/generated:
+# Use built-in image_gen from request.outputSlot, then save/copy files as <asset-id>.* in .betterref-imagegen/generated:
+npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --status --out .betterref-imagegen --project . --json
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --auto-attach-dir .betterref-imagegen/generated --project . --json
 npx betterref-hyperframes --asset-plan .betterref-prd/asset-plan.json --out .betterref-hyperframes --json
 # After authoring/rendering HyperFrames and collecting passing lint/validate/inspect/render evidence:
@@ -238,9 +242,11 @@ Outputs:
 - `.betterref-prd/prd-checklist.json` - machine-readable PRD checklist consumed by `betterref-verify`
 - `.betterref-prd/asset-plan.json` - machine-readable generated/source asset plan with imagegen and HyperFrames prompts, target paths, native-size/minimum evidence requirements, attach metadata, and pass/pending status
 - `.betterref-run/run-state.json`, `.betterref-run/next-actions.md`, and `.betterref-run/final-summary.json` - orchestrator state, required external handoff, and final run summary from `betterref-run`
+- `.betterref-run/imagegen-handoff-request.json` and `.betterref-run/imagegen-handoff-prompt.md` - first-class handoff for Codex built-in `image_gen` when generated raster assets block a run
 - `AGENTS.md` - project-root managed BetterRef/Karpathy/Superpowers contract, created only when `betterref-prd` receives `--project`
 - `.betterref-imagegen/imagegen-requests.json` and `.betterref-imagegen/imagegen-prompts.md` - built-in `image_gen` request queue for pending asset plan items
-- `.betterref-imagegen/generated/<asset-id>.*` - optional convention consumed by `betterref-imagegen --auto-attach-dir`
+- `.betterref-imagegen/generated/<asset-id>.*` - default generated output slot consumed by `betterref-imagegen --auto-attach-dir` and `betterref-run` auto-resume
+- `.betterref-imagegen/imagegen-status.json` - pending, generated-not-attached, attached-not-rendered, asset-quality-failed, and pass status for generated/source assets
 - `.betterref-hyperframes/hyperframes-requests.json` and `.betterref-hyperframes/hyperframes-runbook.md` - HyperFrames request queue and CLI checklist for pending motion/video asset plan items
 - `.betterref-prd/betterref.guard.json` - generated guard config for source reuse, long-page, DOM, asset scaling, and PRD-inferred raster sharpness checks
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
@@ -277,7 +283,7 @@ BetterRef คือ skill และ CLI สำหรับงาน reference-dr
 
 - Treat reference as evidence, not UI. Reference image, PDF render, and crop are never shipped as page UI.
 - Build deterministic UI with code-native components: navigation, text, buttons, cards, forms, layouts, responsive states, and scroll behavior.
-- Use `imagegen` or production source assets for complex raster visuals; attach generated files into `asset-plan.json` before final verification.
+- Use `imagegen` or production source assets for complex raster visuals; save generated project assets into the declared output slots, attach them into `asset-plan.json`, and verify they render in browser evidence before final verification.
 - Use HyperFrames for animated/cinematic motion assets, reveal loops, shader transitions, WebM/MP4, or website-to-video work; attach rendered files with CLI evidence before final verification.
 - For long-page references, compare full-page structure and section/viewport states separately. Do not scale the entire page down to fit one viewport.
 - Use browser evidence from `@chrome` first when the Chrome extension is connected; when it is not callable, fall back to Chrome MCP, `betterref-chrome` via Chrome CDP, or `betterref-capture` via Playwright in that order.

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
+import path from 'node:path';
 import { parseArgs } from '../lib/args.mjs';
 import {
+  analyzeImagegenStatus,
   attachGeneratedAssets,
   autoAttachGeneratedAssets,
   BetterRefImagegenError,
@@ -16,6 +18,8 @@ Options:
   --out                 Write built-in image_gen request queue and prompt markdown.
   --attach              Attach a generated file as <asset-id>=<file>.
   --auto-attach-dir     Attach generated files named <asset-id>.* from a directory.
+  --status              Print/write imagegen asset status instead of queue/attach.
+  --browser-evidence    Browser evidence JSON for rendered-asset status.
   --project             Project directory for resolving relative target paths.
   --json                Print JSON result to stdout.
   --help                Show this help.
@@ -48,7 +52,16 @@ async function main() {
 
   try {
     let result;
-    if (values['auto-attach-dir']) {
+    if (flags.has('status')) {
+      result = await analyzeImagegenStatus({
+        assetPlanPath: values['asset-plan'],
+        outDir: values.out,
+        generatedDir: values['auto-attach-dir'],
+        projectDir: values.project,
+        browserEvidencePath: values['browser-evidence'],
+        outPath: values.out ? path.join(values.out, 'imagegen-status.json') : undefined
+      });
+    } else if (values['auto-attach-dir']) {
       result = await autoAttachGeneratedAssets({
         assetPlanPath: values['asset-plan'],
         autoAttachDir: values['auto-attach-dir'],
@@ -71,6 +84,8 @@ async function main() {
       console.log(JSON.stringify(result, null, 2));
     } else if (result.schemaVersion === 'betterref.imagegen.queue.v1') {
       console.log(`[betterref-imagegen] requests=${result.requests.length}`);
+    } else if (result.schemaVersion === 'betterref.imagegen.status.v1') {
+      console.log(`[betterref-imagegen] status=${JSON.stringify(result.counts)}`);
     } else {
       console.log(`[betterref-imagegen] attached=${result.attached.length}`);
     }
