@@ -8,6 +8,7 @@ Use this when a PRD PDF, written product spec, Figma brief, or visual target is 
 - `visual-checklist.md`: each visible area, target viewport, typography, asset class, and pass criteria.
 - `prd-checklist.json`: machine-readable checklist consumed by `betterref-verify`.
 - `asset-plan.json`: machine-readable generated/source asset plan with imagegen and HyperFrames prompts, target paths, native-size or CLI evidence requirements, and pass/pending status.
+- `.betterref-run/run-state.json`, `.betterref-run/next-actions.md`, and `.betterref-run/final-summary.json`: hybrid orchestrator state and handoff trail from `betterref-run`.
 - `AGENTS.md`: project-root BetterRef/Karpathy/Superpowers contract generated only when `betterref-prd` receives `--project`.
 - `.betterref.json`: viewport, regions, ignore areas, and thresholds.
 - `betterref.guard.json`: hard-fail config for source scans, long-page mode, asset scaling, rendered asset coverage, and auto raster quality when the PRD mentions hero/image/premium assets.
@@ -55,6 +56,7 @@ Fallback order for browser evidence:
 4. `betterref-capture` through project-local Playwright.
 
 ```bash
+npx betterref-run --pdf PRD.pdf --project . --url http://127.0.0.1:3000/ --ref reference.png --endpoint http://127.0.0.1:9222 --json
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --auto-attach-dir .betterref-imagegen/generated --project . --json
@@ -73,6 +75,8 @@ npx betterref-verify --report .betterref/report.json --guard .betterref/guard-re
 
 If you use `betterref-capture --full-page` instead of `betterref-chrome`, pass `.betterref/screenshot.png` as `--actual-full` to `betterref-longpage`. Add repeated `--selector name=css` entries when the app has stable section selectors, for example `--selector hero=[data-betterref="hero"] --selector footer=footer`.
 If you use `@chrome`, export the tab handoff as `.betterref/chrome-handoff.json`, run `betterref-chrome-bridge`, and pass the generated `.betterref/browser-evidence.json` through guard and final verification.
+
+`betterref-run` is the preferred first command for new PRD-to-web work. It runs every local BetterRef step that has enough evidence and exits `3` with `.betterref-run/next-actions.md` when it needs external action such as built-in `image_gen`, HyperFrames CLI render evidence, or real browser evidence from `@chrome`/CDP.
 
 Use tool scores as evidence, not authority. If the PRD says the page must scroll, have working cards, include a generated hero asset, or include an animated motion asset, a high visual score cannot pass a fake or missing implementation.
 Use `--require guard,prd,longpage,assetplan,browser` and pass `--browser-evidence .betterref/browser-evidence.json` in final PRD verification so omitted browser evidence and pending generated/source assets fail instead of silently passing.

@@ -1,0 +1,412 @@
+import assert from 'node:assert/strict';
+import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:http';
+import { createWriteStream } from 'node:fs';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { test } from 'node:test';
+import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
+import { WebSocketServer } from 'ws';
+
+const repoRoot = path.resolve(import.meta.dirname, '..');
+const runBin = path.join(repoRoot, 'bin', 'betterref-run.mjs');
+const pngBase64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
+
+async function makeCase(name) {
+  const dir = path.join(tmpdir(), `betterref-run-${process.pid}-${name}-${Date.now()}`);
+  await mkdir(dir, { recursive: true });
+  return dir;
+}
+
+function writePdf(filePath, lines) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 48 });
+    const stream = doc.pipe(createWriteStream(filePath));
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+    doc.fontSize(18).text('BetterRef Run PRD');
+    doc.moveDown();
+    doc.fontSize(11);
+    for (const line of lines) {
+      doc.text(line);
+    }
+    doc.end();
+  });
+}
+
+async function writePng(filePath, base64 = pngBase64) {
+  await writeFile(filePath, Buffer.from(base64, 'base64'));
+}
+
+async function solidPngBase64(width, height, color) {
+  const buffer = await sharp({
+    create: {
+      width,
+      height,
+      channels: 3,
+      background: color
+    }
+  }).png().toBuffer();
+  return buffer.toString('base64');
+}
+
+async function pathExists(filePath) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function runCli(args) {
+  return spawnSync(process.execPath, [runBin, ...args], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    timeout: 10000
+  });
+}
+
+function runCliAsync(args) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [runBin, ...args], {
+      cwd: repoRoot,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => child.kill('SIGTERM'), 10000);
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on('close', (status, signal) => {
+      clearTimeout(timer);
+      resolve({ status, signal, stdout, stderr });
+    });
+  });
+}
+
+function listen(server) {
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => resolve(server.address().port));
+  });
+}
+
+async function closeServer(server, wss) {
+  if (wss) {
+    for (const client of wss.clients) {
+      client.terminate();
+    }
+    await new Promise((resolve) => wss.close(resolve));
+  }
+  server.closeAllConnections?.();
+  await new Promise((resolve) => server.close(resolve));
+}
+
+async function makeFakeChrome({ screenshot = pngBase64 } = {}) {
+  let port;
+  const target = () => ({
+    id: 'page-1',
+    type: 'page',
+    title: 'ONETAPGG Local',
+    url: 'http://127.0.0.1:3000/',
+    webSocketDebuggerUrl: `ws://127.0.0.1:${port}/devtools/page/page-1`
+  });
+  const server = createServer((request, response) => {
+    if (request.url === '/json/list') {
+      response.setHeader('content-type', 'application/json');
+      response.end(JSON.stringify([target()]));
+      return;
+    }
+    if (request.url === '/json/version') {
+      response.setHeader('content-type', 'application/json');
+      response.end(JSON.stringify({ Browser: 'FakeChrome/1.0' }));
+      return;
+    }
+    response.statusCode = 404;
+    response.end('not found');
+  });
+  const wss = new WebSocketServer({ server, path: '/devtools/page/page-1' });
+  wss.on('connection', (socket) => {
+    socket.on('message', (message) => {
+      const command = JSON.parse(message.toString());
+      if (command.method === 'Runtime.evaluate') {
+        socket.send(JSON.stringify({
+          id: command.id,
+          result: {
+            result: {
+              type: 'object',
+              value: {
+                viewport: {
+                  width: 100,
+                  height: 80,
+                  deviceScaleFactor: 1,
+                  scrollHeight: 160,
+                  scrollX: 0,
+                  scrollY: 0,
+                  url: 'http://127.0.0.1:3000/',
+                  title: 'ONETAPGG Local'
+                },
+                page: {
+                  scrollWidth: 100,
+                  scrollHeight: 160,
+                  bodyTextLength: 24,
+                  interactiveCount: 2
+                },
+                fonts: { ready: true, status: 'loaded' },
+                images: [],
+                console: [],
+                elements: [
+                  {
+                    name: 'header',
+                    selector: 'header',
+                    boundingBox: { x: 0, y: 0, width: 100, height: 20 },
+                    absoluteBox: { x: 0, y: 0, width: 100, height: 20 }
+                  },
+                  {
+                    name: 'hero',
+                    selector: '.hero',
+                    boundingBox: { x: 0, y: 20, width: 100, height: 40 },
+                    absoluteBox: { x: 0, y: 20, width: 100, height: 40 }
+                  }
+                ]
+              }
+            }
+          }
+        }));
+        return;
+      }
+      if (command.method === 'Page.captureScreenshot') {
+        socket.send(JSON.stringify({ id: command.id, result: { data: screenshot } }));
+        return;
+      }
+      socket.send(JSON.stringify({ id: command.id, result: {} }));
+    });
+  });
+
+  port = await listen(server);
+  return {
+    endpoint: `http://127.0.0.1:${port}`,
+    close: () => closeServer(server, wss)
+  };
+}
+
+test('betterref-run prints usage and exits with code 2 when required args are missing', () => {
+  const result = runCli([]);
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /Usage: betterref-run/);
+  assert.match(result.stderr, /--pdf/);
+  assert.match(result.stderr, /--project/);
+  assert.match(result.stderr, /--ref/);
+});
+
+test('betterref-run bootstraps PRD artifacts and blocks on pending imagegen assets', async () => {
+  const dir = await makeCase('imagegen-block');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  await mkdir(project, { recursive: true });
+  await writePng(ref);
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Required screens: Homepage.',
+    'Hero Image: premium 3D glass hero raster for the landing page.'
+  ]);
+
+  const result = runCli([
+    '--pdf', pdf,
+    '--project', project,
+    '--ref', ref,
+    '--url', 'http://127.0.0.1:3000/',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 3, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.status, 'blocked');
+  assert.equal(payload.phase, 'assets');
+  assert.equal(payload.exitCode, 3);
+  assert.ok(payload.blockers.some((item) => item.code === 'blocked_external_asset_generation'));
+  assert.match(payload.artifacts.agentsPath, /AGENTS\.md$/);
+  assert.match(payload.artifacts.imagegenQueuePath, /imagegen-requests\.json$/);
+  assert.equal(await pathExists(path.join(project, 'AGENTS.md')), true);
+
+  const queue = JSON.parse(await readFile(path.join(project, '.betterref-imagegen', 'imagegen-requests.json'), 'utf8'));
+  assert.equal(queue.requests.length, 1);
+  const actions = await readFile(path.join(project, '.betterref-run', 'next-actions.md'), 'utf8');
+  assert.match(actions, /image_gen/);
+  assert.match(actions, /betterref-imagegen --asset-plan/);
+  assert.match(actions, /--attach asset-001=/);
+});
+
+test('betterref-run writes HyperFrames requests and blocks without CLI evidence', async () => {
+  const dir = await makeCase('hyperframes-block');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  await mkdir(project, { recursive: true });
+  await writePng(ref);
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Hero Motion: animated cinematic 3D logo reveal with transparent WebM loop.'
+  ]);
+
+  const result = runCli([
+    '--pdf', pdf,
+    '--project', project,
+    '--ref', ref,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 3, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.status, 'blocked');
+  assert.equal(payload.phase, 'assets');
+  assert.ok(payload.blockers.some((item) => item.code === 'blocked_external_asset_generation'));
+  assert.match(payload.artifacts.hyperframesQueuePath, /hyperframes-requests\.json$/);
+
+  const queue = JSON.parse(await readFile(path.join(project, '.betterref-hyperframes', 'hyperframes-requests.json'), 'utf8'));
+  assert.equal(queue.requests.length, 1);
+  const actions = await readFile(path.join(project, '.betterref-run', 'next-actions.md'), 'utf8');
+  assert.match(actions, /npx hyperframes lint/);
+  assert.match(actions, /betterref-hyperframes --asset-plan/);
+});
+
+test('betterref-run blocks with @chrome handoff when no endpoint is supplied', async () => {
+  const dir = await makeCase('browser-block');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  await mkdir(project, { recursive: true });
+  await writePng(ref);
+  await writePdf(pdf, ['Viewport: 1440x900.']);
+
+  const result = runCli([
+    '--pdf', pdf,
+    '--project', project,
+    '--ref', ref,
+    '--url', 'http://127.0.0.1:3000/',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 3, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.status, 'blocked');
+  assert.equal(payload.phase, 'browser');
+  assert.ok(payload.blockers.some((item) => item.code === 'blocked_browser_evidence'));
+  const actions = await readFile(path.join(project, '.betterref-run', 'next-actions.md'), 'utf8');
+  assert.match(actions, /@chrome/);
+  assert.match(actions, /betterref-chrome/);
+  assert.match(actions, /browser-evidence\.json/);
+});
+
+test('betterref-run returns pass after browser capture, guard, and final verify all pass', async () => {
+  const dir = await makeCase('pass');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  const screenshot = await solidPngBase64(100, 80, { r: 255, g: 255, b: 255 });
+  await mkdir(project, { recursive: true });
+  await writePng(ref, screenshot);
+  await writePdf(pdf, ['Viewport: 100x80.']);
+  const fakeChrome = await makeFakeChrome({ screenshot });
+  try {
+    const result = await runCliAsync([
+      '--pdf', pdf,
+      '--project', project,
+      '--ref', ref,
+      '--url', 'http://127.0.0.1:3000/',
+      '--endpoint', fakeChrome.endpoint,
+      '--json'
+    ]);
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.status, 'pass');
+    assert.equal(payload.exitCode, 0);
+    assert.equal(payload.finalVerdict.verdict, 'pass');
+    assert.deepEqual(payload.blockers, []);
+    assert.match(payload.artifacts.reportPath, /report\.json$/);
+    assert.match(payload.artifacts.guardReportPath, /guard-report\.json$/);
+    assert.match(payload.artifacts.browserEvidencePath, /browser-evidence\.json$/);
+    assert.match(payload.artifacts.finalVerdictPath, /final-verdict\.json$/);
+
+    const summary = JSON.parse(await readFile(path.join(project, '.betterref-run', 'final-summary.json'), 'utf8'));
+    assert.equal(summary.status, 'pass');
+    assert.equal(summary.finalVerdict.verdict, 'pass');
+  } finally {
+    await fakeChrome.close();
+  }
+});
+
+test('betterref-run returns exit 1 when final verify runs but PRD remains incomplete', async () => {
+  const dir = await makeCase('revise');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  const screenshot = await solidPngBase64(100, 80, { r: 255, g: 255, b: 255 });
+  await mkdir(project, { recursive: true });
+  await writePng(ref, screenshot);
+  await writePdf(pdf, ['Viewport: 100x80.', 'Required screens: Homepage.']);
+  const fakeChrome = await makeFakeChrome({ screenshot });
+  try {
+    const result = await runCliAsync([
+      '--pdf', pdf,
+      '--project', project,
+      '--ref', ref,
+      '--url', 'http://127.0.0.1:3000/',
+      '--endpoint', fakeChrome.endpoint,
+      '--json'
+    ]);
+
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.status, 'revise');
+    assert.equal(payload.phase, 'final');
+    assert.equal(payload.exitCode, 1);
+    assert.equal(payload.finalVerdict.verdict, 'revise');
+    assert.ok(payload.finalVerdict.blockingReasons.some((item) => item.includes('prd-001')));
+  } finally {
+    await fakeChrome.close();
+  }
+});
+
+test('betterref-run returns exit 1 when visual comparison fails after capture', async () => {
+  const dir = await makeCase('visual-fail');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  const screenshot = await solidPngBase64(100, 80, { r: 255, g: 255, b: 255 });
+  const blackReference = await solidPngBase64(100, 80, { r: 0, g: 0, b: 0 });
+  await mkdir(project, { recursive: true });
+  await writePng(ref, blackReference);
+  await writePdf(pdf, ['Viewport: 100x80.']);
+  const fakeChrome = await makeFakeChrome({ screenshot });
+  try {
+    const result = await runCliAsync([
+      '--pdf', pdf,
+      '--project', project,
+      '--ref', ref,
+      '--url', 'http://127.0.0.1:3000/',
+      '--endpoint', fakeChrome.endpoint,
+      '--json'
+    ]);
+
+    assert.equal(result.status, 1, result.stderr || result.stdout);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.status, 'fail');
+    assert.equal(payload.phase, 'final');
+    assert.equal(payload.exitCode, 1);
+    assert.equal(payload.finalVerdict.verdict, 'fail');
+    assert.ok(payload.finalVerdict.blockingReasons.some((item) => /visual/i.test(item)));
+  } finally {
+    await fakeChrome.close();
+  }
+});

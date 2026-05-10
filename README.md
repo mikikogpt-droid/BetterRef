@@ -34,8 +34,11 @@ Start-Process "$env:ProgramFiles\Google\Chrome\Application\chrome.exe" -Argument
 Bridge a PRD PDF into BetterRef control artifacts:
 
 ```bash
+npx betterref-run --pdf PRD.pdf --project . --url http://127.0.0.1:3000/ --ref reference.png --endpoint http://127.0.0.1:9222 --json
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 ```
+
+`betterref-run` is the hybrid orchestrator for PRD-to-web work. It bootstraps PRD artifacts and `AGENTS.md`, writes imagegen/HyperFrames request queues when external asset work is pending, captures CDP browser evidence when `--endpoint` is provided, runs long-page/guard/final verification when evidence is available, and writes `.betterref-run/run-state.json`, `.betterref-run/next-actions.md`, and `.betterref-run/final-summary.json`. Exit code `3` means the run is blocked by required external action, not complete.
 
 This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `asset-plan.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. With `--project .`, it also creates or updates `AGENTS.md` at the project root with a managed BetterRef/Karpathy/Superpowers contract while preserving existing project instructions outside the managed block. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed. If the PRD mentions concrete static hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered still-asset work, the generated guard config enables `autoAssetQuality` and the asset plan lists imagegen/production-asset prompts, target paths, native-size minimums, and acceptance criteria. If it mentions animated, motion, reveal, loop, WebM/MP4, shader transition, or HyperFrames work, the asset plan routes that item to HyperFrames and requires CLI render evidence plus browser video evidence. Code-native behavior such as sticky headers, hover zoom, parallax limits, mobile menus, and fallback-only rules stays in the PRD checklist instead of becoming generated asset tasks.
 
@@ -196,6 +199,7 @@ npx betterref-guard --project . --report .betterref/report.json --config betterr
 Use `betterref-prd` when the reference work starts from a PRD PDF:
 
 ```bash
+npx betterref-run --pdf PRD.pdf --project . --url http://127.0.0.1:3000/ --ref reference.png --endpoint http://127.0.0.1:9222 --json
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .betterref.json
 ```
 
@@ -220,6 +224,7 @@ Outputs:
 
 - `.betterref-prd/prd-checklist.json` - machine-readable PRD checklist consumed by `betterref-verify`
 - `.betterref-prd/asset-plan.json` - machine-readable generated/source asset plan with imagegen and HyperFrames prompts, target paths, native-size/minimum evidence requirements, attach metadata, and pass/pending status
+- `.betterref-run/run-state.json`, `.betterref-run/next-actions.md`, and `.betterref-run/final-summary.json` - orchestrator state, required external handoff, and final run summary from `betterref-run`
 - `AGENTS.md` - project-root managed BetterRef/Karpathy/Superpowers contract, created only when `betterref-prd` receives `--project`
 - `.betterref-imagegen/imagegen-requests.json` and `.betterref-imagegen/imagegen-prompts.md` - built-in `image_gen` request queue for pending asset plan items
 - `.betterref-imagegen/generated/<asset-id>.*` - optional convention consumed by `betterref-imagegen --auto-attach-dir`
@@ -239,7 +244,7 @@ Outputs:
 
 Use `--require guard,prd,longpage,assetplan,browser`, `--browser-evidence .betterref/browser-evidence.json`, and `--project .` for PRD/full-page workflows. Missing or malformed browser evidence, pending generated/source assets, fake-passed imagegen assets without attach metadata, or fake-passed HyperFrames assets without CLI evidence are hard fails even when the visual score passes.
 
-Exit code `0` means the configured thresholds passed. Exit code `1` means revise. Exit code `2` means invalid usage or missing optional tooling.
+Exit code `0` means the configured thresholds passed. Exit code `1` means revise/fail after verification. Exit code `2` means invalid usage or config. For `betterref-run`, exit code `3` means the run is blocked by required external evidence such as imagegen output, HyperFrames CLI evidence, or browser evidence.
 
 ## ภาษาไทย
 

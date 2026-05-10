@@ -13,6 +13,7 @@
     "betterref-chrome-bridge": "./bin/betterref-chrome-bridge.mjs",
     "betterref-imagegen": "./bin/betterref-imagegen.mjs",
     "betterref-hyperframes": "./bin/betterref-hyperframes.mjs",
+    "betterref-run": "./bin/betterref-run.mjs",
     "betterref-prd": "./bin/betterref-prd.mjs",
     "betterref-diff": "./bin/betterref-diff.mjs",
     "betterref-capture": "./bin/betterref-capture.mjs",
