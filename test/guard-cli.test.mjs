@@ -169,6 +169,78 @@ test('betterref-guard hard fails blurry raster assets below the configured sharp
   assert.equal(qualityFails[0].asset.path, 'public/hero-blur.png');
 });
 
+test('betterref-guard can auto-check browser evidence images from local public assets', async () => {
+  const dir = await makeCase('auto-asset-quality');
+  const project = path.join(dir, 'project');
+  const publicDir = path.join(project, 'public');
+  await mkdir(path.join(project, 'src'), { recursive: true });
+  await mkdir(publicDir, { recursive: true });
+  await writeFile(path.join(project, 'src', 'page.tsx'), 'export default function Page(){return <main />;}');
+  await writeCheckerPng(path.join(publicDir, 'hero-sharp.png'));
+  await writeCheckerPng(path.join(publicDir, 'hero-blur.png'), { blur: true });
+  const report = path.join(dir, 'report.json');
+  const config = path.join(dir, 'guard.json');
+  const evidence = path.join(dir, 'browser-evidence.json');
+  await writeJson(report, {
+    passed: true,
+    mode: 'single_viewport',
+    verdict: { verdict: 'pass', score: 99, hard_fail_present: false, hardFailHints: [] }
+  });
+  await writeJson(config, {
+    autoAssetQuality: { enabled: true, minSharpness: 20 }
+  });
+  await writeJson(evidence, {
+    viewport: { width: 1440, height: 900 },
+    page: { bodyTextLength: 12, interactiveCount: 1 },
+    fonts: { ready: true, status: 'loaded' },
+    console: [],
+    images: [
+      {
+        src: 'http://127.0.0.1:3000/hero-sharp.png',
+        naturalWidth: 96,
+        naturalHeight: 96,
+        renderedWidth: 96,
+        renderedHeight: 96
+      },
+      {
+        src: '/hero-blur.png',
+        naturalWidth: 96,
+        naturalHeight: 96,
+        renderedWidth: 96,
+        renderedHeight: 96
+      },
+      {
+        src: 'https://cdn.example.com/remote-hero.png',
+        naturalWidth: 96,
+        naturalHeight: 96,
+        renderedWidth: 96,
+        renderedHeight: 96
+      }
+    ]
+  });
+
+  const result = runGuard([
+    '--project',
+    project,
+    '--report',
+    report,
+    '--config',
+    config,
+    '--browser-evidence',
+    evidence,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const guardReport = JSON.parse(result.stdout);
+  const qualityFails = guardReport.hardFails.filter((item) => item.code === 'asset_quality_below_threshold');
+  assert.equal(qualityFails.length, 1);
+  assert.equal(qualityFails[0].asset.src, '/hero-blur.png');
+  assert.equal(qualityFails[0].asset.path, 'public/hero-blur.png');
+  assert.equal(guardReport.summary.assetQualityChecks, 2);
+  assert.equal(guardReport.summary.assetQualityAutoSkipped, 1);
+});
+
 test('betterref-guard consumes browser evidence for scroll, image, font, console, and DOM hard fails', async () => {
   const dir = await makeCase('browser-evidence');
   const project = path.join(dir, 'project');

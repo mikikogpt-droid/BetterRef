@@ -32,7 +32,7 @@ Never call the result done when any hard-fail ledger item exists. A score of 98-
 | High BetterRef score | Run hard-fail ledger first; score is secondary. |
 | Source imports reference/PDF/crop | Fail; replace with code-native UI or generated/source asset. |
 | Asset rendered larger than native size | Fail; regenerate/source higher resolution or reduce display size. |
-| Hero/premium raster looks soft | Add `assetQualityChecks` and fail if sharpness is below threshold. |
+| Hero/premium raster looks soft | Use `autoAssetQuality` from browser evidence or explicit `assetQualityChecks`; fail if sharpness is below threshold. |
 
 ## PRD To Web Loop
 
@@ -94,7 +94,7 @@ Capture both a native full-page screenshot and section/viewport screenshots. Com
 
 Start with local assets, project scripts, browser tools, DOM measurement, screenshot capture, pixel/SSIM diff, image dimensions, asset sharpness checks, fonts, and icon libraries. If a measured gap remains, create or install scoped tooling, or use `imagegen` for complex raster work. Name the gap before adding a tool.
 
-Chrome MCP or browser automation can establish route, viewport, scroll, console, font, image scale, DOM text, interactive count, and DOM box truth. `betterref-chrome --full-page --section-screenshots` writes `.betterref/browser-evidence.json`, `.betterref/chrome-full-page.png`, and `.betterref/sections/*.png`; `betterref-longpage` auto-crops browser chrome from the reference and diffs full-page plus sections. Pass browser evidence and long-page report into `betterref-guard`/`betterref-verify` so browser hard fails cannot be hidden by a high pixel score.
+Chrome MCP or browser automation can establish route, viewport, scroll, console, font, image scale, DOM text, interactive count, and DOM box truth. `betterref-chrome --full-page --section-screenshots` writes `.betterref/browser-evidence.json`, `.betterref/chrome-full-page.png`, and `.betterref/sections/*.png`; `betterref-guard` can use `autoAssetQuality` to map browser image URLs back to local `public` assets for sharpness checks. `betterref-longpage` auto-crops browser chrome from the reference and diffs full-page plus sections. Pass browser evidence and long-page report into `betterref-guard`/`betterref-verify` so browser hard fails cannot be hidden by a high pixel score.
 
 Use `betterref-eval` for benchmark suites. A pressure fixture should declare the expected verdict, then fail CI if the actual verdict changes in a way that lets fake UI, blurred assets, missing scroll, or PRD gaps pass.
 

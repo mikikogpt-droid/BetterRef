@@ -53,6 +53,16 @@ npx betterref-guard --project . --report .betterref/report.json --config betterr
 
 Use `betterref-guard` before any final pass claim. It can fail screenshot-as-UI source usage, long-page references missing scroll/section evidence, reported hard fails, failed visual reports, rendered image assets that are larger than their native dimensions, blurry raster assets below a configured sharpness threshold, missing scroll from the real browser, unloaded fonts, console errors, missing DOM text, and missing interactive elements.
 
+For local browser captures, enable automatic raster checks with:
+
+```json
+{
+  "autoAssetQuality": { "enabled": true, "minSharpness": 20, "roots": ["public"] }
+}
+```
+
+This maps browser evidence such as `/assets/hero.png` back to `public/assets/hero.png` when the file exists. External CDN, data, and blob URLs are skipped unless you add explicit `assetQualityChecks`.
+
 Combine visual, guard, and PRD checklist evidence into one final verdict:
 
 ```bash
@@ -170,7 +180,7 @@ Outputs:
 - `.betterref/chrome-full-page.png` and `.betterref/sections/*.png` - native browser evidence for long-page and section review when requested
 - `.betterref-longpage/longpage-report.json` - auto-cropped reference, full-page structure score, and per-section diff verdicts
 - `.betterref/browser-evidence.json` - viewport, scroll, DOM text, interactive count, fonts, console, and rendered image dimensions from the real browser
-- `.betterref/guard-report.json` - hard-fail ledger for source reuse, long-page evidence, and asset scaling checks
+- `.betterref/guard-report.json` - hard-fail ledger for source reuse, long-page evidence, asset scaling, and raster sharpness checks
 - `.betterref/final-verdict.json` - single PRD + visual + guard verdict from `betterref-verify`
 - `.betterref/eval-report.json` - benchmark summary from `betterref-eval`
 - `.betterref/diff.png` - pixel hotspot image for the next UI patch

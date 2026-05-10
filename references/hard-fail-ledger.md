@@ -54,9 +54,16 @@ The hard-fail ledger is the authority that numeric scores cannot override.
       "role": "hero",
       "minSharpness": 20
     }
-  ]
+  ],
+  "autoAssetQuality": {
+    "enabled": true,
+    "minSharpness": 20,
+    "roots": ["public"]
+  }
 }
 ```
+
+`autoAssetQuality` uses `browser-evidence.json` image URLs and checks matching local files under `public` by default. It skips unresolved external/CDN/data/blob images instead of hard-failing them; add explicit `assetQualityChecks` for assets that cannot be mapped from browser evidence.
 
 Run:
 

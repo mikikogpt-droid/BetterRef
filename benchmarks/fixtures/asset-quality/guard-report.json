@@ -6,9 +6,11 @@
       "code": "asset_quality_below_threshold",
       "message": "Raster asset sharpness 8.42 is below the configured minimum 20.",
       "asset": {
+        "src": "/hero-blur.png",
         "path": "public/hero-blur.png",
         "role": "hero",
-        "minSharpness": 20
+        "minSharpness": 20,
+        "autoDiscovered": true
       },
       "measuredSharpness": 8.42,
       "minSharpness": 20
