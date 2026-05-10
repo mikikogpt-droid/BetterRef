@@ -396,6 +396,7 @@ test('betterref-verify fails when a passed imagegen asset lacks attach evidence'
   assert.equal(verdict.verdict, 'fail');
   assert.equal(verdict.hardFailPresent, true);
   assert.equal(verdict.assetPlan.passed, false);
+  assert.equal(verdict.assetPlan.passedCount, 0);
   assert.equal(verdict.assetPlan.invalid[0].id, 'asset-001');
   assert.ok(verdict.blockingReasons.some((item) => item.includes('asset plan item asset-001 lacks generated/source asset evidence')));
 });
