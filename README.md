@@ -82,7 +82,7 @@ Run benchmark manifests to catch regressions in pressure scenarios:
 npx betterref-eval --manifest benchmarks/betterref-eval.json --out .betterref/eval-report.json
 ```
 
-Start from `benchmarks/betterref-eval.example.json` when creating a new benchmark suite.
+Start from `benchmarks/betterref-eval.example.json` when creating a new benchmark suite. Include `assetPlan` plus `require: "assetplan"` for pressure cases where a required imagegen or production raster asset is still pending.
 
 Generate semantic regions from DOM boxes captured by Chrome MCP or browser tooling:
 

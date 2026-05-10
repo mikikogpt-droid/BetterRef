@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "betterref.asset.plan.v1",
+  "imagegenRequired": true,
+  "assets": [
+    {
+      "id": "asset-001",
+      "status": "pending",
+      "requirement": "Premium cinematic hero raster must be generated with image_gen and verified before completion.",
+      "targetPath": "public/betterref-assets/hero-cinematic.png",
+      "minNativeWidth": 1920,
+      "minNativeHeight": 1080,
+      "minSharpness": 20
+    }
+  ]
+}

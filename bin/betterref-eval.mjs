@@ -13,7 +13,7 @@ Options:
   --help                Show this help.
 
 Manifest case shape:
-  { "id": "long-page-pressure", "report": "report.json", "guard": "guard.json", "prd": "prd.json", "longpage": "longpage-report.json", "expect": { "verdict": "fail", "hardFailPresent": true } }
+  { "id": "long-page-pressure", "report": "report.json", "guard": "guard.json", "prd": "prd.json", "longpage": "longpage-report.json", "assetPlan": "asset-plan.json", "require": "guard,prd,longpage,assetplan", "expect": { "verdict": "fail", "hardFailPresent": true } }
 `;
 
 function failUsage(message) {

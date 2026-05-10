@@ -120,6 +120,49 @@ test('betterref-eval includes long-page reports in pressure expectations', async
   assert.equal(report.cases[0].actual.hardFailPresent, true);
 });
 
+test('betterref-eval includes asset plans in imagegen pressure expectations', async () => {
+  const dir = await makeCase('assetplan-pressure');
+  const visual = path.join(dir, 'visual.json');
+  const guard = path.join(dir, 'guard.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const manifest = path.join(dir, 'manifest.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pending',
+        requirement: 'Cinematic hero raster must be generated with image_gen.',
+        targetPath: 'public/betterref-assets/hero.png'
+      }
+    ]
+  });
+  await writeJson(manifest, {
+    cases: [
+      {
+        id: 'imagegen-pending-pressure',
+        report: 'visual.json',
+        guard: 'guard.json',
+        assetPlan: 'asset-plan.json',
+        require: 'assetplan',
+        expect: { verdict: 'fail', hardFailPresent: true }
+      }
+    ]
+  });
+
+  const result = runEval(['--manifest', manifest, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.passed, true);
+  assert.equal(report.cases[0].actual.verdict, 'fail');
+  assert.equal(report.cases[0].actual.hardFailPresent, true);
+  assert.ok(report.cases[0].actual.blockingReasons.some((item) => item.includes('asset plan item asset-001 is pending')));
+});
+
 test('bundled benchmark example is executable', () => {
   const manifest = path.join(repoRoot, 'benchmarks', 'betterref-eval.example.json');
 
@@ -128,8 +171,8 @@ test('bundled benchmark example is executable', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.passed, true);
-  assert.equal(report.summary.total, 5);
-  assert.equal(report.summary.matched, 5);
+  assert.equal(report.summary.total, 6);
+  assert.equal(report.summary.matched, 6);
 });
 
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {

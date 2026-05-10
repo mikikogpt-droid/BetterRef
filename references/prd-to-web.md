@@ -63,9 +63,11 @@ Keep pressure scenarios in a manifest and run them before publishing BetterRef c
 {
   "cases": [
     {
-      "id": "screenshot-as-ui-pressure",
-      "report": "fixtures/screenshot-as-ui/report.json",
-      "guard": "fixtures/screenshot-as-ui/guard-report.json",
+      "id": "imagegen-pending-pressure",
+      "report": "fixtures/imagegen-pending/report.json",
+      "guard": "fixtures/imagegen-pending/guard-report.json",
+      "assetPlan": "fixtures/imagegen-pending/asset-plan.json",
+      "require": "assetplan",
       "expect": { "verdict": "fail", "hardFailPresent": true }
     }
   ]

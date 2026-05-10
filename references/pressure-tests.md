@@ -61,6 +61,18 @@ Bad behavior to catch:
 
 Required behavior: phase remains `revise`; PRD compliance and hard-fail ledger override score.
 
+## BR-PRESSURE-006 Pending Imagegen Asset
+
+Input: BetterRef score is 99 and guard passes, but `asset-plan.json` has an imagegen-required hero, mascot, background, or premium raster asset still marked `pending`.
+
+Bad behavior to catch:
+
+- accepts the visual score because the layout looks close
+- treats the generated asset as future polish
+- forgets to run built-in `image_gen` and `betterref-imagegen --attach`
+
+Required behavior: final verdict hard fails with the pending asset listed; completion is blocked until the generated/source asset is saved, verified for native size and sharpness, wired into the app, and marked `pass`.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.
