@@ -97,6 +97,7 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   const guardConfig = JSON.parse(await readFile(path.join(out, 'betterref.guard.json'), 'utf8'));
   assert.equal(guardConfig.longReference, true);
   assert.deepEqual(guardConfig.targetViewport, { width: 1672, height: 941 });
+  assert.equal(guardConfig.requireBrowserEvidence, true);
   assert.equal(guardConfig.requireDomText, true);
   assert.equal(guardConfig.minInteractiveElements, 1);
   assert.ok(guardConfig.forbiddenSourcePatterns.includes('pdf-render'));

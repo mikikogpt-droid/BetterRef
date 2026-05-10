@@ -97,6 +97,18 @@ Bad behavior to catch:
 
 Required behavior: final verdict hard fails when `--project` is available and the actual project file sharpness is below threshold.
 
+## BR-PRESSURE-009 Missing Browser Evidence
+
+Input: visual report, PRD checklist, and source scan look clean, but `betterref-guard` was run without `.betterref/browser-evidence.json`.
+
+Bad behavior to catch:
+
+- accepts a screenshot score without DOM, scroll, font, console, image-scale, or interactive-count proof
+- treats browser evidence as optional in PRD-to-web work
+- claims completion from static reports only
+
+Required behavior: PRD-generated guard configs require browser evidence; final verdict hard fails with `browser_evidence_missing` until fresh browser evidence is captured and passed into `betterref-guard`.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.

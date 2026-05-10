@@ -100,7 +100,7 @@ Start with local assets, project scripts, browser tools, DOM measurement, screen
 
 Chrome MCP or browser automation can establish route, viewport, scroll, console, font, image scale, DOM text, interactive count, and DOM box truth. `betterref-chrome --full-page --section-screenshots` writes `.betterref/browser-evidence.json`, `.betterref/chrome-full-page.png`, and `.betterref/sections/*.png`; `betterref-guard` can use `autoAssetQuality` to map browser image URLs back to local `public` assets for sharpness checks. `betterref-longpage` auto-crops browser chrome from the reference and diffs full-page plus sections. Pass browser evidence and long-page report into `betterref-guard`/`betterref-verify` so browser hard fails cannot be hidden by a high pixel score.
 
-Use `betterref-eval` for benchmark suites. A pressure fixture should declare the expected verdict, then fail CI if the actual verdict changes in a way that lets fake UI, blurred assets, missing scroll, pending or fake-passed imagegen assets, or PRD gaps pass.
+Use `betterref-eval` for benchmark suites. A pressure fixture should declare the expected verdict, then fail CI if the actual verdict changes in a way that lets fake UI, blurred assets, missing browser evidence, missing scroll, pending or fake-passed imagegen assets, or PRD gaps pass.
 
 ## Final Report
 
@@ -118,4 +118,4 @@ Do not say "100%" unless all PRD criteria, visual criteria, and hard-fail ledger
 
 ## Pressure Tests
 
-Use `references/pressure-tests.md` when editing or validating this skill. The required scenarios cover long-page screenshots, screenshot-as-UI, blurry scaled assets, missing diff tooling, PRD compliance being overruled by score, and pending or fake-passed imagegen assets.
+Use `references/pressure-tests.md` when editing or validating this skill. The required scenarios cover long-page screenshots, screenshot-as-UI, blurry scaled assets, missing browser evidence, missing diff tooling, PRD compliance being overruled by score, and pending or fake-passed imagegen assets.

@@ -33,6 +33,16 @@
       }
     },
     {
+      "id": "missing-browser-evidence-pressure",
+      "report": "fixtures/missing-browser-evidence/report.json",
+      "guard": "fixtures/missing-browser-evidence/guard-report.json",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "blockingReasonIncludes": ["browser_evidence_missing"]
+      }
+    },
+    {
       "id": "asset-quality-pressure",
       "report": "fixtures/asset-quality/report.json",
       "guard": "fixtures/asset-quality/guard-report.json",

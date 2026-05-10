@@ -303,6 +303,33 @@ test('betterref-guard consumes browser evidence for scroll, image, font, console
   }
 });
 
+test('betterref-guard hard fails when required browser evidence is missing', async () => {
+  const dir = await makeCase('missing-browser-evidence');
+  const project = path.join(dir, 'project');
+  await mkdir(path.join(project, 'src'), { recursive: true });
+  await writeFile(path.join(project, 'src', 'page.tsx'), 'export default function Page(){return <main><button>Buy</button></main>;}');
+  const report = path.join(dir, 'report.json');
+  const config = path.join(dir, 'guard.json');
+  await writeJson(report, {
+    passed: true,
+    mode: 'single_viewport',
+    verdict: { verdict: 'pass', score: 98, hard_fail_present: false, hardFailHints: [] }
+  });
+  await writeJson(config, {
+    requireBrowserEvidence: true,
+    requireDomText: true,
+    minInteractiveElements: 1
+  });
+
+  const result = runGuard(['--project', project, '--report', report, '--config', config, '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const guardReport = JSON.parse(result.stdout);
+  assert.equal(guardReport.passed, false);
+  assert.equal(guardReport.hardFailPresent, true);
+  assert.ok(guardReport.hardFails.some((item) => item.code === 'browser_evidence_missing'));
+});
+
 test('betterref-guard accepts unsupported browser font status when fonts are not reported as unready', async () => {
   const dir = await makeCase('font-unsupported');
   const project = path.join(dir, 'project');

@@ -260,8 +260,8 @@ test('bundled benchmark example is executable', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.passed, true);
-  assert.equal(report.summary.total, 10);
-  assert.equal(report.summary.matched, 10);
+  assert.equal(report.summary.total, 11);
+  assert.equal(report.summary.matched, 11);
 });
 
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {

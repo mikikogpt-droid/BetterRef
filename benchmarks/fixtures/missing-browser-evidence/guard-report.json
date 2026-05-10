@@ -1,0 +1,10 @@
+{
+  "passed": false,
+  "hardFailPresent": true,
+  "hardFails": [
+    {
+      "code": "browser_evidence_missing",
+      "message": "Browser evidence is required but no browser-evidence file was provided."
+    }
+  ]
+}

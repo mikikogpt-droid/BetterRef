@@ -16,6 +16,7 @@ The hard-fail ledger is the authority that numeric scores cannot override.
 | `asset_quality_below_threshold` | Raster asset is blurrier or lower-detail than the configured sharpness threshold. |
 | `asset_quality_missing_path` | Configured asset quality check has no local image path. |
 | `asset_quality_unreadable` | Configured asset quality image cannot be read. |
+| `browser_evidence_missing` | Guard config requires fresh browser evidence, but no browser-evidence file was provided. |
 | `browser_missing_scroll_evidence` | Browser evidence shows a long-page reference is being checked against a non-scrollable page. |
 | `browser_fonts_not_ready` | Browser evidence shows fonts were not ready during capture. |
 | `browser_console_error_present` | Browser evidence contains console errors or exceptions. |
@@ -29,6 +30,7 @@ The hard-fail ledger is the authority that numeric scores cannot override.
   "longReference": true,
   "targetViewport": { "width": 1440, "height": 900 },
   "actualFullPageHeight": 1780,
+  "requireBrowserEvidence": true,
   "requireDomText": true,
   "minInteractiveElements": 1,
   "forbiddenSourcePatterns": [

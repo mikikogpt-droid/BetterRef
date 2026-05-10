@@ -64,7 +64,8 @@ test('pressure tests cover the failure modes that caused the ONETAPGG miss', asy
     'BR-PRESSURE-005',
     'BR-PRESSURE-006',
     'BR-PRESSURE-007',
-    'BR-PRESSURE-008'
+    'BR-PRESSURE-008',
+    'BR-PRESSURE-009'
   ]) {
     assert.match(pressureTests, new RegExp(id));
   }
