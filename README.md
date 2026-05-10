@@ -68,7 +68,7 @@ For local browser captures, enable automatic raster checks with:
 }
 ```
 
-This maps browser evidence such as `/assets/hero.png` back to `public/assets/hero.png` when the file exists. External CDN, data, and blob URLs are skipped unless you add explicit `assetQualityChecks`.
+This maps browser evidence such as `/assets/hero.png` back to `public/assets/hero.png` when the file exists. External CDN, data, and blob URLs are skipped unless you add explicit `assetQualityChecks`. Chrome evidence includes `<img>` assets and CSS background-image assets, so generated hero art cannot hide outside the image-scale and sharpness checks.
 
 Combine visual, guard, and PRD checklist evidence into one final verdict:
 
@@ -76,13 +76,15 @@ Combine visual, guard, and PRD checklist evidence into one final verdict:
 npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --browser-evidence .betterref/browser-evidence.json --project . --require guard,prd,longpage,assetplan,browser --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
+When an `asset-plan.json` item is marked `pass`, final verification validates the asset file, native dimensions, sharpness, attach metadata, and fresh browser evidence that the target asset is actually rendered by the app. This catches the common failure where imagegen succeeds but the page still shows placeholder cards or a CSS-only hero.
+
 Run benchmark manifests to catch regressions in pressure scenarios:
 
 ```bash
 npx betterref-eval --manifest benchmarks/betterref-eval.json --out .betterref/eval-report.json
 ```
 
-Start from `benchmarks/betterref-eval.example.json` when creating a new benchmark suite. Include `assetPlan` plus `require: "assetplan"` for pressure cases where a required imagegen or production raster asset is still pending. Include `browserEvidence` plus `require: "browser"` when the final verdict depends on browser proof.
+Start from `benchmarks/betterref-eval.example.json` when creating a new benchmark suite. Include `assetPlan` plus `require: "assetplan"` for pressure cases where a required imagegen or production raster asset is still pending. Include `browserEvidence` plus `require: "browser"` when the final verdict depends on browser proof, including generated assets that must be visible in the actual page.
 
 Generate semantic regions from DOM boxes captured by Chrome MCP or browser tooling:
 

@@ -33,6 +33,7 @@ Never call the result done when any hard-fail ledger item exists. A score of 98-
 | Source imports reference/PDF/crop | Fail; replace with code-native UI or generated/source asset. |
 | Asset rendered larger than native size | Fail; regenerate/source higher resolution or reduce display size. |
 | Hero/premium raster looks soft | Use `autoAssetQuality` from browser evidence or explicit `assetQualityChecks`; fail if sharpness is below threshold. |
+| Generated/source asset file exists but is not rendered | Fail; wire it into the actual UI and recapture browser evidence. |
 
 ## PRD To Web Loop
 
@@ -57,7 +58,7 @@ npx betterref-verify --report .betterref/report.json --guard .betterref/guard-re
 ```
 
 Do not use final-pass resizing to make screenshots agree. For final verification, compare native target viewport screenshots and report layout drift instead of squeezing images.
-For PRD/full-page verification, require the expected evidence with `--require guard,prd,longpage,assetplan,browser`; missing browser evidence, pending assets, and fake-passed assets without attach metadata are hard fails.
+For PRD/full-page verification, require the expected evidence with `--require guard,prd,longpage,assetplan,browser`; missing browser evidence, pending assets, fake-passed assets without attach metadata, and generated assets that are not rendered in browser evidence are hard fails.
 Use built-in `image_gen` for each request from `.betterref-imagegen/imagegen-requests.json`, then run `betterref-imagegen --attach <asset-id>=<file> --project .` so the asset plan records generated path, native size, sharpness, timestamp, and verification metadata before final verification. Do not manually flip asset status to `pass`.
 
 ## Hard-Fail Ledger
@@ -73,6 +74,7 @@ The verdict must be `fail` or `revise` if any item is true:
 - Important content is clipped, overlapped, hidden, or blocked.
 - A complex hero/raster asset is visibly lower quality, has rectangular edges, wrong crop, weak lighting/depth, low measured sharpness, or blurred scaling.
 - Rendered asset dimensions exceed native image dimensions.
+- A generated/source asset is marked pass but does not appear in fresh browser evidence from the actual app.
 - The report uses a high score to override a PRD gap or real UI defect.
 - No fresh screenshot from the actual app was used.
 
