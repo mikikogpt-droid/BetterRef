@@ -30,6 +30,20 @@ async function writeTinyPng(filePath, width = 64, height = 64) {
   }).png().toFile(filePath);
 }
 
+async function writeCheckerPng(filePath, width = 128, height = 96) {
+  const data = Buffer.alloc(width * height * 3);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = (y * width + x) * 3;
+      const on = (Math.floor(x / 4) + Math.floor(y / 4)) % 2 === 0;
+      data[index] = on ? 255 : 0;
+      data[index + 1] = on ? 255 : 0;
+      data[index + 2] = on ? 255 : 0;
+    }
+  }
+  await sharp(data, { raw: { width, height, channels: 3 } }).png().toFile(filePath);
+}
+
 function runVerify(args) {
   return spawnSync(process.execPath, [verifyBin, ...args], {
     cwd: repoRoot,
@@ -393,7 +407,7 @@ test('betterref-verify validates generated asset files when project path is supp
   const visual = path.join(dir, 'report.json');
   const assetPlan = path.join(dir, 'asset-plan.json');
   await mkdir(path.dirname(assetPath), { recursive: true });
-  await writeTinyPng(assetPath, 128, 96);
+  await writeCheckerPng(assetPath, 128, 96);
   await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
   await writeJson(assetPlan, {
     schemaVersion: 'betterref.asset.plan.v1',
@@ -478,6 +492,54 @@ test('betterref-verify fails when asset plan native dimensions do not match the 
   assert.equal(verdict.assetPlan.passed, false);
   assert.ok(verdict.blockingReasons.some((item) => item.includes('claimed native width 128 does not match file width 64')));
   assert.ok(verdict.blockingReasons.some((item) => item.includes('claimed native height 96 does not match file height 64')));
+});
+
+test('betterref-verify fails when measured asset sharpness does not match the project file', async () => {
+  const dir = await makeCase('asset-plan-sharpness-mismatch');
+  const project = path.join(dir, 'project');
+  const assetPath = path.join(project, 'public', 'betterref-assets', 'hero.png');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  await mkdir(path.dirname(assetPath), { recursive: true });
+  await writeTinyPng(assetPath, 128, 96);
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pass',
+        requirement: 'Hero sharpness must describe the actual project file.',
+        targetPath: 'public/betterref-assets/hero.png',
+        generatedPath: 'public/betterref-assets/hero.png',
+        nativeWidth: 128,
+        nativeHeight: 96,
+        measuredSharpness: 25,
+        minNativeWidth: 128,
+        minNativeHeight: 96,
+        minSharpness: 20,
+        verifiedAt: '2026-05-10T00:00:00.000Z',
+        verification: 'betterref-imagegen attach'
+      }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--project', project,
+    '--require', 'assetplan',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.equal(verdict.assetPlan.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('actual file sharpness')));
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('is below 20')));
 });
 
 test('betterref-verify prints usage and exits code 2 without a report', () => {

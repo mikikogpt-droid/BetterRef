@@ -1,6 +1,6 @@
 # BetterRef Benchmarks
 
-`betterref-eval.example.json` is intentionally runnable. It includes one clean case and eight pressure cases that must not pass accidentally:
+`betterref-eval.example.json` is intentionally runnable. It includes one clean case and nine pressure cases that must not pass accidentally:
 
 - `clean-prd-page`: code-native UI with complete PRD evidence.
 - `screenshot-as-ui-pressure`: high visual score, but guard hard-fails reference reuse.
@@ -10,6 +10,7 @@
 - `imagegen-fake-pass-pressure`: high visual score and clean guard, but the asset was marked pass without attach evidence.
 - `imagegen-missing-file-pressure`: the asset plan metadata looks complete, but the project asset file is missing.
 - `imagegen-dimension-mismatch-pressure`: the asset plan metadata claims dimensions that do not match the project asset file.
+- `imagegen-file-sharpness-pressure`: the asset plan metadata claims a sharp asset, but the project asset file is flat/blurry.
 - `missing-mobile-prd-pressure`: no hard fail, but PRD evidence is incomplete, so the verdict is `revise`.
 
 Each pressure case asserts both the verdict and at least one expected blocking-reason substring, so a case cannot pass by failing for an unrelated reason.

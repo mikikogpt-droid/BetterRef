@@ -85,6 +85,18 @@ Bad behavior to catch:
 
 Required behavior: final verdict hard fails; a passed asset must include generated/source evidence, verified native dimensions, required sharpness evidence, and attach/production verification metadata. When a project path is available, verify the actual file.
 
+## BR-PRESSURE-008 Fake Sharpness Metadata
+
+Input: `asset-plan.json` has an imagegen-required asset marked `pass` with `measuredSharpness` above threshold, but the project asset file is flat, blurred, or otherwise below `minSharpness`.
+
+Bad behavior to catch:
+
+- trusts the asset-plan sharpness value without reading the project file
+- lets a manually edited asset plan hide a blurry generated image
+- treats attach metadata as enough even when the checked-in asset changed later
+
+Required behavior: final verdict hard fails when `--project` is available and the actual project file sharpness is below threshold.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.
