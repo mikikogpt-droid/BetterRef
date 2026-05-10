@@ -310,6 +310,9 @@ test('betterref-guard consumes browser evidence for scroll, image, font, console
     page: { bodyTextLength: 0, interactiveCount: 0 },
     fonts: { ready: false, status: 'loading' },
     console: [{ type: 'error', text: 'Hydration failed' }],
+    network: {
+      errors: [{ type: 'response', url: 'http://127.0.0.1:3000/missing.png', status: 404 }]
+    },
     images: [
       {
         src: '/hero.png',
@@ -340,6 +343,7 @@ test('betterref-guard consumes browser evidence for scroll, image, font, console
     'asset_scaled_beyond_native_size',
     'browser_fonts_not_ready',
     'browser_console_error_present',
+    'browser_network_error_present',
     'browser_missing_dom_text',
     'browser_missing_interactive_elements'
   ]) {

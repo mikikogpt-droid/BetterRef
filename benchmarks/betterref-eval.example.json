@@ -98,6 +98,22 @@
       }
     },
     {
+      "id": "browser-network-error-pressure",
+      "report": "fixtures/browser-network-error/report.json",
+      "guardConfig": "fixtures/browser-network-error/guard-config.json",
+      "browserEvidence": "fixtures/browser-network-error/browser-evidence.json",
+      "project": "fixtures/browser-network-error/project",
+      "require": "guard,browser",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "blockingReasonIncludes": [
+          "browser_network_error_present",
+          "missing-hero.png"
+        ]
+      }
+    },
+    {
       "id": "asset-quality-pressure",
       "report": "fixtures/asset-quality/report.json",
       "guard": "fixtures/asset-quality/guard-report.json",

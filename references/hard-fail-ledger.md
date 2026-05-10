@@ -20,6 +20,7 @@ The hard-fail ledger is the authority that numeric scores cannot override.
 | `browser_missing_scroll_evidence` | Browser evidence shows a long-page reference is being checked against a non-scrollable page. |
 | `browser_fonts_not_ready` | Browser evidence shows fonts were not ready during capture. |
 | `browser_console_error_present` | Browser evidence contains console errors or exceptions. |
+| `browser_network_error_present` | Browser evidence contains failed HTTP responses or failed requests with URL/status details. |
 | `browser_missing_dom_text` | Guard requires DOM text but browser evidence shows none. |
 | `browser_missing_interactive_elements` | Guard requires interactive elements but browser evidence shows too few. |
 | `browser_missing_rendered_assets` | Asset-heavy PRD/browser config requires production image assets, but browser evidence shows too few rendered assets. |

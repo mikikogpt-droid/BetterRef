@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "mode": "single_viewport",
+  "verdict": {
+    "verdict": "pass",
+    "score": 99,
+    "hard_fail_present": false
+  }
+}

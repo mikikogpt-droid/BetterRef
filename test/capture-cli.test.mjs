@@ -64,10 +64,24 @@ exports.chromium = {
       async newContext() {
         return {
           async newPage() {
+            const handlers = {};
             const page = {
               __betterrefConsole: [],
-              on() {},
-              async goto() {},
+              __betterrefNetwork: [],
+              on(event, handler) {
+                handlers[event] = handler;
+              },
+              async goto() {
+                handlers.response?.({
+                  status: () => 404,
+                  statusText: () => 'Not Found',
+                  url: () => 'http://127.0.0.1:3000/missing-hero.png',
+                  request: () => ({
+                    method: () => 'GET',
+                    resourceType: () => 'image'
+                  })
+                });
+              },
               async screenshot({ path }) {
                 await fs.writeFile(path, Buffer.from('png'));
               },
@@ -114,5 +128,7 @@ exports.chromium = {
   assert.equal(evidence.page.bodyTextLength, 128);
   assert.equal(evidence.images[0].naturalWidth, 1920);
   assert.equal(evidence.assets.rendered[0].sourceType, 'css-background');
+  assert.equal(evidence.network.errors[0].status, 404);
+  assert.match(evidence.network.errors[0].url, /missing-hero\.png/);
   assert.match(evidence.fullPageScreenshotPath, /screenshot\.png$/);
 });

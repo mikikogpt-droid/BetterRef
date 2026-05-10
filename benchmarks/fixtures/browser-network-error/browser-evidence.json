@@ -1,0 +1,29 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "page": {
+    "scrollHeight": 1200,
+    "bodyTextLength": 1800,
+    "interactiveCount": 12
+  },
+  "fonts": {
+    "ready": true,
+    "status": "loaded"
+  },
+  "images": [],
+  "console": [],
+  "network": {
+    "errors": [
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:3000/missing-hero.png",
+        "status": 404,
+        "statusText": "Not Found",
+        "method": "GET",
+        "resourceType": "image"
+      }
+    ]
+  }
+}

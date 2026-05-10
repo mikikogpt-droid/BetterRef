@@ -149,6 +149,9 @@ async function collectBrowserEvidence(page, { screenshotPath, fullPageScreenshot
   return {
     ...evidence,
     console: Array.isArray(page.__betterrefConsole) ? page.__betterrefConsole : [],
+    network: {
+      errors: Array.isArray(page.__betterrefNetwork) ? page.__betterrefNetwork : []
+    },
     screenshotPath,
     fullPageScreenshotPath
   };
@@ -196,6 +199,7 @@ async function main() {
     });
     const page = await context.newPage();
     page.__betterrefConsole = [];
+    page.__betterrefNetwork = [];
     page.on('console', (message) => {
       page.__betterrefConsole.push({
         type: message.type(),
@@ -206,6 +210,28 @@ async function main() {
       page.__betterrefConsole.push({
         type: 'error',
         text: error.message
+      });
+    });
+    page.on('response', (response) => {
+      const status = response.status();
+      if (status < 400) return;
+      const request = response.request();
+      page.__betterrefNetwork.push({
+        type: 'response',
+        url: response.url(),
+        status,
+        statusText: response.statusText(),
+        method: request.method(),
+        resourceType: request.resourceType()
+      });
+    });
+    page.on('requestfailed', (request) => {
+      page.__betterrefNetwork.push({
+        type: 'requestfailed',
+        url: request.url(),
+        method: request.method(),
+        resourceType: request.resourceType(),
+        errorText: request.failure()?.errorText || ''
       });
     });
     await page.goto(url, {

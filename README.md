@@ -123,7 +123,7 @@ npx playwright install chromium
 npx betterref-capture --url http://127.0.0.1:3000/ --ref reference.png --out .betterref --viewport 1440x900 --full-page --html
 ```
 
-`betterref-capture` resolves Playwright from the current project first, then writes `.betterref/screenshot.png` and `.betterref/browser-evidence.json` with viewport, scroll, DOM text length, interactive count, font state, console messages, `<img>` dimensions, and CSS background assets. This is the no-CDP path for local dogfooding; pass the browser evidence into `betterref-guard` and `betterref-verify`.
+`betterref-capture` resolves Playwright from the current project first, then writes `.betterref/screenshot.png` and `.betterref/browser-evidence.json` with viewport, scroll, DOM text length, interactive count, font state, console messages, failed network request URLs/statuses, `<img>` dimensions, and CSS background assets. This is the no-CDP path for local dogfooding; pass the browser evidence into `betterref-guard` and `betterref-verify`.
 
 Keep strict native viewport comparison for final gates. If a real browser capture is off by device scale or output size, use diagnostic normalization only to understand the mismatch, then re-capture at the correct viewport before claiming pass.
 
@@ -195,7 +195,7 @@ Outputs:
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
 - `.betterref/chrome-full-page.png` and `.betterref/sections/*.png` - native browser evidence for long-page and section review when requested
 - `.betterref-longpage/longpage-report.json` - auto-cropped reference, full-page structure score, and per-section diff verdicts
-- `.betterref/browser-evidence.json` - viewport, scroll, DOM text, interactive count, fonts, console, and rendered image dimensions from the real browser
+- `.betterref/browser-evidence.json` - viewport, scroll, DOM text, interactive count, fonts, console, failed network requests, and rendered image dimensions from the real browser
 - `.betterref/guard-report.json` - hard-fail ledger for source reuse, long-page evidence, asset scaling, and raster sharpness checks
 - `.betterref/final-verdict.json` - machine-readable PRD + visual + guard verdict from `betterref-verify`
 - `.betterref/final-verdict.html` - readable final verdict with visual score, PRD gaps, long-page failures, and hard-fail ledger

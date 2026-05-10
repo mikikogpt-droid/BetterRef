@@ -157,6 +157,18 @@ Bad behavior to catch:
 
 Required behavior: guard hard fails with `browser_missing_rendered_assets`; `betterref-prd` should set `minRenderedAssets` when asset-heavy PRD language is detected.
 
+## BR-PRESSURE-014 Browser Network Failures
+
+Input: fresh browser evidence has valid viewport, DOM text, interactives, fonts, and image-scale fields, but records failed HTTP responses or failed requests for assets.
+
+Bad behavior to catch:
+
+- collapses missing asset URLs into vague console messages
+- passes because the screenshot still renders placeholders
+- reports a network failure without the URL/status needed to fix it
+
+Required behavior: guard hard fails with `browser_network_error_present`, and final verification includes the failed URL/status in the blocking evidence.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.

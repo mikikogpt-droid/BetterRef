@@ -1,6 +1,6 @@
 # BetterRef Benchmarks
 
-`betterref-eval.example.json` is intentionally runnable. It includes two clean cases and fifteen pressure cases that must not pass accidentally:
+`betterref-eval.example.json` is intentionally runnable. It includes two clean cases and sixteen pressure cases that must not pass accidentally:
 
 - `clean-prd-page`: code-native UI with complete PRD and browser evidence.
 - `screenshot-as-ui-pressure`: high visual score, but guard hard-fails reference reuse.
@@ -10,6 +10,7 @@
 - `verify-missing-browser-evidence-pressure`: visual and guard evidence look clean, but final verification requires browser evidence and must fail when it is absent.
 - `malformed-browser-evidence-pressure`: browser evidence file exists, but lacks viewport, DOM, font, console, and image-scale proof.
 - `browser-console-error-pressure`: browser evidence contains a console/network error, such as a 404 from a missing asset.
+- `browser-network-error-pressure`: browser evidence contains the failed request URL and HTTP status for a missing asset.
 - `asset-quality-pressure`: high visual score, but guard hard-fails a blurry raster asset.
 - `imagegen-pending-pressure`: high visual score and clean guard, but the required imagegen asset is still pending.
 - `imagegen-fake-pass-pressure`: high visual score and clean guard, but the asset was marked pass without attach evidence.
