@@ -194,6 +194,33 @@ test('betterref-prd allows config output outside the artifact directory', async 
   assert.equal(config.regions.some((region) => region.name === 'footer'), true);
 });
 
+test('betterref-prd infers canonical screens without noisy requirement lines', async () => {
+  const dir = await makeCase('canonical-screens');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(dir, 'prd-out');
+  await writePdf(pdf, [
+    'Page Purpose Core Modules',
+    'Homepage Build first impression with hero 3D and quick top-up cards.',
+    'Catalog Let users find all games and wallet items.',
+    'Checkout Let customers pay quickly with packages and payment methods.',
+    'Account Dashboard Customers can track recent orders, saved IDs, favorites, and quick reorder.',
+    'Promotions & Rewards show gift boxes and discount campaigns.'
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.deepEqual(summary.screens, ['Homepage', 'Catalog', 'Checkout', 'Promotions', 'Account Dashboard']);
+});
+
 test('betterref-prd keeps code-native visual behavior out of the imagegen asset plan', async () => {
   const dir = await makeCase('asset-extraction');
   const pdf = path.join(dir, 'prd.pdf');
