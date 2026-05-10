@@ -107,3 +107,55 @@ test('betterref-longpage auto-crops browser chrome and diffs full page plus sect
   assert.ok((await readFile(path.join(out, 'reference-sections', 'header.png'))).length > 0);
   assert.ok((await readFile(path.join(out, 'longpage-report.json'))).length > 0);
 });
+
+test('betterref-longpage reports out-of-bounds section clips instead of aborting', async () => {
+  const dir = await makeCase('section-out-of-bounds');
+  const reference = path.join(dir, 'reference.svg');
+  const actualFull = path.join(dir, 'actual-full.svg');
+  const sectionDir = path.join(dir, 'sections');
+  const out = path.join(dir, 'out');
+  await mkdir(sectionDir, { recursive: true });
+
+  await writeFile(reference, svg(100, 60, [
+    '<rect x="0" y="0" width="100" height="60" fill="#111111"/>'
+  ]));
+  await writeFile(actualFull, svg(100, 80, [
+    '<rect x="0" y="0" width="100" height="80" fill="#111111"/>'
+  ]));
+  const footer = path.join(sectionDir, 'footer.svg');
+  await writeFile(footer, svg(100, 30, ['<rect x="0" y="0" width="100" height="30" fill="#111111"/>']));
+
+  const evidence = path.join(dir, 'browser-evidence.json');
+  await writeFile(evidence, JSON.stringify({
+    viewport: { width: 100, height: 40 },
+    page: { scrollHeight: 80 },
+    fullPageScreenshotPath: actualFull,
+    sectionScreenshotPaths: [
+      { name: 'footer', path: footer, clip: { x: 0, y: 50, width: 100, height: 30, scale: 1 } }
+    ]
+  }, null, 2));
+
+  const result = spawnSync(process.execPath, [
+    longpageBin,
+    '--ref',
+    reference,
+    '--actual-full',
+    actualFull,
+    '--browser-evidence',
+    evidence,
+    '--out',
+    out,
+    '--crop-reference',
+    'none',
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
+  assert.equal(payload.sections.length, 1);
+  assert.equal(payload.sections[0].passed, false);
+  assert.match(payload.sections[0].error, /outside the cropped reference bounds/);
+  assert.match(payload.verdict.hardFailHints[0], /section footer failed/);
+  assert.ok((await readFile(path.join(out, 'longpage-report.json'))).length > 0);
+});

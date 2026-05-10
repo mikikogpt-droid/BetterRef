@@ -1,0 +1,24 @@
+{
+  "passed": false,
+  "hardFailPresent": true,
+  "fullPageStructure": {
+    "passed": true,
+    "score": 97
+  },
+  "sections": [
+    {
+      "name": "footer",
+      "passed": false,
+      "score": 0,
+      "error": "footer clip is outside the cropped reference bounds."
+    }
+  ],
+  "verdict": {
+    "verdict": "fail",
+    "score": 49,
+    "hard_fail_present": true,
+    "hardFailHints": [
+      "section footer failed: footer clip is outside the cropped reference bounds."
+    ]
+  }
+}

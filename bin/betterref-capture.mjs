@@ -16,6 +16,8 @@ Options:
   --viewport <WxH>       Browser viewport. Default: 1440x900
   --device-scale <n>     Device scale factor. Default: 1
   --full-page            Capture the full page instead of the viewport.
+  --section-screenshots  Also capture one screenshot per measured selector.
+  --selector <name=css>  Section selector for --section-screenshots. Repeatable.
   --wait-until <state>   Playwright goto wait state. Default: load
   --timeout <ms>         Navigation timeout. Default: 30000
   --max-changed <n>      Maximum changed pixel percent for diff. Default: 2
@@ -31,12 +33,54 @@ Options:
   --help                 Show this help.
 `;
 
+const defaultSelectors = [
+  { name: 'header', selector: 'header,[role="banner"],.header,.site-header' },
+  { name: 'nav', selector: 'nav,[role="navigation"]' },
+  { name: 'hero', selector: '[data-betterref="hero"],.hero,[class*="hero"]' },
+  { name: 'main', selector: 'main,[role="main"]' },
+  { name: 'footer', selector: 'footer,[role="contentinfo"]' }
+];
+
 function failUsage(message) {
   if (message) {
     console.error(message);
   }
   console.error(usage);
   process.exit(2);
+}
+
+function asArray(value) {
+  if (value === undefined) {
+    return [];
+  }
+  return Array.isArray(value) ? value : [value];
+}
+
+function slugName(value) {
+  return String(value || 'section')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'section';
+}
+
+function parseSelectorSpecs(values) {
+  const items = asArray(values);
+  if (items.length === 0) {
+    return defaultSelectors;
+  }
+
+  return items.map((item) => {
+    const text = String(item);
+    const separator = text.indexOf('=');
+    if (separator <= 0 || separator === text.length - 1) {
+      throw new Error('--selector must use name=css format.');
+    }
+    return {
+      name: text.slice(0, separator).trim(),
+      selector: text.slice(separator + 1).trim()
+    };
+  });
 }
 
 function parseViewport(value) {
@@ -76,7 +120,76 @@ async function loadPlaywright() {
   }
 }
 
-async function collectBrowserEvidence(page, { screenshotPath, fullPageScreenshotPath }) {
+async function captureSectionScreenshots(page, selectorSpecs, outDir) {
+  const sectionDir = path.join(outDir, 'sections');
+  await mkdir(sectionDir, { recursive: true });
+  const sections = [];
+
+  for (const spec of selectorSpecs) {
+    const handles = await page.$$(spec.selector);
+    for (const [index, handle] of handles.entries()) {
+      const name = index === 0 ? spec.name : `${spec.name}-${index + 1}`;
+      let measured;
+      if (typeof handle.evaluate === 'function') {
+        measured = await handle.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            boundingBox: {
+              x: rect.x,
+              y: rect.y,
+              width: rect.width,
+              height: rect.height
+            },
+            absoluteBox: {
+              x: rect.x + window.scrollX,
+              y: rect.y + window.scrollY,
+              width: rect.width,
+              height: rect.height
+            },
+            tagName: element.tagName,
+            text: (element.innerText || element.textContent || '').trim().slice(0, 120)
+          };
+        });
+      } else if (typeof handle.boundingBox === 'function') {
+        const box = await handle.boundingBox();
+        measured = {
+          boundingBox: box,
+          absoluteBox: box,
+          tagName: null,
+          text: ''
+        };
+      }
+
+      const box = measured?.absoluteBox || measured?.boundingBox;
+      if (!box?.width || !box?.height) {
+        continue;
+      }
+
+      const sectionPath = path.join(sectionDir, `${slugName(name)}.png`);
+      await handle.screenshot({ path: sectionPath });
+      sections.push({
+        name,
+        selector: spec.selector,
+        path: sectionPath,
+        clip: {
+          x: Math.max(0, box.x),
+          y: Math.max(0, box.y),
+          width: Math.max(1, box.width),
+          height: Math.max(1, box.height),
+          scale: 1
+        },
+        boundingBox: measured?.boundingBox || null,
+        absoluteBox: measured?.absoluteBox || box,
+        tagName: measured?.tagName || null,
+        text: measured?.text || ''
+      });
+    }
+  }
+
+  return sections;
+}
+
+async function collectBrowserEvidence(page, { screenshotPath, fullPageScreenshotPath, sectionScreenshotPaths }) {
   const evidence = await page.evaluate(() => {
     const doc = document.documentElement;
     const body = document.body;
@@ -152,6 +265,8 @@ async function collectBrowserEvidence(page, { screenshotPath, fullPageScreenshot
     network: {
       errors: Array.isArray(page.__betterrefNetwork) ? page.__betterrefNetwork : []
     },
+    sectionScreenshotPaths: Array.isArray(sectionScreenshotPaths) ? sectionScreenshotPaths : [],
+    elements: Array.isArray(sectionScreenshotPaths) ? sectionScreenshotPaths : [],
     screenshotPath,
     fullPageScreenshotPath
   };
@@ -183,6 +298,12 @@ async function main() {
   } catch (error) {
     failUsage(error.message);
   }
+  let selectorSpecs;
+  try {
+    selectorSpecs = parseSelectorSpecs(values.selector);
+  } catch (error) {
+    failUsage(error.message);
+  }
 
   const { chromium } = await loadPlaywright();
   await mkdir(outDir, { recursive: true });
@@ -190,6 +311,7 @@ async function main() {
   const screenshotPath = path.join(outDir, 'screenshot.png');
   const browserEvidencePath = path.join(outDir, 'browser-evidence.json');
   const fullPage = flags.has('full-page');
+  const sectionScreenshots = flags.has('section-screenshots');
   const browser = await chromium.launch({ headless: true });
   let browserEvidence;
   try {
@@ -242,9 +364,13 @@ async function main() {
       path: screenshotPath,
       fullPage
     });
+    const sectionScreenshotPaths = sectionScreenshots
+      ? await captureSectionScreenshots(page, selectorSpecs, outDir)
+      : [];
     browserEvidence = await collectBrowserEvidence(page, {
       screenshotPath,
-      fullPageScreenshotPath: fullPage ? screenshotPath : null
+      fullPageScreenshotPath: fullPage ? screenshotPath : null,
+      sectionScreenshotPaths
     });
     await writeFile(browserEvidencePath, `${JSON.stringify(browserEvidence, null, 2)}\n`);
     await context.close();
@@ -261,6 +387,7 @@ async function main() {
     screenshotPath,
     browserEvidencePath,
     fullPageScreenshotPath: fullPage ? screenshotPath : null,
+    sectionScreenshotPaths: browserEvidence?.sectionScreenshotPaths || [],
     diff: null
   };
 
@@ -286,6 +413,9 @@ async function main() {
   } else {
     console.log(`[betterref-capture] screenshot=${screenshotPath}`);
     console.log(`[betterref-capture] browser-evidence=${browserEvidencePath}`);
+    for (const section of result.sectionScreenshotPaths || []) {
+      console.log(`[betterref-capture] section=${section.name}:${section.path}`);
+    }
     if (result.diff) {
       console.log(`[betterref-capture] diff-report=${result.diff.artifacts.reportPath}`);
     }

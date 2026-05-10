@@ -21,6 +21,13 @@ npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-
 
 This writes `.betterref/chrome-full-page.png`, `.betterref/sections/*.png`, `.betterref/chrome-dom-boxes.json`, `.betterref/browser-evidence.json`, and `.betterref-longpage/longpage-report.json`.
 
+When Chrome CDP is not available but Playwright is installed in the project, use the no-CDP capture path:
+
+```bash
+npx betterref-capture --url http://127.0.0.1:3000 --out .betterref --viewport 1440x900 --full-page --section-screenshots --selector hero=[data-betterref="hero"] --selector footer=footer
+npx betterref-longpage --ref reference.png --actual-full .betterref/screenshot.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
+```
+
 ## Minimum Sections
 
 - `header + hero`

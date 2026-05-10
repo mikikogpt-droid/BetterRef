@@ -35,6 +35,17 @@
       }
     },
     {
+      "id": "longpage-out-of-bounds-section-pressure",
+      "report": "fixtures/longpage-out-of-bounds/report.json",
+      "guard": "fixtures/longpage-out-of-bounds/guard-report.json",
+      "longpage": "fixtures/longpage-out-of-bounds/longpage-report.json",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "blockingReasonIncludes": ["long-page section footer"]
+      }
+    },
+    {
       "id": "longpage-mode-object-clean",
       "report": "fixtures/longpage-mode-object/report.json",
       "guardConfig": "fixtures/longpage-mode-object/guard-config.json",

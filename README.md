@@ -120,10 +120,10 @@ Capture a local page and diff it in one command when Playwright is installed:
 ```bash
 npm install -D playwright
 npx playwright install chromium
-npx betterref-capture --url http://127.0.0.1:3000/ --ref reference.png --out .betterref --viewport 1440x900 --full-page --html
+npx betterref-capture --url http://127.0.0.1:3000/ --ref reference.png --out .betterref --viewport 1440x900 --full-page --section-screenshots --html
 ```
 
-`betterref-capture` resolves Playwright from the current project first, then writes `.betterref/screenshot.png` and `.betterref/browser-evidence.json` with viewport, scroll, DOM text length, interactive count, font state, console messages, failed network request URLs/statuses, `<img>` dimensions, and CSS background assets. This is the no-CDP path for local dogfooding; pass the browser evidence into `betterref-guard` and `betterref-verify`.
+`betterref-capture` resolves Playwright from the current project first, then writes `.betterref/screenshot.png`, optional `.betterref/sections/*.png`, and `.betterref/browser-evidence.json` with viewport, scroll, DOM text length, interactive count, font state, console messages, failed network request URLs/statuses, section screenshot paths/clips, `<img>` dimensions, and CSS background assets. This is the no-CDP path for local dogfooding; pass the browser evidence into `betterref-longpage`, `betterref-guard`, and `betterref-verify`.
 
 Keep strict native viewport comparison for final gates. If a real browser capture is off by device scale or output size, use diagnostic normalization only to understand the mismatch, then re-capture at the correct viewport before claiming pass.
 

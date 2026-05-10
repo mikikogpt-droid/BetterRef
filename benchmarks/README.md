@@ -1,10 +1,11 @@
 # BetterRef Benchmarks
 
-`betterref-eval.example.json` is intentionally runnable. It includes two clean cases and sixteen pressure cases that must not pass accidentally:
+`betterref-eval.example.json` is intentionally runnable. It includes two clean cases and seventeen pressure cases that must not pass accidentally:
 
 - `clean-prd-page`: code-native UI with complete PRD and browser evidence.
 - `screenshot-as-ui-pressure`: high visual score, but guard hard-fails reference reuse.
 - `longpage-section-pressure`: high first-pass score, but long-page section comparison fails.
+- `longpage-out-of-bounds-section-pressure`: section evidence exists, but a section clip falls outside the cropped reference bounds.
 - `longpage-mode-object-clean`: full-page report mode metadata is emitted as an object and the benchmark runs `betterref-guard` from `guardConfig`.
 - `missing-browser-evidence-pressure`: high visual score, but required browser evidence is missing.
 - `verify-missing-browser-evidence-pressure`: visual and guard evidence look clean, but final verification requires browser evidence and must fail when it is absent.

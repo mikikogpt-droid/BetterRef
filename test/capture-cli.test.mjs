@@ -65,6 +65,19 @@ exports.chromium = {
         return {
           async newPage() {
             const handlers = {};
+            const sectionHandle = {
+              async evaluate() {
+                return {
+                  boundingBox: { x: 0, y: 20, width: 320, height: 180 },
+                  absoluteBox: { x: 0, y: 120, width: 320, height: 180 },
+                  tagName: 'SECTION',
+                  text: 'Hero'
+                };
+              },
+              async screenshot({ path }) {
+                await fs.writeFile(path, Buffer.from('section'));
+              }
+            };
             const page = {
               __betterrefConsole: [],
               __betterrefNetwork: [],
@@ -84,6 +97,9 @@ exports.chromium = {
               },
               async screenshot({ path }) {
                 await fs.writeFile(path, Buffer.from('png'));
+              },
+              async $$(selector) {
+                return selector.includes('hero') ? [sectionHandle] : [];
               },
               async evaluate() {
                 return {
@@ -114,6 +130,9 @@ exports.chromium = {
     '--out',
     out,
     '--full-page',
+    '--section-screenshots',
+    '--selector',
+    'hero=[data-betterref="hero"]',
     '--json'
   ], {
     cwd: project,
@@ -124,11 +143,13 @@ exports.chromium = {
   const payload = JSON.parse(result.stdout);
   assert.match(payload.browserEvidencePath, /browser-evidence\.json$/);
   assert.match(payload.fullPageScreenshotPath, /screenshot\.png$/);
+  assert.match(payload.sectionScreenshotPaths[0].path, /sections[\\/]hero\.png$/);
   const evidence = JSON.parse(await readFile(path.join(out, 'browser-evidence.json'), 'utf8'));
   assert.equal(evidence.page.bodyTextLength, 128);
   assert.equal(evidence.images[0].naturalWidth, 1920);
   assert.equal(evidence.assets.rendered[0].sourceType, 'css-background');
   assert.equal(evidence.network.errors[0].status, 404);
   assert.match(evidence.network.errors[0].url, /missing-hero\.png/);
+  assert.equal(evidence.sectionScreenshotPaths[0].clip.y, 120);
   assert.match(evidence.fullPageScreenshotPath, /screenshot\.png$/);
 });
