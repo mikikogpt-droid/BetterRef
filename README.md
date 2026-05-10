@@ -37,6 +37,14 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.jso
 
 This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed.
 
+Audit hard fails that numeric visual scores cannot prove:
+
+```bash
+npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --out .betterref/guard-report.json
+```
+
+Use `betterref-guard` before any final pass claim. It can fail screenshot-as-UI source usage, long-page references missing scroll/section evidence, reported hard fails, failed visual reports, and rendered image assets that are larger than their native dimensions.
+
 Generate semantic regions from DOM boxes captured by Chrome MCP or browser tooling:
 
 ```bash
@@ -72,13 +80,7 @@ npx playwright install chromium
 npx betterref-capture --url http://127.0.0.1:3000/ --ref reference.png --out .betterref --viewport 1440x900
 ```
 
-If a real browser capture is off by device scale or viewport output size, keep strict mode for final gates but use this for diagnosis:
-
-```bash
-npx betterref-diff --ref reference.png --actual screenshot.png --out .betterref --match-size reference --regions both --html
-```
-
-`--match-size reference` resizes the actual image to the reference dimensions before scoring, records the original and compared dimensions, and writes `actual-compared.png` for the HTML overlay. Default mode remains `strict`, so accidental viewport mismatch is still a hard fail unless explicitly normalized.
+Keep strict native viewport comparison for final gates. If a real browser capture is off by device scale or output size, use diagnostic normalization only to understand the mismatch, then re-capture at the correct viewport before claiming pass.
 
 ## Chrome MCP Workflow
 
@@ -131,6 +133,7 @@ For visual PDF review, render the PRD pages with Poppler or the local PDF skill 
 Outputs:
 
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
+- `.betterref/guard-report.json` - hard-fail ledger for source reuse, long-page evidence, and asset scaling checks
 - `.betterref/diff.png` - pixel hotspot image for the next UI patch
 - `.betterref/report.html` - optional visual report with reference/current/diff and region table
 

@@ -5,6 +5,7 @@
   "type": "module",
   "private": false,
   "bin": {
+    "betterref-guard": "./bin/betterref-guard.mjs",
     "betterref-chrome": "./bin/betterref-chrome.mjs",
     "betterref-prd": "./bin/betterref-prd.mjs",
     "betterref-diff": "./bin/betterref-diff.mjs",
@@ -15,7 +16,8 @@
     "SKILL.md",
     "agents",
     "bin",
-    "lib"
+    "lib",
+    "references"
   ],
   "scripts": {
     "test": "node --test"
