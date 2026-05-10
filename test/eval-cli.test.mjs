@@ -198,6 +198,104 @@ test('betterref-eval includes asset plans in imagegen pressure expectations', as
   assert.ok(report.cases[0].actual.blockingReasons.some((item) => item.includes('asset plan item asset-001 is pending')));
 });
 
+test('betterref-eval can pressure-check asset plan extraction false positives', async () => {
+  const dir = await makeCase('assetplan-lint-pressure');
+  const visual = path.join(dir, 'visual.json');
+  const guard = path.join(dir, 'guard.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const manifest = path.join(dir, 'manifest.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pending',
+        role: 'cinematic-hero',
+        requirement: '3D Asset Rules: hero premium glass device frame with static fallback image.',
+        targetPath: 'public/betterref-assets/hero.png'
+      },
+      {
+        id: 'asset-002',
+        status: 'pending',
+        role: 'game-card-art',
+        requirement: 'Image: game or wallet card art.',
+        targetPath: 'public/betterref-assets/game-card.png'
+      }
+    ]
+  });
+  await writeJson(manifest, {
+    cases: [
+      {
+        id: 'prd-imagegen-false-positive-pressure',
+        report: 'visual.json',
+        guard: 'guard.json',
+        assetPlan: 'asset-plan.json',
+        expect: {
+          verdict: 'fail',
+          hardFailPresent: true,
+          assetPlanRequiredRequirementIncludes: ['3D Asset Rules', 'Image: game or wallet card art'],
+          assetPlanForbiddenRequirementIncludes: ['Header sticky', 'hover with image zoom', 'Fallback:']
+        }
+      }
+    ]
+  });
+
+  const result = runEval(['--manifest', manifest, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.passed, true);
+  assert.equal(report.cases[0].actual.assetPlan.assetCount, 2);
+  assert.deepEqual(report.cases[0].actual.assetPlan.roles, ['cinematic-hero', 'game-card-art']);
+});
+
+test('betterref-eval fails asset plan lint when code-native behavior leaks into imagegen tasks', async () => {
+  const dir = await makeCase('assetplan-lint-fail');
+  const visual = path.join(dir, 'visual.json');
+  const guard = path.join(dir, 'guard.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const manifest = path.join(dir, 'manifest.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pending',
+        requirement: 'Header sticky on desktop after scroll through hero.',
+        targetPath: 'public/betterref-assets/sticky.png'
+      }
+    ]
+  });
+  await writeJson(manifest, {
+    cases: [
+      {
+        id: 'prd-imagegen-false-positive-pressure',
+        report: 'visual.json',
+        guard: 'guard.json',
+        assetPlan: 'asset-plan.json',
+        expect: {
+          verdict: 'pass',
+          hardFailPresent: false,
+          assetPlanForbiddenRequirementIncludes: ['Header sticky']
+        }
+      }
+    ]
+  });
+
+  const result = runEval(['--manifest', manifest, '--json']);
+
+  assert.equal(result.status, 1);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.passed, false);
+  assert.match(report.cases[0].mismatches.join('\n'), /expected asset plan requirements not to include Header sticky/);
+});
+
 test('betterref-eval passes project directories through to verify asset files', async () => {
   const dir = await makeCase('assetplan-project-pressure');
   const visual = path.join(dir, 'visual.json');
@@ -345,8 +443,8 @@ test('bundled benchmark example is executable', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.passed, true);
-  assert.equal(report.summary.total, 19);
-  assert.equal(report.summary.matched, 19);
+  assert.equal(report.summary.total, 20);
+  assert.equal(report.summary.matched, 20);
 });
 
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {

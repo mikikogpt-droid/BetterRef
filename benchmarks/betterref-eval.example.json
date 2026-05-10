@@ -222,6 +222,25 @@
       }
     },
     {
+      "id": "prd-imagegen-false-positive-pressure",
+      "report": "fixtures/clean/report.json",
+      "guard": "fixtures/clean/guard-report.json",
+      "assetPlan": "fixtures/prd-imagegen-false-positive/asset-plan.json",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "assetPlanRequiredRequirementIncludes": [
+          "3D Asset Rules",
+          "Image: game or wallet card art"
+        ],
+        "assetPlanForbiddenRequirementIncludes": [
+          "Header sticky",
+          "hover with image zoom",
+          "Fallback:"
+        ]
+      }
+    },
+    {
       "id": "missing-rendered-assets-pressure",
       "report": "fixtures/missing-rendered-assets/report.json",
       "guard": "fixtures/missing-rendered-assets/guard-report.json",

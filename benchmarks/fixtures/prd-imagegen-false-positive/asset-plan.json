@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "betterref.asset.plan.v1",
+  "imagegenRequired": true,
+  "assets": [
+    {
+      "id": "asset-001",
+      "status": "pending",
+      "role": "cinematic-hero",
+      "requirement": "3D Asset Rules: hero premium glass device frame with static fallback image.",
+      "targetPath": "public/betterref-assets/hero.png"
+    },
+    {
+      "id": "asset-002",
+      "status": "pending",
+      "role": "game-card-art",
+      "requirement": "Image: game or wallet card art.",
+      "targetPath": "public/betterref-assets/game-card.png"
+    }
+  ]
+}
