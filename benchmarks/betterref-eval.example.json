@@ -62,6 +62,18 @@
       }
     },
     {
+      "id": "imagegen-missing-file-pressure",
+      "report": "fixtures/imagegen-missing-file/report.json",
+      "guard": "fixtures/imagegen-missing-file/guard-report.json",
+      "assetPlan": "fixtures/imagegen-missing-file/asset-plan.json",
+      "project": "fixtures/imagegen-missing-file/project",
+      "require": "assetplan",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true
+      }
+    },
+    {
       "id": "missing-mobile-prd-pressure",
       "report": "fixtures/missing-mobile/report.json",
       "guard": "fixtures/missing-mobile/guard-report.json",

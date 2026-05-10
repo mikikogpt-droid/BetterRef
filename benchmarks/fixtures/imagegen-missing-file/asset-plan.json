@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "betterref.asset.plan.v1",
+  "imagegenRequired": true,
+  "assets": [
+    {
+      "id": "asset-001",
+      "status": "pass",
+      "requirement": "Generated hero metadata is not enough; the project asset file must exist.",
+      "targetPath": "public/betterref-assets/hero-cinematic.png",
+      "generatedPath": "public/betterref-assets/hero-cinematic.png",
+      "nativeWidth": 1920,
+      "nativeHeight": 1080,
+      "measuredSharpness": 25,
+      "minNativeWidth": 1920,
+      "minNativeHeight": 1080,
+      "minSharpness": 20,
+      "verifiedAt": "2026-05-10T00:00:00.000Z",
+      "verification": "betterref-imagegen attach"
+    }
+  ]
+}

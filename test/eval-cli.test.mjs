@@ -163,6 +163,60 @@ test('betterref-eval includes asset plans in imagegen pressure expectations', as
   assert.ok(report.cases[0].actual.blockingReasons.some((item) => item.includes('asset plan item asset-001 is pending')));
 });
 
+test('betterref-eval passes project directories through to verify asset files', async () => {
+  const dir = await makeCase('assetplan-project-pressure');
+  const visual = path.join(dir, 'visual.json');
+  const guard = path.join(dir, 'guard.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const manifest = path.join(dir, 'manifest.json');
+  await mkdir(path.join(dir, 'project'), { recursive: true });
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pass',
+        requirement: 'Generated hero file must exist in the project.',
+        targetPath: 'public/betterref-assets/hero.png',
+        generatedPath: 'public/betterref-assets/hero.png',
+        nativeWidth: 1920,
+        nativeHeight: 1080,
+        measuredSharpness: 25,
+        minNativeWidth: 1920,
+        minNativeHeight: 1080,
+        minSharpness: 20,
+        verifiedAt: '2026-05-10T00:00:00.000Z',
+        verification: 'betterref-imagegen attach'
+      }
+    ]
+  });
+  await writeJson(manifest, {
+    cases: [
+      {
+        id: 'imagegen-missing-file-pressure',
+        report: 'visual.json',
+        guard: 'guard.json',
+        assetPlan: 'asset-plan.json',
+        project: 'project',
+        require: 'assetplan',
+        expect: { verdict: 'fail', hardFailPresent: true }
+      }
+    ]
+  });
+
+  const result = runEval(['--manifest', manifest, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.passed, true);
+  assert.equal(report.cases[0].actual.verdict, 'fail');
+  assert.equal(report.cases[0].actual.hardFailPresent, true);
+  assert.ok(report.cases[0].actual.blockingReasons.some((item) => item.includes('generated/source asset file is unreadable')));
+});
+
 test('bundled benchmark example is executable', () => {
   const manifest = path.join(repoRoot, 'benchmarks', 'betterref-eval.example.json');
 
@@ -171,8 +225,8 @@ test('bundled benchmark example is executable', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.passed, true);
-  assert.equal(report.summary.total, 7);
-  assert.equal(report.summary.matched, 7);
+  assert.equal(report.summary.total, 8);
+  assert.equal(report.summary.matched, 8);
 });
 
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {
