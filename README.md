@@ -129,16 +129,23 @@ npx betterref-capture --url http://127.0.0.1:3000/ --ref reference.png --out .be
 
 Keep strict native viewport comparison for final gates. If a real browser capture is off by device scale or output size, use diagnostic normalization only to understand the mismatch, then re-capture at the correct viewport before claiming pass.
 
-## Chrome MCP Workflow
+## Chrome Plugin / MCP Workflow
 
-When a Google Chrome MCP server or Chrome plugin is available, it is useful as the browser truth source before running BetterRef:
+When `@chrome` or a Google Chrome MCP server is installed and connected, use it as the primary browser truth source before running BetterRef. Do not treat the absence of a visible `chrome` tool name in the initial tool list as proof that Chrome is unavailable; load the Chrome skill and, if needed, discover `node_repl js` because the Chrome plugin routes browser commands through the bundled browser client.
 
 - capture the same tab the user is actually looking at, instead of a separate headless browser state
 - inspect viewport, zoom, scroll, route, console errors, and DOM bounding boxes before scoring
 - map failing BetterRef regions back to likely UI selectors or panels
 - verify interactive states such as hover, menus, selected tabs, modals, and loaded fonts
 
-Use Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict. When the MCP tools are not exposed to the current agent session, use `betterref-chrome` against Chrome CDP; it captures `chrome-screenshot.png`, can capture `chrome-full-page.png` and per-selector `sections/*.png`, writes `chrome-dom-boxes.json` and `browser-evidence.json`, generates `.betterref.json`, and can run the diff in one command.
+Browser evidence source order:
+
+1. `@chrome` / Chrome plugin extension backend for the user's real Chrome tabs, cookies, extensions, zoom, and active state.
+2. Chrome MCP server when it is exposed as a callable tool.
+3. `betterref-chrome` against Chrome CDP when the extension backend is not available.
+4. `betterref-capture` through project-local Playwright when neither Chrome path is available.
+
+Use `@chrome` or Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict. When the extension/MCP path is not available, use `betterref-chrome` against Chrome CDP; it captures `chrome-screenshot.png`, can capture `chrome-full-page.png` and per-selector `sections/*.png`, writes `chrome-dom-boxes.json` and `browser-evidence.json`, generates `.betterref.json`, and can run the diff in one command.
 
 Recommended handoff shape from Chrome MCP or any browser script:
 
@@ -230,7 +237,7 @@ BetterRef คือ skill และ CLI สำหรับงาน reference-dr
 - Build deterministic UI with code-native components: navigation, text, buttons, cards, forms, layouts, responsive states, and scroll behavior.
 - Use `imagegen` or production source assets for complex raster visuals; attach generated files into `asset-plan.json` before final verification.
 - For long-page references, compare full-page structure and section/viewport states separately. Do not scale the entire page down to fit one viewport.
-- Use browser evidence from Chrome MCP when available; when it is not exposed, use `betterref-chrome` via Chrome CDP or `betterref-capture` via Playwright.
+- Use browser evidence from `@chrome` first when the Chrome extension is connected; when it is not callable, fall back to Chrome MCP, `betterref-chrome` via Chrome CDP, or `betterref-capture` via Playwright in that order.
 - A high visual score is supporting evidence only. PRD compliance, hard-fail ledger, browser evidence, and asset evidence decide the final verdict.
 
 ### Final Verdict Bundle Gate

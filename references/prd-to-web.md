@@ -41,6 +41,15 @@ PDF pages, screenshots, and rendered PRD pages are evidence only. They cannot be
 
 ## Recommended Commands
 
+Use `@chrome` first when the Codex Chrome Extension is connected. The browser truth source for PRD-to-web work should be the user's real Chrome state whenever available: selected tab, route, scroll, zoom, fonts, console/network, DOM boxes, full-page screenshot, and per-section screenshots. If the Chrome plugin skill is present but no explicit Chrome tool appears in the initial tool list, load the Chrome skill and discover `node_repl js`; the extension backend uses the bundled browser client through that runtime.
+
+Fallback order for browser evidence:
+
+1. `@chrome` / Chrome plugin extension backend.
+2. Chrome MCP server, when exposed.
+3. `betterref-chrome` through Chrome CDP.
+4. `betterref-capture` through project-local Playwright.
+
 ```bash
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json

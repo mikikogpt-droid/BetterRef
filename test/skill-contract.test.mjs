@@ -63,12 +63,16 @@ test('README keeps the Thai runbook readable and final bundle gate explicit', as
   assert.match(readme, /Final Verdict Bundle Gate/);
   assert.match(readme, /--require guard,prd,longpage,assetplan,browser/);
   assert.match(readme, /--bundle \.betterref\/evidence-bundle\.json/);
+  assert.match(readme, /@chrome/);
   assert.match(readme, /Chrome MCP/);
   assert.match(readme, /betterref-chrome/);
+  assert.match(readme, /betterref-capture/);
 });
 
 test('PRD runbook requires an auditable final evidence bundle', async () => {
   const runbook = await readFile(path.join(repoRoot, 'references', 'prd-to-web.md'), 'utf8');
+  assert.match(runbook, /@chrome/);
+  assert.match(runbook, /Fallback order for browser evidence/);
   assert.match(runbook, /--require guard,prd,longpage,assetplan,browser/);
   assert.match(runbook, /--browser-evidence \.betterref\/browser-evidence\.json/);
   assert.match(runbook, /--bundle \.betterref\/evidence-bundle\.json/);
