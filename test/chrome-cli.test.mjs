@@ -60,6 +60,7 @@ async function closeServer(server, wss) {
 
 async function makeFakeChrome({ withWebSocket = false } = {}) {
   let port;
+  const commands = [];
   const target = () => ({
     id: 'page-1',
     type: 'page',
@@ -88,6 +89,7 @@ async function makeFakeChrome({ withWebSocket = false } = {}) {
     wss.on('connection', (socket) => {
       socket.on('message', (message) => {
         const command = JSON.parse(message.toString());
+        commands.push(command);
         if (command.method === 'Runtime.evaluate') {
           socket.send(JSON.stringify({
             id: command.id,
@@ -126,12 +128,14 @@ async function makeFakeChrome({ withWebSocket = false } = {}) {
                     {
                       name: 'header',
                       selector: 'header',
-                      boundingBox: { x: 0, y: 0, width: 100, height: 20 }
+                      boundingBox: { x: 0, y: 0, width: 100, height: 20 },
+                      absoluteBox: { x: 0, y: 0, width: 100, height: 20 }
                     },
                     {
                       name: 'hero',
                       selector: '.hero',
-                      boundingBox: { x: 0, y: 20, width: 100, height: 40 }
+                      boundingBox: { x: 0, y: 20, width: 100, height: 40 },
+                      absoluteBox: { x: 0, y: 20, width: 100, height: 40 }
                     }
                   ]
                 }
@@ -152,6 +156,7 @@ async function makeFakeChrome({ withWebSocket = false } = {}) {
   port = await listen(server);
   return {
     endpoint: `http://127.0.0.1:${port}`,
+    commands,
     close: () => closeServer(server, wss)
   };
 }
@@ -229,6 +234,52 @@ test('betterref-chrome captures screenshot and DOM boxes from selected Chrome ta
     assert.equal(config.viewport, '100x80');
     assert.equal(config.regions[0].name, 'header');
     assert.equal(config.regions[1].name, 'hero');
+  } finally {
+    await fakeChrome.close();
+  }
+});
+
+test('betterref-chrome can capture full-page and section screenshots from DOM evidence', async () => {
+  const fakeChrome = await makeFakeChrome({ withWebSocket: true });
+  const out = await makeCase('full-page-sections');
+  try {
+    const result = await runCli([
+      '--endpoint',
+      fakeChrome.endpoint,
+      '--out',
+      out,
+      '--url-match',
+      'dashboard',
+      '--selector',
+      'header=header',
+      '--selector',
+      'hero=.hero',
+      '--full-page',
+      '--section-screenshots',
+      '--json'
+    ]);
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = JSON.parse(result.stdout);
+    assert.match(payload.artifacts.fullPageScreenshotPath, /chrome-full-page\.png$/);
+    assert.equal(payload.artifacts.sectionScreenshotPaths.length, 2);
+    assert.match(payload.artifacts.sectionScreenshotPaths[0].path, /sections[\\/]+header\.png$/);
+    assert.match(payload.artifacts.sectionScreenshotPaths[1].path, /sections[\\/]+hero\.png$/);
+    const fullPage = await readFile(path.join(out, 'chrome-full-page.png'));
+    const header = await readFile(path.join(out, 'sections', 'header.png'));
+    const hero = await readFile(path.join(out, 'sections', 'hero.png'));
+    assert.ok(fullPage.length > 0);
+    assert.ok(header.length > 0);
+    assert.ok(hero.length > 0);
+
+    const screenshots = fakeChrome.commands.filter((command) => command.method === 'Page.captureScreenshot');
+    assert.equal(screenshots.length, 4);
+    assert.equal(screenshots.some((command) => command.params.captureBeyondViewport === true), true);
+    const clips = screenshots.map((command) => command.params.clip).filter(Boolean);
+    assert.deepEqual(clips.map((clip) => [clip.x, clip.y, clip.width, clip.height, clip.scale]), [
+      [0, 0, 100, 20, 1],
+      [0, 20, 100, 40, 1]
+    ]);
   } finally {
     await fakeChrome.close();
   }

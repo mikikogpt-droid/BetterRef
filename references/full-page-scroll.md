@@ -12,6 +12,14 @@ Use `full_page_scroll_reference` when the reference is taller than the target vi
 - Compare sections at native width. If heights differ, report layout drift.
 - Do not hide drift by stretching or squeezing images.
 
+Use Chrome CDP capture when available:
+
+```bash
+npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
+```
+
+This writes `.betterref/chrome-full-page.png`, `.betterref/sections/*.png`, `.betterref/chrome-dom-boxes.json`, and `.betterref/browser-evidence.json`.
+
 ## Minimum Sections
 
 - `header + hero`

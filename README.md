@@ -18,6 +18,8 @@ npx betterref-chrome \
   --out .betterref \
   --selector header=header \
   --selector hero='[data-betterref="hero"]' \
+  --full-page \
+  --section-screenshots \
   --ref reference.png \
   --regions both \
   --html
@@ -111,7 +113,7 @@ When a Google Chrome MCP server or Chrome plugin is available, it is useful as t
 - map failing BetterRef regions back to likely UI selectors or panels
 - verify interactive states such as hover, menus, selected tabs, modals, and loaded fonts
 
-Use Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict. When the MCP tools are not exposed to the current agent session, use `betterref-chrome` against Chrome CDP; it captures `chrome-screenshot.png`, writes `chrome-dom-boxes.json` and `browser-evidence.json`, generates `.betterref.json`, and can run the diff in one command.
+Use Chrome MCP for state and DOM evidence, then run `betterref-diff` on the captured screenshot for the numeric verdict. When the MCP tools are not exposed to the current agent session, use `betterref-chrome` against Chrome CDP; it captures `chrome-screenshot.png`, can capture `chrome-full-page.png` and per-selector `sections/*.png`, writes `chrome-dom-boxes.json` and `browser-evidence.json`, generates `.betterref.json`, and can run the diff in one command.
 
 Recommended handoff shape from Chrome MCP or any browser script:
 
@@ -152,7 +154,7 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.jso
 Then use the generated runbook:
 
 ```bash
-npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --ref reference.png --regions both --html
+npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
 npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --prd .betterref-prd/prd-checklist.json --out .betterref/final-verdict.json
 ```
@@ -164,6 +166,7 @@ Outputs:
 - `.betterref-prd/prd-checklist.json` - machine-readable PRD checklist consumed by `betterref-verify`
 - `.betterref-prd/betterref.guard.json` - generated guard config for source reuse, long-page, DOM, and asset checks
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
+- `.betterref/chrome-full-page.png` and `.betterref/sections/*.png` - native browser evidence for long-page and section review when requested
 - `.betterref/browser-evidence.json` - viewport, scroll, DOM text, interactive count, fonts, console, and rendered image dimensions from the real browser
 - `.betterref/guard-report.json` - hard-fail ledger for source reuse, long-page evidence, and asset scaling checks
 - `.betterref/final-verdict.json` - single PRD + visual + guard verdict from `betterref-verify`

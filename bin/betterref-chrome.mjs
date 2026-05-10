@@ -15,6 +15,8 @@ Options:
   --title-match <text>   Select the first target whose title contains text.
   --selector <name=css>  DOM region selector. Repeatable. Defaults to common layout selectors.
   --wait-ms <n>          Wait before measuring/capturing. Default: 0
+  --full-page            Also capture a native full-page screenshot.
+  --section-screenshots  Also capture one screenshot per measured selector.
   --ref, --reference     Optional reference image path. If provided, diff immediately.
   --merge-config <path>  Existing .betterref.json to preserve thresholds and ignoreRegions.
   --regions <mode>       Diff region mode: auto, config, or both.
@@ -82,6 +84,8 @@ async function main() {
       regionMode: values.regions,
       html: flags.has('html'),
       matchSize: values['match-size'],
+      fullPage: flags.has('full-page'),
+      sectionScreenshots: flags.has('section-screenshots'),
       maxChangedPercent: numberValue(values['max-changed'], undefined, '--max-changed'),
       maxMeanDiff: numberValue(values['max-mean'], undefined, '--max-mean'),
       minSsim: numberValue(values['min-ssim'], undefined, '--min-ssim'),
@@ -92,6 +96,12 @@ async function main() {
       console.log(JSON.stringify(result, null, 2));
     } else {
       console.log(`[betterref-chrome] screenshot=${result.artifacts.screenshotPath}`);
+      if (result.artifacts.fullPageScreenshotPath) {
+        console.log(`[betterref-chrome] full-page=${result.artifacts.fullPageScreenshotPath}`);
+      }
+      for (const section of result.artifacts.sectionScreenshotPaths || []) {
+        console.log(`[betterref-chrome] section=${section.name}:${section.path}`);
+      }
       console.log(`[betterref-chrome] dom-boxes=${result.artifacts.domBoxesPath}`);
       console.log(`[betterref-chrome] config=${result.artifacts.configPath}`);
       if (result.diff) {
