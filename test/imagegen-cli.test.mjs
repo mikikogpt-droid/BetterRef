@@ -103,6 +103,44 @@ test('betterref-imagegen writes built-in image_gen requests for pending assets',
   assert.match(prompts, /Do not leave project assets under/);
 });
 
+test('betterref-imagegen ignores pending HyperFrames assets', async () => {
+  const dir = await makeCase('skip-hyperframes');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const out = path.join(dir, 'imagegen');
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    hyperframesRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pending',
+        tool: 'hyperframes',
+        implementation: 'hyperframes-composition-rendered-video',
+        role: 'animated-cinematic-hero',
+        targetPath: 'public/betterref-assets/hero-loop.webm',
+        prompt: 'Build a HyperFrames neon logo reveal.'
+      },
+      {
+        id: 'asset-002',
+        status: 'pending',
+        tool: 'image_gen',
+        role: 'game-card-art',
+        targetPath: 'public/betterref-assets/game-card.png',
+        prompt: 'Create game-card art.'
+      }
+    ]
+  });
+
+  const result = runImagegen(['--asset-plan', assetPlan, '--out', out, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.requests.length, 1);
+  assert.equal(payload.requests[0].id, 'asset-002');
+  assert.equal(payload.requests[0].tool, 'image_gen');
+});
+
 test('betterref-imagegen attaches a generated asset and marks the plan item pass', async () => {
   const dir = await makeCase('attach');
   const project = path.join(dir, 'project');

@@ -222,6 +222,20 @@
       }
     },
     {
+      "id": "hyperframes-missing-cli-evidence-pressure",
+      "report": "fixtures/hyperframes-missing-cli-evidence/report.json",
+      "guard": "fixtures/hyperframes-missing-cli-evidence/guard-report.json",
+      "assetPlan": "fixtures/hyperframes-missing-cli-evidence/asset-plan.json",
+      "require": "assetplan",
+      "expect": {
+        "verdict": "fail",
+        "hardFailPresent": true,
+        "blockingReasonIncludes": [
+          "lacks HyperFrames CLI evidence"
+        ]
+      }
+    },
+    {
       "id": "prd-imagegen-false-positive-pressure",
       "report": "fixtures/clean/report.json",
       "guard": "fixtures/clean/guard-report.json",
@@ -323,6 +337,19 @@
       "assetPlan": "fixtures/real-commerce-imagegen-rendered/asset-plan.json",
       "browserEvidence": "fixtures/real-commerce-imagegen-rendered/browser-evidence.json",
       "project": "fixtures/real-commerce-imagegen-rendered/project",
+      "require": "guard,assetplan,browser",
+      "expect": {
+        "verdict": "pass",
+        "hardFailPresent": false
+      }
+    },
+    {
+      "id": "real-cinematic-hyperframes-rendered-pass",
+      "report": "fixtures/real-cinematic-hyperframes-rendered/report.json",
+      "guard": "fixtures/real-cinematic-hyperframes-rendered/guard-report.json",
+      "assetPlan": "fixtures/real-cinematic-hyperframes-rendered/asset-plan.json",
+      "browserEvidence": "fixtures/real-cinematic-hyperframes-rendered/browser-evidence.json",
+      "project": "fixtures/real-cinematic-hyperframes-rendered/project",
       "require": "guard,assetplan,browser",
       "expect": {
         "verdict": "pass",

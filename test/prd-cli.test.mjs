@@ -262,3 +262,50 @@ test('betterref-prd keeps code-native visual behavior out of the imagegen asset 
   assert.equal(prdChecklist.items.some((item) => /sticky/i.test(item.requirement)), true);
   assert.equal(prdChecklist.items.some((item) => /hover/i.test(item.requirement)), true);
 });
+
+test('betterref-prd routes animated cinematic hero assets to HyperFrames', async () => {
+  const dir = await makeCase('hyperframes-asset-extraction');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(dir, 'prd-out');
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Homepage modules: header, animated hero, quick top-up, footer.',
+    'Hero Motion: cinematic 3D logo reveal with neon glow pulse and transparent WebM loop.',
+    'Hero UI text, buttons, top-up cards, and navigation remain code-native React/CSS.',
+    'Game cards hover with CSS image zoom and border glow.'
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.hyperframesRequired, true);
+
+  const guardConfig = JSON.parse(await readFile(path.join(out, 'betterref.guard.json'), 'utf8'));
+  assert.equal(guardConfig.minRenderedAssets, 1);
+  assert.equal(guardConfig.autoAssetQuality, undefined);
+
+  const assetPlan = JSON.parse(await readFile(path.join(out, 'asset-plan.json'), 'utf8'));
+  assert.equal(assetPlan.imagegenRequired, false);
+  assert.equal(assetPlan.hyperframesRequired, true);
+  assert.equal(assetPlan.assets.length, 1);
+  assert.equal(assetPlan.assets[0].tool, 'hyperframes');
+  assert.equal(assetPlan.assets[0].implementation, 'hyperframes-composition-rendered-video');
+  assert.equal(assetPlan.assets[0].role, 'animated-cinematic-hero');
+  assert.match(assetPlan.assets[0].targetPath, /\.webm$/);
+  assert.match(assetPlan.assets[0].prompt, /HyperFrames/i);
+  assert.equal(assetPlan.assets[0].acceptanceCriteria.some((item) => /hyperframes lint/i.test(item)), true);
+  assert.equal(assetPlan.assets.some((asset) => /hover|zoom|border glow/i.test(asset.requirement)), false);
+
+  const runbook = await readFile(path.join(out, 'betterref-runbook.md'), 'utf8');
+  assert.match(runbook, /betterref-hyperframes --asset-plan/);
+  assert.match(runbook, /npx hyperframes lint/);
+  assert.match(runbook, /npx hyperframes render --format webm --quality high/);
+});

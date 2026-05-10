@@ -181,6 +181,30 @@ Bad behavior to catch:
 
 Required behavior: guard hard fails with `browser_network_error_present`, and final verification includes the failed URL/status in the blocking evidence.
 
+## BR-PRESSURE-015 HyperFrames Asset Missing CLI Evidence
+
+Input: `asset-plan.json` has a HyperFrames-required animated hero loop marked `pass`, but the item has no evidence that `npx hyperframes lint`, `npx hyperframes validate`, `npx hyperframes inspect --json`, and `npx hyperframes render --format webm --quality high` passed.
+
+Bad behavior to catch:
+
+- trusts `status: pass` because a `.webm` path exists
+- accepts a manually edited asset plan as motion evidence
+- treats imagegen or a static screenshot as equivalent to a rendered HyperFrames composition
+
+Required behavior: final verdict hard fails with a HyperFrames CLI evidence reason; completion is blocked until `betterref-hyperframes --attach ... --evidence ...` records passing CLI evidence.
+
+## BR-PRESSURE-016 HyperFrames Asset Not Rendered In Browser
+
+Input: a HyperFrames asset has passing CLI evidence and a rendered `.webm` file, but fresh browser evidence has no matching `videos` or `media.rendered` entry for the target asset.
+
+Bad behavior to catch:
+
+- verifies the rendered file but never checks whether the web app uses it
+- leaves the page on a static fallback image while the asset plan says the motion asset passed
+- treats a screenshot with similar colors as proof of animation
+
+Required behavior: final verdict hard fails with `asset_pass_not_rendered` or equivalent until the app renders the HyperFrames video/WebM and fresh browser evidence captures it.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.

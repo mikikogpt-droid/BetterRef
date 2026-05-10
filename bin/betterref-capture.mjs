@@ -204,6 +204,21 @@ async function collectBrowserEvidence(page, { screenshotPath, fullPageScreenshot
         renderedHeight: rect.height || image.clientHeight || 0
       };
     });
+    const videos = Array.from(document.querySelectorAll('video')).map((video) => {
+      const rect = video.getBoundingClientRect();
+      return {
+        src: video.currentSrc || video.src || '',
+        poster: video.poster || '',
+        naturalWidth: video.videoWidth || 0,
+        naturalHeight: video.videoHeight || 0,
+        renderedWidth: rect.width || video.clientWidth || 0,
+        renderedHeight: rect.height || video.clientHeight || 0,
+        muted: video.muted,
+        autoplay: video.autoplay,
+        loop: video.loop,
+        playsInline: video.playsInline
+      };
+    });
     const cssUrlPattern = /url\((['"]?)(.*?)\1\)/gi;
     const backgroundImages = Array.from(document.querySelectorAll('*')).flatMap((element) => {
       const style = getComputedStyle(element);
@@ -253,6 +268,7 @@ async function collectBrowserEvidence(page, { screenshotPath, fullPageScreenshot
         status: document.fonts ? document.fonts.status : 'unsupported'
       },
       images,
+      videos,
       assets: {
         rendered: backgroundImages
       }

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "betterref.asset.plan.v1",
+  "imagegenRequired": false,
+  "hyperframesRequired": true,
+  "assets": [
+    {
+      "id": "asset-001",
+      "status": "pass",
+      "tool": "hyperframes",
+      "implementation": "hyperframes-composition-rendered-video",
+      "role": "animated-cinematic-hero",
+      "requirement": "Animated cinematic 3D hero loop must be rendered from HyperFrames.",
+      "targetPath": "public/betterref-assets/hero-loop.webm",
+      "generatedPath": "public/betterref-assets/hero-loop.webm",
+      "bytes": 16,
+      "verifiedAt": "2026-05-10T00:00:00.000Z",
+      "verification": "betterref-hyperframes attach",
+      "hyperframesEvidence": {
+        "commands": {
+          "lint": {
+            "command": "npx hyperframes lint",
+            "passed": true
+          },
+          "validate": {
+            "command": "npx hyperframes validate",
+            "passed": true
+          },
+          "inspect": {
+            "command": "npx hyperframes inspect --json",
+            "passed": true
+          },
+          "render": {
+            "command": "npx hyperframes render --format webm --quality high",
+            "passed": true
+          }
+        }
+      }
+    }
+  ]
+}

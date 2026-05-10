@@ -664,6 +664,108 @@ test('betterref-verify accepts passed generated assets when browser evidence ren
   assert.equal(verdict.assetPlan.passed, true);
 });
 
+test('betterref-verify fails when a passed HyperFrames asset lacks CLI evidence', async () => {
+  const dir = await makeCase('hyperframes-missing-evidence');
+  const project = path.join(dir, 'project');
+  const assetPath = path.join(project, 'public', 'betterref-assets', 'hero-loop.webm');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  await mkdir(path.dirname(assetPath), { recursive: true });
+  await writeFile(assetPath, Buffer.from('fake-webm-output'));
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    hyperframesRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pass',
+        tool: 'hyperframes',
+        implementation: 'hyperframes-composition-rendered-video',
+        requirement: 'Animated cinematic 3D hero loop.',
+        targetPath: 'public/betterref-assets/hero-loop.webm',
+        generatedPath: 'public/betterref-assets/hero-loop.webm',
+        verifiedAt: '2026-05-10T00:00:00.000Z',
+        verification: 'betterref-hyperframes attach'
+      }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--project', project,
+    '--require', 'assetplan',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.assetPlan.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('lacks HyperFrames CLI evidence')));
+});
+
+test('betterref-verify accepts passed HyperFrames assets with CLI evidence and browser video rendering', async () => {
+  const dir = await makeCase('hyperframes-rendered');
+  const project = path.join(dir, 'project');
+  const assetPath = path.join(project, 'public', 'betterref-assets', 'hero-loop.webm');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const browserEvidence = path.join(dir, 'browser-evidence.json');
+  await mkdir(path.dirname(assetPath), { recursive: true });
+  await writeFile(assetPath, Buffer.from('fake-webm-output'));
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    hyperframesRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pass',
+        tool: 'hyperframes',
+        implementation: 'hyperframes-composition-rendered-video',
+        requirement: 'Animated cinematic 3D hero loop.',
+        targetPath: 'public/betterref-assets/hero-loop.webm',
+        generatedPath: 'public/betterref-assets/hero-loop.webm',
+        verifiedAt: '2026-05-10T00:00:00.000Z',
+        verification: 'betterref-hyperframes attach',
+        bytes: Buffer.byteLength('fake-webm-output'),
+        hyperframesEvidence: {
+          commands: {
+            lint: { command: 'npx hyperframes lint', passed: true },
+            validate: { command: 'npx hyperframes validate', passed: true },
+            inspect: { command: 'npx hyperframes inspect --json', passed: true },
+            render: { command: 'npx hyperframes render --format webm --quality high', passed: true }
+          }
+        }
+      }
+    ]
+  });
+  await writeJson(browserEvidence, {
+    viewport: { width: 1440, height: 900 },
+    page: { scrollHeight: 1200, bodyTextLength: 100, interactiveCount: 4 },
+    fonts: { ready: true, status: 'loaded' },
+    console: [],
+    images: [],
+    videos: [{ src: '/betterref-assets/hero-loop.webm', renderedWidth: 960, renderedHeight: 540 }]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--browser-evidence', browserEvidence,
+    '--project', project,
+    '--require', 'assetplan,browser',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'pass');
+  assert.equal(verdict.assetPlan.passed, true);
+});
+
 test('betterref-verify fails when asset plan native dimensions do not match the project file', async () => {
   const dir = await makeCase('asset-plan-dimension-mismatch');
   const project = path.join(dir, 'project');

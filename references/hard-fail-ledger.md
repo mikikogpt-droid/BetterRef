@@ -24,6 +24,8 @@ The hard-fail ledger is the authority that numeric scores cannot override.
 | `browser_missing_dom_text` | Guard requires DOM text but browser evidence shows none. |
 | `browser_missing_interactive_elements` | Guard requires interactive elements but browser evidence shows too few. |
 | `browser_missing_rendered_assets` | Asset-heavy PRD/browser config requires production image assets, but browser evidence shows too few rendered assets. |
+| `asset_pass_missing_hyperframes_evidence` | A HyperFrames asset is marked pass without passing lint, validate, inspect, and render evidence. |
+| `asset_pass_not_rendered` | A generated/source/HyperFrames asset is marked pass but fresh browser evidence does not show it rendered in the actual app. |
 
 ## Guard Config Example
 
@@ -68,7 +70,7 @@ The hard-fail ledger is the authority that numeric scores cannot override.
 }
 ```
 
-`autoAssetQuality` uses `browser-evidence.json` image URLs and checks matching local files under `public` by default. It skips unresolved external/CDN/data/blob images instead of hard-failing them; add explicit `assetQualityChecks` for assets that cannot be mapped from browser evidence.
+`autoAssetQuality` uses `browser-evidence.json` image URLs and checks matching local files under `public` by default. It skips unresolved external/CDN/data/blob images instead of hard-failing them; add explicit `assetQualityChecks` for assets that cannot be mapped from browser evidence. HyperFrames/video assets are verified from the asset plan's CLI evidence plus `browser-evidence.json` `videos` or `media.rendered` entries, not from raster sharpness checks.
 
 Run:
 

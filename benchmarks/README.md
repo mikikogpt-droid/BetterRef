@@ -19,12 +19,14 @@
 - `imagegen-dimension-mismatch-pressure`: the asset plan metadata claims dimensions that do not match the project asset file.
 - `imagegen-file-sharpness-pressure`: the asset plan metadata claims a sharp asset, but the project asset file is flat/blurry.
 - `imagegen-not-rendered-pressure`: the generated asset file verifies, but browser evidence shows the app is still rendering a placeholder instead.
+- `hyperframes-missing-cli-evidence-pressure`: a HyperFrames motion asset is marked pass but lacks passing lint/validate/inspect/render evidence.
 - `prd-imagegen-false-positive-pressure`: a PRD-derived asset plan keeps sticky/hover/fallback behavior out of imagegen tasks while preserving real 3D hero and game-art assets.
 - `missing-rendered-assets-pressure`: an asset-heavy PRD page has browser evidence, but no rendered production assets at all.
 - `missing-mobile-prd-pressure`: no hard fail, but PRD evidence is incomplete, so the verdict is `revise`.
 - `real-prd-landing-full-evidence-pass`: a full PRD-to-web landing page archetype with visual, guard, PRD, long-page, browser, and rendered asset evidence all present.
 - `real-dashboard-prd-gap-pressure`: an operational dashboard archetype where visual/guard pass but a product requirement remains missing, so the verdict stays `revise`.
 - `real-commerce-imagegen-rendered-pass`: a commerce/card-art archetype where a generated asset is verified, present on disk, and rendered in browser evidence.
+- `real-cinematic-hyperframes-rendered-pass`: a cinematic motion archetype where a HyperFrames-rendered WebM has CLI evidence, exists on disk, and is visible in browser video evidence.
 
 Each pressure case asserts both the verdict and at least one expected blocking-reason substring, so a case cannot pass by failing for an unrelated reason.
 

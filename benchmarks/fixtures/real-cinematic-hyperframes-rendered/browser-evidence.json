@@ -1,0 +1,24 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "page": {
+    "scrollHeight": 1400,
+    "bodyTextLength": 180,
+    "interactiveCount": 5
+  },
+  "fonts": {
+    "ready": true,
+    "status": "loaded"
+  },
+  "console": [],
+  "images": [],
+  "videos": [
+    {
+      "src": "/betterref-assets/hero-loop.webm",
+      "renderedWidth": 960,
+      "renderedHeight": 540
+    }
+  ]
+}

@@ -7,7 +7,7 @@ Use this when a PRD PDF, written product spec, Figma brief, or visual target is 
 - `requirements.md`: product, content, interaction, visual, responsive, and asset requirements.
 - `visual-checklist.md`: each visible area, target viewport, typography, asset class, and pass criteria.
 - `prd-checklist.json`: machine-readable checklist consumed by `betterref-verify`.
-- `asset-plan.json`: machine-readable generated/source asset plan with imagegen prompts, target paths, native-size minimums, and pass/pending status.
+- `asset-plan.json`: machine-readable generated/source asset plan with imagegen and HyperFrames prompts, target paths, native-size or CLI evidence requirements, and pass/pending status.
 - `.betterref.json`: viewport, regions, ignore areas, and thresholds.
 - `betterref.guard.json`: hard-fail config for source scans, long-page mode, asset scaling, rendered asset coverage, and auto raster quality when the PRD mentions hero/image/premium assets.
 - `.betterref/report.json`, `.betterref/browser-evidence.json`, `.betterref/guard-report.json`, `.betterref/final-verdict.json`, `.betterref/final-verdict.html`, and `.betterref/evidence-bundle.json`: final evidence.
@@ -18,10 +18,12 @@ A phase passes only when all are true:
 
 - PRD checklist items assigned to the phase are complete.
 - Real UI is code-native where deterministic UI is required.
-- Complex raster/3D/cinematic visuals are generated or sourced as production assets.
+- Complex static raster/3D/cinematic visuals are generated or sourced as production assets.
+- Animated/cinematic motion visuals are rendered from HyperFrames and attached with passing lint/validate/inspect/render evidence.
 - Fresh browser screenshots exist for desktop and mobile target states.
 - Browser evidence exists for viewport, scroll, fonts, DOM text, interactive elements, console, and image scale.
 - Hero, mascot, cinematic, premium, raster, or other image-heavy assets are checked by `autoAssetQuality` or explicit `assetQualityChecks`.
+- Motion/video assets are visible in browser evidence as `<video>` or equivalent rendered media.
 - BetterRef visual verdict passes the configured threshold.
 - `betterref-guard` passes.
 - No hard-fail ledger item remains.
@@ -33,8 +35,9 @@ Separate requirements before implementation:
 - Product behavior: navigation, flows, forms, auth, payments, search, filtering, states.
 - Content: copy, labels, pricing, game names, promotions, badges, legal text.
 - Visual style: layout, hierarchy, colors, typography, animation, motion density.
-- Asset needs: logo, hero, icons, game art, payments, social proof.
+- Asset needs: logo, hero, icons, game art, payments, social proof, static raster assets, and motion/video assets.
 - Code-native visual behavior: sticky headers, hover zoom, border glow, parallax limits, responsive menus, and fallback-only rules. These belong in `prd-checklist.json`, not `asset-plan.json`.
+- HyperFrames motion needs: animated hero loops, logo reveals, shader transitions, product-tour clips, WebM/MP4 assets. These belong in `asset-plan.json` as HyperFrames tasks, not imagegen tasks.
 - Verification: commands, screenshots, selectors, section names, mobile states.
 
 PDF pages, screenshots, and rendered PRD pages are evidence only. They cannot be shipped as page UI.
@@ -54,6 +57,9 @@ Fallback order for browser evidence:
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --auto-attach-dir .betterref-imagegen/generated --project . --json
+npx betterref-hyperframes --asset-plan .betterref-prd/asset-plan.json --out .betterref-hyperframes --json
+# After authoring/rendering HyperFrames and collecting passing lint/validate/inspect/render evidence:
+npx betterref-hyperframes --asset-plan .betterref-prd/asset-plan.json --attach asset-001=path/to/rendered.webm --evidence path/to/hyperframes-evidence.json --project . --json
 # When evidence comes from @chrome or Chrome MCP handoff JSON:
 npx betterref-chrome-bridge --input .betterref/chrome-handoff.json --out .betterref --config-out .betterref.json --json
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
@@ -67,7 +73,7 @@ npx betterref-verify --report .betterref/report.json --guard .betterref/guard-re
 If you use `betterref-capture --full-page` instead of `betterref-chrome`, pass `.betterref/screenshot.png` as `--actual-full` to `betterref-longpage`. Add repeated `--selector name=css` entries when the app has stable section selectors, for example `--selector hero=[data-betterref="hero"] --selector footer=footer`.
 If you use `@chrome`, export the tab handoff as `.betterref/chrome-handoff.json`, run `betterref-chrome-bridge`, and pass the generated `.betterref/browser-evidence.json` through guard and final verification.
 
-Use tool scores as evidence, not authority. If the PRD says the page must scroll, have working cards, or include a generated hero asset, a high visual score cannot pass a fake or missing implementation.
+Use tool scores as evidence, not authority. If the PRD says the page must scroll, have working cards, include a generated hero asset, or include an animated motion asset, a high visual score cannot pass a fake or missing implementation.
 Use `--require guard,prd,longpage,assetplan,browser` and pass `--browser-evidence .betterref/browser-evidence.json` in final PRD verification so omitted browser evidence and pending generated/source assets fail instead of silently passing.
 
 `betterref-prd` sets `requireBrowserEvidence: true` in the generated guard config. The final phase cannot pass from static screenshots, reports alone, or placeholder browser evidence; final verification requires browser evidence with viewport, scroll, DOM text, interactive count, font, console, and image-scale fields.
@@ -81,14 +87,16 @@ The bundle must include:
 - `inputs`: absolute paths for the reports used to make the verdict.
 - `requiredEvidence`: which evidence classes were required and which, if any, were missing.
 - `browserEvidence`: pass/fail summary and invalid evidence count.
-- `assetPlan`: generated/source asset summary including pending and invalid counts.
+- `assetPlan`: generated/source asset summary including pending, invalid, imagegen-required, and HyperFrames-required counts.
 - `artifacts`: byte sizes and SHA-256 hashes for visual, guard, PRD, long-page, browser, asset-plan, final JSON, and final HTML evidence.
 - `blockingReasons`: the exact reasons the phase is not passable.
 
 A bundle with `verdict.passed: true` is only credible when `requiredEvidence.missing` is empty, `blockingReasons` is empty, `browserEvidence.passed` is true, `assetPlan.passed` is true, and every required artifact is present with a hash. If any one of those checks fails, continue implementation instead of reporting completion.
 
-When PRD text mentions concrete hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered asset work, `betterref-prd` enables `autoAssetQuality`, sets `minRenderedAssets`, and writes `asset-plan.json`. Each pending asset must be generated with `imagegen` or sourced as a production asset, saved to its target path, wired into the app, verified with browser evidence, and marked `pass` only after scale and sharpness checks pass. Generic style language such as "premium neon motion" is not by itself an imagegen task unless it is attached to a specific asset subject.
+When PRD text mentions concrete static hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered still-asset work, `betterref-prd` enables `autoAssetQuality`, sets `minRenderedAssets`, and writes `asset-plan.json`. Each pending static asset must be generated with `imagegen` or sourced as a production asset, saved to its target path, wired into the app, verified with browser evidence, and marked `pass` only after scale and sharpness checks pass. Generic style language such as "premium neon motion" is not by itself an imagegen task unless it is attached to a specific asset subject.
 Use `betterref-imagegen --asset-plan ... --out .betterref-imagegen` to create built-in `image_gen` requests. After generation, either run `betterref-imagegen --attach <asset-id>=<file> --project .` or save generated files as `.betterref-imagegen/generated/<asset-id>.*` and run `betterref-imagegen --auto-attach-dir .betterref-imagegen/generated --project .`. A manually edited `status: pass` is not evidence.
+
+When PRD text mentions animated, motion, reveal, loop, WebM/MP4, shader transition, video, or HyperFrames work, `betterref-prd` routes the item to HyperFrames. Use `betterref-hyperframes --asset-plan ... --out .betterref-hyperframes` to create the request queue, author/render the composition with HyperFrames, run `npx hyperframes lint`, `npx hyperframes validate`, `npx hyperframes inspect --json`, and `npx hyperframes render --format webm --quality high`, then attach the rendered asset with `betterref-hyperframes --attach <asset-id>=<file> --evidence <hyperframes-evidence.json> --project .`. A manually edited `status: pass` or a video file without CLI evidence is not evidence.
 
 ## Benchmark Manifests
 

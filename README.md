@@ -37,7 +37,7 @@ Bridge a PRD PDF into BetterRef control artifacts:
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 ```
 
-This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `asset-plan.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed. If the PRD mentions concrete hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered asset work, the generated guard config enables `autoAssetQuality` and the asset plan lists imagegen/production-asset prompts, target paths, native-size minimums, and acceptance criteria. Code-native behavior such as sticky headers, hover zoom, parallax limits, mobile menus, and fallback-only rules stays in the PRD checklist instead of becoming imagegen tasks.
+This writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `asset-plan.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed. If the PRD mentions concrete static hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered still-asset work, the generated guard config enables `autoAssetQuality` and the asset plan lists imagegen/production-asset prompts, target paths, native-size minimums, and acceptance criteria. If it mentions animated, motion, reveal, loop, WebM/MP4, shader transition, or HyperFrames work, the asset plan routes that item to HyperFrames and requires CLI render evidence plus browser video evidence. Code-native behavior such as sticky headers, hover zoom, parallax limits, mobile menus, and fallback-only rules stays in the PRD checklist instead of becoming generated asset tasks.
 
 Generate built-in `image_gen` requests for pending assets and attach generated files back into the plan:
 
@@ -47,6 +47,19 @@ npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --attach asse
 ```
 
 The generated queue includes each asset's role, phase, requirement, target path, native-size minimums, sharpness minimum, and acceptance criteria so an agent can generate the right file without guessing from prose.
+
+Generate HyperFrames requests for pending motion/video assets and attach rendered files back into the plan:
+
+```bash
+npx betterref-hyperframes --asset-plan .betterref-prd/asset-plan.json --out .betterref-hyperframes --json
+npx hyperframes lint path/to/hyperframes-project
+npx hyperframes validate path/to/hyperframes-project
+npx hyperframes inspect path/to/hyperframes-project --json
+npx hyperframes render path/to/hyperframes-project --format webm --quality high --output path/to/rendered.webm
+npx betterref-hyperframes --asset-plan .betterref-prd/asset-plan.json --attach asset-001=path/to/rendered.webm --evidence path/to/hyperframes-evidence.json --project . --json
+```
+
+The evidence JSON must record passing `lint`, `validate`, `inspect`, and `render` commands. A HyperFrames asset is not passable just because a `.webm` file exists; final verification also checks that fresh browser evidence shows the video/WebM rendered in the actual app.
 
 Audit hard fails that numeric visual scores cannot prove:
 
@@ -60,7 +73,7 @@ Add browser evidence when available:
 npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
 ```
 
-Use `betterref-guard` before any final pass claim. It can fail screenshot-as-UI source usage, long-page references missing scroll/section evidence, reported hard fails, failed visual reports, rendered image assets that are larger than their native dimensions, blurry raster assets below a configured sharpness threshold, missing scroll from the real browser, unloaded fonts, console errors, missing DOM text, and missing interactive elements.
+Use `betterref-guard` before any final pass claim. It can fail screenshot-as-UI source usage, long-page references missing scroll/section evidence, reported hard fails, failed visual reports, rendered image assets that are larger than their native dimensions, blurry raster assets below a configured sharpness threshold, missing rendered production image/video assets, missing scroll from the real browser, unloaded fonts, console errors, missing DOM text, and missing interactive elements.
 
 For local browser captures, enable automatic raster checks with:
 
@@ -70,7 +83,7 @@ For local browser captures, enable automatic raster checks with:
 }
 ```
 
-This maps browser evidence such as `/assets/hero.png` back to `public/assets/hero.png` when the file exists. External CDN, data, and blob URLs are skipped unless you add explicit `assetQualityChecks`. Chrome evidence includes `<img>` assets and CSS background-image assets, so generated hero art cannot hide outside the image-scale and sharpness checks.
+This maps browser evidence such as `/assets/hero.png` back to `public/assets/hero.png` when the file exists. External CDN, data, and blob URLs are skipped unless you add explicit `assetQualityChecks`. Chrome evidence includes `<img>` assets, CSS background-image assets, and `<video>` assets, so generated hero art or rendered motion loops cannot hide outside browser evidence.
 
 For asset-heavy PRDs, the generated guard config also sets `minRenderedAssets: 1`. If the app renders only code-native placeholders while the PRD expects hero/game/promo imagery, `betterref-guard` hard-fails with `browser_missing_rendered_assets`.
 
@@ -80,7 +93,7 @@ Combine visual, guard, and PRD checklist evidence into one final verdict:
 npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --browser-evidence .betterref/browser-evidence.json --project . --require guard,prd,longpage,assetplan,browser --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
 ```
 
-When an `asset-plan.json` item is marked `pass`, final verification validates the asset file, native dimensions, sharpness, attach metadata, and fresh browser evidence that the target asset is actually rendered by the app. This catches the common failure where imagegen succeeds but the page still shows placeholder cards or a CSS-only hero.
+When an `asset-plan.json` item is marked `pass`, final verification validates the asset file, native dimensions, sharpness, attach metadata, and fresh browser evidence that the target asset is actually rendered by the app. HyperFrames assets additionally require passing lint/validate/inspect/render evidence and browser video evidence. This catches the common failure where imagegen or HyperFrames succeeds but the page still shows placeholder cards, a CSS-only hero, or a static screenshot.
 
 Run benchmark manifests to catch regressions in pressure scenarios:
 
@@ -88,7 +101,7 @@ Run benchmark manifests to catch regressions in pressure scenarios:
 npx betterref-eval --manifest benchmarks/betterref-eval.json --out .betterref/eval-report.json
 ```
 
-Start from `benchmarks/betterref-eval.example.json` when creating a new benchmark suite. Include `assetPlan` plus `require: "assetplan"` for pressure cases where a required imagegen or production raster asset is still pending. Include `browserEvidence` plus `require: "browser"` when the final verdict depends on browser proof, including generated assets that must be visible in the actual page.
+Start from `benchmarks/betterref-eval.example.json` when creating a new benchmark suite. Include `assetPlan` plus `require: "assetplan"` for pressure cases where a required imagegen, HyperFrames, or production asset is still pending. Include `browserEvidence` plus `require: "browser"` when the final verdict depends on browser proof, including generated assets that must be visible in the actual page.
 
 Generate semantic regions from DOM boxes captured by Chrome MCP or browser tooling:
 
@@ -161,6 +174,9 @@ Recommended handoff shape from Chrome MCP or any browser script:
   "images": [
     { "src": "/assets/hero.png", "naturalWidth": 1920, "naturalHeight": 1080, "renderedWidth": 840, "renderedHeight": 520 }
   ],
+  "videos": [
+    { "src": "/assets/hero-loop.webm", "renderedWidth": 840, "renderedHeight": 520 }
+  ],
   "console": []
 }
 ```
@@ -189,6 +205,9 @@ Then use the generated runbook:
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
 # After using built-in image_gen and saving files as <asset-id>.* in .betterref-imagegen/generated:
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --auto-attach-dir .betterref-imagegen/generated --project . --json
+npx betterref-hyperframes --asset-plan .betterref-prd/asset-plan.json --out .betterref-hyperframes --json
+# After authoring/rendering HyperFrames and collecting passing lint/validate/inspect/render evidence:
+npx betterref-hyperframes --asset-plan .betterref-prd/asset-plan.json --attach asset-001=path/to/rendered.webm --evidence path/to/hyperframes-evidence.json --project . --json
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
@@ -200,9 +219,10 @@ For visual PDF review, render the PRD pages with Poppler or the local PDF skill 
 Outputs:
 
 - `.betterref-prd/prd-checklist.json` - machine-readable PRD checklist consumed by `betterref-verify`
-- `.betterref-prd/asset-plan.json` - machine-readable generated/source asset plan with imagegen prompts, target paths, native-size minimums, attach metadata, and pass/pending status
+- `.betterref-prd/asset-plan.json` - machine-readable generated/source asset plan with imagegen and HyperFrames prompts, target paths, native-size/minimum evidence requirements, attach metadata, and pass/pending status
 - `.betterref-imagegen/imagegen-requests.json` and `.betterref-imagegen/imagegen-prompts.md` - built-in `image_gen` request queue for pending asset plan items
 - `.betterref-imagegen/generated/<asset-id>.*` - optional convention consumed by `betterref-imagegen --auto-attach-dir`
+- `.betterref-hyperframes/hyperframes-requests.json` and `.betterref-hyperframes/hyperframes-runbook.md` - HyperFrames request queue and CLI checklist for pending motion/video asset plan items
 - `.betterref-prd/betterref.guard.json` - generated guard config for source reuse, long-page, DOM, asset scaling, and PRD-inferred raster sharpness checks
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
 - `.betterref/chrome-full-page.png` and `.betterref/sections/*.png` - native browser evidence for long-page and section review when requested
@@ -216,7 +236,7 @@ Outputs:
 - `.betterref/diff.png` - pixel hotspot image for the next UI patch
 - `.betterref/report.html` - optional visual report with reference/current/diff and region table
 
-Use `--require guard,prd,longpage,assetplan,browser`, `--browser-evidence .betterref/browser-evidence.json`, and `--project .` for PRD/full-page workflows. Missing or malformed browser evidence, pending generated/source assets, or fake-passed assets without attach metadata are hard fails even when the visual score passes.
+Use `--require guard,prd,longpage,assetplan,browser`, `--browser-evidence .betterref/browser-evidence.json`, and `--project .` for PRD/full-page workflows. Missing or malformed browser evidence, pending generated/source assets, fake-passed imagegen assets without attach metadata, or fake-passed HyperFrames assets without CLI evidence are hard fails even when the visual score passes.
 
 Exit code `0` means the configured thresholds passed. Exit code `1` means revise. Exit code `2` means invalid usage or missing optional tooling.
 
@@ -239,6 +259,7 @@ BetterRef คือ skill และ CLI สำหรับงาน reference-dr
 - Treat reference as evidence, not UI. Reference image, PDF render, and crop are never shipped as page UI.
 - Build deterministic UI with code-native components: navigation, text, buttons, cards, forms, layouts, responsive states, and scroll behavior.
 - Use `imagegen` or production source assets for complex raster visuals; attach generated files into `asset-plan.json` before final verification.
+- Use HyperFrames for animated/cinematic motion assets, reveal loops, shader transitions, WebM/MP4, or website-to-video work; attach rendered files with CLI evidence before final verification.
 - For long-page references, compare full-page structure and section/viewport states separately. Do not scale the entire page down to fit one viewport.
 - Use browser evidence from `@chrome` first when the Chrome extension is connected; when it is not callable, fall back to Chrome MCP, `betterref-chrome` via Chrome CDP, or `betterref-capture` via Playwright in that order.
 - A high visual score is supporting evidence only. PRD compliance, hard-fail ledger, browser evidence, and asset evidence decide the final verdict.
@@ -316,7 +337,8 @@ The goal is **maximum reference fidelity**, not merely matching the mood. If the
 - Clearly identify which image is current and which image is the reference.
 - Match state before scoring: viewport, zoom, route, tab, scroll, workspace/path, folder, and data state.
 - Measure layout before judging: top bar, rail, sidebar, main workspace, right panel, hero, search card, KPI, and status bar.
-- Use `imagegen` freely for hero visuals, glass/3D/cinematic visuals, textures, raster assets, and premium imagery.
+- Use `imagegen` freely for static hero visuals, glass/3D/cinematic stills, textures, raster assets, and premium imagery.
+- Use HyperFrames for animated/cinematic motion assets, logo reveals, shader transitions, WebM/MP4 loops, and website-to-video deliverables.
 - Start with local/project tools, assets, fonts, and dependencies. If they cannot close a measured visual gap, find, create, or install a scoped tool or asset.
 - Use HTML/CSS/SVG for deterministic UI structure: panels, buttons, tabs, cards, forms, and layout.
 - Treat typography as a core requirement: font family, Thai glyphs, fallback, weight, line-height, text boxes, line breaks, and KPI numbers.
@@ -331,7 +353,7 @@ Before judging reference-matching work as complete, all 14 gates must be checked
 3. Measure real layout instead of relying on vibes: sidebar, main workspace, right panel, hero, search card, KPI cards, and status bar.
 4. Treat typography as a primary requirement: font family, Thai glyphs, weight, line-height, line breaks, and KPI numbers.
 5. Focus on the largest visible mismatches first: title, chips, KPI cards, hero visual, clipping, and scrollbars.
-6. Use `imagegen` freely when the target is glass, 3D, cinematic, textured, or raster-heavy instead of forcing CSS/SVG approximations.
+6. Use `imagegen` for static glass, 3D, cinematic, textured, or raster-heavy assets, and HyperFrames for animated/cinematic motion assets instead of forcing CSS/SVG approximations.
 7. Inventory available tools first: browser tooling, screenshots, DOM measurement, pixel sampling, image processing, fonts, icons, and dependencies.
 8. Map every major visual gap to the tool or asset workflow that will close it.
 9. If local tools are insufficient, find, create, or install scoped tooling such as pixel diff, SSIM, font inspection, background removal, or helper scripts.
@@ -345,9 +367,9 @@ Before judging reference-matching work as complete, all 14 gates must be checked
 
 BetterRef must not lower quality because the first available tool is insufficient:
 
-- Inventory first: browser/screenshot tooling, DOM measurement, pixel sampling, image processing, `imagegen`, local assets, installed fonts, icon libraries, and project dependencies.
+- Inventory first: browser/screenshot tooling, DOM measurement, pixel sampling, image processing, `imagegen`, HyperFrames, local assets, installed fonts, icon libraries, and project dependencies.
 - Map each visual gap to a tool, such as layout drift, font/Thai glyph mismatch, wrong hero crop, bitmap edges, clipped KPI cards, extra scrollbars, or color/shadow mismatch.
-- If local tools are insufficient, use `imagegen`, find a suitable asset/font/icon/library, write a helper script, or install a temporary/project-local package.
+- If local tools are insufficient, use `imagegen`, HyperFrames, a suitable asset/font/icon/library, a helper script, or a temporary/project-local package.
 - Every escalation must name the gap it solves and be verified with a fresh screenshot.
 - Avoid global installs or new runtime dependencies unless the project actually needs them.
 
@@ -362,6 +384,7 @@ Do not pass if any of these are present:
 - A reference one-line title wraps into multiple lines.
 - Font fallback, Thai glyph shape, line-height, or text rhythm differs materially.
 - A hero/raster asset has a visible bitmap box, wrong crop, or weaker lighting/depth.
+- An animated/cinematic asset lacks HyperFrames CLI evidence or is not visible as video/WebM in browser evidence.
 - Macro layout proportions are wrong: sidebar, main, right panel, search card, KPI cards.
 - Side panels collide or have tighter spacing than the reference.
 - Icons look like placeholders or use the wrong visual language.

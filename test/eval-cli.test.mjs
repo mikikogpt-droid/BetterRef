@@ -526,8 +526,8 @@ test('bundled benchmark example is executable', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.passed, true);
-  assert.equal(report.summary.total, 24);
-  assert.equal(report.summary.matched, 24);
+  assert.equal(report.summary.total, 26);
+  assert.equal(report.summary.matched, 26);
 });
 
 test('bundled benchmark example includes real PRD project archetypes', async () => {
@@ -536,7 +536,9 @@ test('bundled benchmark example includes real PRD project archetypes', async () 
   for (const id of [
     'real-prd-landing-full-evidence-pass',
     'real-dashboard-prd-gap-pressure',
-    'real-commerce-imagegen-rendered-pass'
+    'real-commerce-imagegen-rendered-pass',
+    'hyperframes-missing-cli-evidence-pressure',
+    'real-cinematic-hyperframes-rendered-pass'
   ]) {
     assert.equal(ids.has(id), true, `${id} must be present in the bundled benchmark manifest`);
   }
