@@ -52,6 +52,23 @@ When the user says `use $betterref start project`, `use BetterRef start project`
 8. Require fresh browser evidence before calling a phase complete.
 9. Follow `.betterref-run/next-actions.md` until final verdict passes; never say 100% until PRD checklist, browser evidence, asset evidence, guard, and final verify all pass.
 
+## Command Aliases
+
+Treat these user phrases as BetterRef workflows:
+
+| Alias | Expand to |
+|---|---|
+| `use $betterref start project` | Bootstrap PRD, `.betterref-prd/*`, `AGENTS.md`, asset plan, and next actions. |
+| `use $betterref compare` | Compare current app/browser evidence to the reference and report score, hard fails, and fixes. |
+| `use $betterref verify phase` | Check PRD phase criteria, browser evidence, asset evidence, guard, and final verdict before saying a phase is done. |
+| `use $betterref fix visual mismatch` | Patch the largest measured mismatch first, then recapture and rerun evidence. |
+| `use $betterref long page review` | Treat tall references as scroll maps and verify full-page plus section evidence. |
+| `use $betterref hard fail audit` | Search source/evidence for screenshot-as-UI, PDF/reference reuse, blur, missing scroll, missing browser evidence, and fake passes. |
+| `use $betterref imagegen assets` | Create or resume imagegen handoff, output slots, attach metadata, quality checks, and browser render verification. |
+| `use $betterref motion assets` | Route animated/cinematic assets through HyperFrames with lint, validate, inspect, render, attach, and browser video evidence. |
+| `use $betterref browser evidence` | Capture or ingest real browser evidence through `@chrome`, Chrome MCP, CDP, or Playwright fallback. |
+| `use $betterref final gate` | Produce final verdict paths and fail if PRD, visual, guard, browser, asset, long-page, or hard-fail evidence is incomplete. |
+
 ## PRD To Web Loop
 
 1. Extract PRD requirements and visual references.

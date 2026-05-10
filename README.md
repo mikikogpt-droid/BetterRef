@@ -9,6 +9,23 @@ npm install
 npx betterref-diff --ref reference.png --actual screenshot.png --out .betterref
 ```
 
+## BetterRef Command Aliases
+
+Use these short prompts in any project after the skill is installed:
+
+| Prompt | Use when |
+|---|---|
+| `use $betterref start project` | Start a PRD-to-web project and create `.betterref-prd/*` plus `AGENTS.md`. |
+| `use $betterref compare` | Compare the current app to a visual reference. |
+| `use $betterref verify phase` | Check a phase before calling it complete. |
+| `use $betterref fix visual mismatch` | Patch the largest measured mismatch and rerun evidence. |
+| `use $betterref long page review` | Review tall references as scrollable full-page maps. |
+| `use $betterref hard fail audit` | Audit screenshot-as-UI, fake passes, blur, missing scroll, and missing evidence. |
+| `use $betterref imagegen assets` | Generate/resume raster asset handoff, attach, and browser render checks. |
+| `use $betterref motion assets` | Route animated/cinematic assets through HyperFrames evidence. |
+| `use $betterref browser evidence` | Capture or ingest real Chrome/browser evidence. |
+| `use $betterref final gate` | Run the final PRD, visual, guard, browser, asset, and hard-fail gate. |
+
 Capture directly from a running Chrome tab through Chrome DevTools Protocol:
 
 ```bash

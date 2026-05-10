@@ -55,6 +55,34 @@ test('SKILL.md expands the start project command into the full BetterRef bootstr
   assert.match(skill, /final verdict/);
 });
 
+test('SKILL.md documents reusable BetterRef command aliases for common project moments', async () => {
+  const skill = await readFile(skillPath, 'utf8');
+  for (const alias of [
+    'use $betterref start project',
+    'use $betterref compare',
+    'use $betterref verify phase',
+    'use $betterref fix visual mismatch',
+    'use $betterref long page review',
+    'use $betterref hard fail audit',
+    'use $betterref imagegen assets',
+    'use $betterref motion assets',
+    'use $betterref browser evidence',
+    'use $betterref final gate'
+  ]) {
+    assert.match(skill, new RegExp(alias.replace('$', '\\$')));
+  }
+  assert.match(skill, /Command Aliases/);
+});
+
+test('README shows the BetterRef command aliases on the GitHub front page', async () => {
+  const readme = await readFile(readmePath, 'utf8');
+  assert.match(readme, /## BetterRef Command Aliases/);
+  assert.match(readme, /use \$betterref start project/);
+  assert.match(readme, /use \$betterref final gate/);
+  assert.match(readme, /imagegen assets/);
+  assert.match(readme, /browser evidence/);
+});
+
 test('SKILL.md does not show dangerous final-pass match-size commands', async () => {
   const skill = await readFile(skillPath, 'utf8');
   assert.doesNotMatch(skill, /--match-size\s+reference/);
