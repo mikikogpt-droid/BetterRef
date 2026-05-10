@@ -43,16 +43,17 @@ Never call the result done when any hard-fail ledger item exists. A score of 98-
 1. Extract PRD requirements and visual references.
 2. Build a checklist that separates product behavior, content, visual style, and assets.
 3. Create phases with explicit pass criteria. Each phase must trace to PRD items.
-4. Keep generated guard config and `asset-plan.json` intact; if PRD mentions static hero/premium/raster assets, `betterref-prd` enables `autoAssetQuality` and creates imagegen/production-asset tasks. If it mentions animated, cinematic motion, reveal, loop, video, WebM/MP4, shader transition, or HyperFrames, it creates HyperFrames tasks instead of imagegen tasks.
-5. Implement with code-native UI plus generated/sourced/HyperFrames-rendered assets where required; mark asset plan items pass only after attach metadata, browser evidence, and guard checks.
-6. Capture fresh browser screenshots at the target viewport and mobile viewport.
-7. Run BetterRef diff/capture and `betterref-guard`.
-8. Mark phase complete only when PRD checklist passes, BetterRef verdict passes, and hard-fail ledger is empty.
+4. Run `betterref-prd` with `--project .` for new project work so it creates or updates `AGENTS.md` with the BetterRef/Karpathy/Superpowers contract.
+5. Keep generated guard config and `asset-plan.json` intact; if PRD mentions static hero/premium/raster assets, `betterref-prd` enables `autoAssetQuality` and creates imagegen/production-asset tasks. If it mentions animated, cinematic motion, reveal, loop, video, WebM/MP4, shader transition, or HyperFrames, it creates HyperFrames tasks instead of imagegen tasks.
+6. Implement with code-native UI plus generated/sourced/HyperFrames-rendered assets where required; mark asset plan items pass only after attach metadata, browser evidence, and guard checks.
+7. Capture fresh browser screenshots at the target viewport and mobile viewport.
+8. Run BetterRef diff/capture and `betterref-guard`.
+9. Mark phase complete only when PRD checklist passes, BetterRef verdict passes, and hard-fail ledger is empty.
 
 Useful commands:
 
 ```bash
-npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
+npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
 npx betterref-hyperframes --asset-plan .betterref-prd/asset-plan.json --out .betterref-hyperframes --json
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
@@ -65,6 +66,7 @@ Do not use final-pass resizing to make screenshots agree. For final verification
 For PRD/full-page verification, require the expected evidence with `--require guard,prd,longpage,assetplan,browser`; missing browser evidence, pending assets, fake-passed assets without attach metadata, and generated assets that are not rendered in browser evidence are hard fails.
 Use built-in `image_gen` for each request from `.betterref-imagegen/imagegen-requests.json`, then run `betterref-imagegen --attach <asset-id>=<file> --project .` so the asset plan records generated path, native size, sharpness, timestamp, and verification metadata before final verification. Do not manually flip asset status to `pass`.
 Use HyperFrames for each request from `.betterref-hyperframes/hyperframes-requests.json`, then run `npx hyperframes lint`, `npx hyperframes validate`, `npx hyperframes inspect --json`, and `npx hyperframes render --format webm --quality high`. Attach the rendered file with `betterref-hyperframes --attach <asset-id>=<file> --evidence <hyperframes-evidence.json> --project .`. Do not mark a motion asset `pass` without that CLI evidence and fresh browser evidence showing the rendered video/WebM in the actual app.
+When `--project .` is used, `betterref-prd` creates or updates `AGENTS.md` with a managed BetterRef contract. Preserve user/project instructions outside the managed block, and do not overwrite them.
 
 ## Hard-Fail Ledger
 

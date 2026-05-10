@@ -10,6 +10,7 @@ Required:
 
 Options:
   --config-out <path>    Write generated .betterref.json to a custom path.
+  --project <dir>        Project root where AGENTS.md should be created or updated.
   --viewport <WxH>       Override viewport when the PRD does not specify one.
   --ref, --reference     Reference image path to include in the generated runbook.
   --url                  Target app URL to include in the generated runbook.
@@ -47,6 +48,7 @@ async function main() {
       pdfPath: values.pdf,
       outDir: values.out,
       configOut: values['config-out'],
+      projectDir: values.project,
       viewport: values.viewport,
       referencePath: values.ref || values.reference,
       url: values.url
@@ -60,6 +62,9 @@ async function main() {
       console.log(`[betterref-prd] checklist=${result.artifacts.checklistPath}`);
       console.log(`[betterref-prd] assetPlan=${result.artifacts.assetPlanPath}`);
       console.log(`[betterref-prd] runbook=${result.artifacts.runbookPath}`);
+      if (result.artifacts.agentsPath) {
+        console.log(`[betterref-prd] agents=${result.artifacts.agentsPath}`);
+      }
     }
   } catch (error) {
     if (error instanceof BetterRefPrdError) {

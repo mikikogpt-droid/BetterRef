@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
-import { mkdir, readFile } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -10,6 +10,8 @@ import { normalizeExtractedPrdText } from '../lib/prd.mjs';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const prdBin = path.join(repoRoot, 'bin', 'betterref-prd.mjs');
+const beginAgentsMarker = '<!-- BEGIN BETTERREF AGENTS CONTRACT -->';
+const endAgentsMarker = '<!-- END BETTERREF AGENTS CONTRACT -->';
 
 async function makeCase(name) {
   const dir = path.join(tmpdir(), `betterref-prd-${process.pid}-${name}-${Date.now()}`);
@@ -31,6 +33,15 @@ function writePdf(filePath, lines) {
     }
     doc.end();
   });
+}
+
+async function pathExists(filePath) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 test('normalizes Thai PRD text before building prompts and checklists', () => {
@@ -105,6 +116,7 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.schemaVersion, 'betterref.prd.v1');
   assert.equal(payload.viewport, '1672x941');
+  assert.equal(payload.artifacts.agentsPath, null);
   assert.match(payload.artifacts.summaryPath, /prd-summary\.json$/);
   assert.match(payload.artifacts.configPath, /\.betterref\.json$/);
   assert.match(payload.artifacts.guardConfigPath, /betterref\.guard\.json$/);
@@ -113,6 +125,8 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.match(payload.artifacts.runbookPath, /betterref-runbook\.md$/);
 
   const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.agentsGenerated, false);
+  assert.equal(summary.agentsPath, null);
   assert.equal(summary.requirements.some((item) => /Thai font/.test(item)), true);
   assert.equal(summary.hardFailHints.some((item) => /overlap/.test(item)), true);
   assert.equal(summary.screens.some((item) => /home landing/.test(item)), true);
@@ -169,6 +183,96 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.match(runbook, /betterref-imagegen --asset-plan/);
   assert.match(runbook, /imagegen/);
   assert.match(runbook, /autoAssetQuality/);
+  assert.equal(await pathExists(path.join(out, 'AGENTS.md')), false);
+});
+
+test('betterref-prd creates project AGENTS.md with mandatory skill contract when --project is provided', async () => {
+  const dir = await makeCase('agents-create');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(project, '.betterref-prd');
+  await mkdir(project, { recursive: true });
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Full-page scroll reference: yes.',
+    'Required screens: Homepage, Checkout.',
+    'Visual requirements: cinematic hero image, payment cards, footer.',
+    'Hard fail: no screenshot as UI, no PDF render as UI, visual score cannot override PRD gaps.'
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  const agentsPath = path.join(project, 'AGENTS.md');
+  assert.equal(payload.artifacts.agentsPath, agentsPath);
+
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.agentsGenerated, true);
+  assert.equal(summary.agentsPath, agentsPath);
+
+  const agents = await readFile(agentsPath, 'utf8');
+  assert.match(agents, /BEGIN BETTERREF AGENTS CONTRACT/);
+  assert.match(agents, /END BETTERREF AGENTS CONTRACT/);
+  assert.match(agents, /C:\\Users\\Miki\\\.codex\\skills\\using-superpowers\\SKILL\.md/);
+  assert.match(agents, /C:\\Users\\Miki\\\.codex\\skills\\karpathy-guidelines\\SKILL\.md/);
+  assert.match(agents, /C:\\Users\\Miki\\\.codex\\skills\\betterref\\SKILL\.md/);
+  assert.match(agents, /Karpathy Gate/);
+  assert.match(agents, /BetterRef PRD\/Visual Contract/);
+  assert.match(agents, /Reference screenshots, PDF renders, and crops are evidence only/);
+  assert.match(agents, /BetterRef score is supporting evidence only/);
+  assert.match(agents, /Viewport: 1440x900/);
+  assert.match(agents, /Screens: Homepage, Checkout/);
+  assert.match(agents, /Long-page reference: true/);
+  assert.match(agents, /Imagegen required: true/);
+  assert.match(agents, /HyperFrames required: false/);
+});
+
+test('betterref-prd preserves existing AGENTS.md and updates only one managed block', async () => {
+  const dir = await makeCase('agents-merge');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(project, '.betterref-prd');
+  const agentsPath = path.join(project, 'AGENTS.md');
+  await mkdir(project, { recursive: true });
+  await writeFile(agentsPath, '# Existing Project Rules\n\nKeep this local rule.\n');
+  await writePdf(pdf, [
+    'Viewport: 1365x768.',
+    'Required screens: Homepage.',
+    'Hero Motion: cinematic 3D logo reveal with transparent WebM loop.'
+  ]);
+
+  const args = [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ];
+  const first = spawnSync(process.execPath, args, { cwd: repoRoot, encoding: 'utf8' });
+  assert.equal(first.status, 0, first.stderr || first.stdout);
+  const second = spawnSync(process.execPath, args, { cwd: repoRoot, encoding: 'utf8' });
+  assert.equal(second.status, 0, second.stderr || second.stdout);
+
+  const agents = await readFile(agentsPath, 'utf8');
+  assert.match(agents, /# Existing Project Rules/);
+  assert.match(agents, /Keep this local rule\./);
+  assert.equal(agents.split(beginAgentsMarker).length - 1, 1);
+  assert.equal(agents.split(endAgentsMarker).length - 1, 1);
+  assert.match(agents, /Viewport: 1365x768/);
+  assert.match(agents, /HyperFrames required: true/);
 });
 
 test('betterref-prd allows config output outside the artifact directory', async () => {
