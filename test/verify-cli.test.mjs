@@ -225,6 +225,15 @@ test('betterref-verify writes an evidence bundle with hashed artifacts', async (
   assert.equal(evidence.verdict.verdict, 'pass');
   assert.equal(evidence.verdict.visualScore, 97);
   assert.equal(evidence.verdict.prdScore, 100);
+  assert.match(evidence.inputs.report, /report\.json$/);
+  assert.match(evidence.inputs.guard, /guard-report\.json$/);
+  assert.match(evidence.inputs.prd, /prd-checklist\.json$/);
+  assert.deepEqual(evidence.requiredEvidence.required, []);
+  assert.deepEqual(evidence.requiredEvidence.missing, []);
+  assert.equal(evidence.browserEvidence.present, false);
+  assert.equal(evidence.browserEvidence.passed, true);
+  assert.equal(evidence.assetPlan.present, false);
+  assert.equal(evidence.assetPlan.passed, true);
   assert.deepEqual(evidence.blockingReasons, []);
 
   const kinds = evidence.artifacts.map((artifact) => artifact.kind).sort();
@@ -280,6 +289,11 @@ test('betterref-verify writes browser evidence into the final evidence bundle', 
   assert.match(verdict.inputs.browserEvidence, /browser-evidence\.json$/);
 
   const evidence = JSON.parse(await readFile(bundle, 'utf8'));
+  assert.deepEqual(evidence.requiredEvidence.required, ['guard', 'prd', 'browser']);
+  assert.deepEqual(evidence.requiredEvidence.missing, []);
+  assert.equal(evidence.browserEvidence.present, true);
+  assert.equal(evidence.browserEvidence.passed, true);
+  assert.equal(evidence.browserEvidence.invalidCount, 0);
   const browserArtifact = evidence.artifacts.find((artifact) => artifact.kind === 'browser-evidence');
   assert.equal(browserArtifact.present, true);
   assert.match(browserArtifact.sha256, /^[a-f0-9]{64}$/);

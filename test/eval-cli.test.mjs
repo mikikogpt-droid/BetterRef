@@ -56,6 +56,32 @@ test('betterref-eval passes a benchmark manifest when all expected verdicts matc
   assert.equal(report.summary.matched, 1);
 });
 
+test('betterref-eval creates the output parent directory when needed', async () => {
+  const dir = await makeCase('nested-out');
+  const visual = path.join(dir, 'visual.json');
+  const guard = path.join(dir, 'guard.json');
+  const manifest = path.join(dir, 'manifest.json');
+  const out = path.join(dir, '.betterref', 'eval-report.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 97, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(manifest, {
+    cases: [
+      {
+        id: 'clean',
+        report: 'visual.json',
+        guard: 'guard.json',
+        expect: { verdict: 'pass', hardFailPresent: false }
+      }
+    ]
+  });
+
+  const result = runEval(['--manifest', manifest, '--out', out, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(await readFile(out, 'utf8'));
+  assert.equal(report.passed, true);
+});
+
 test('betterref-eval fails when a pressure case unexpectedly passes', async () => {
   const dir = await makeCase('unexpected-pass');
   const visual = path.join(dir, 'visual.json');

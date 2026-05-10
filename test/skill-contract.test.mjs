@@ -5,6 +5,7 @@ import { test } from 'node:test';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const skillPath = path.join(repoRoot, 'SKILL.md');
+const readmePath = path.join(repoRoot, 'README.md');
 
 async function fileExists(relativePath) {
   try {
@@ -52,6 +53,26 @@ test('BetterRef ships focused reference files for heavy guidance', async () => {
   ]) {
     assert.equal(await fileExists(relativePath), true, `${relativePath} must exist`);
   }
+});
+
+test('README keeps the Thai runbook readable and final bundle gate explicit', async () => {
+  const readme = await readFile(readmePath, 'utf8');
+  assert.doesNotMatch(readme, /[\u0080-\u009f]/, 'README contains mojibake control characters');
+  assert.doesNotMatch(readme, /## เธ/, 'README Thai section heading is mojibake');
+  assert.match(readme, /## ภาษาไทย/);
+  assert.match(readme, /Final Verdict Bundle Gate/);
+  assert.match(readme, /--require guard,prd,longpage,assetplan,browser/);
+  assert.match(readme, /--bundle \.betterref\/evidence-bundle\.json/);
+  assert.match(readme, /Chrome MCP/);
+  assert.match(readme, /betterref-chrome/);
+});
+
+test('PRD runbook requires an auditable final evidence bundle', async () => {
+  const runbook = await readFile(path.join(repoRoot, 'references', 'prd-to-web.md'), 'utf8');
+  assert.match(runbook, /--require guard,prd,longpage,assetplan,browser/);
+  assert.match(runbook, /--browser-evidence \.betterref\/browser-evidence\.json/);
+  assert.match(runbook, /--bundle \.betterref\/evidence-bundle\.json/);
+  assert.match(runbook, /Use tool scores as evidence, not authority/);
 });
 
 test('pressure tests cover the failure modes that caused the ONETAPGG miss', async () => {

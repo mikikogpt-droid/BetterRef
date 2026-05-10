@@ -59,6 +59,21 @@ Use `--require guard,prd,longpage,assetplan,browser` and pass `--browser-evidenc
 
 `betterref-prd` sets `requireBrowserEvidence: true` in the generated guard config. The final phase cannot pass from static screenshots, reports alone, or placeholder browser evidence; final verification requires browser evidence with viewport, scroll, DOM text, interactive count, font, console, and image-scale fields.
 
+## Final Evidence Bundle
+
+The final handoff artifact is `.betterref/evidence-bundle.json`. Treat it as the audit record for the phase, not as another optional report. It must be created by `betterref-verify --bundle` after the final browser capture and it should be committed or attached to CI artifacts when the project allows generated evidence files.
+
+The bundle must include:
+
+- `inputs`: absolute paths for the reports used to make the verdict.
+- `requiredEvidence`: which evidence classes were required and which, if any, were missing.
+- `browserEvidence`: pass/fail summary and invalid evidence count.
+- `assetPlan`: generated/source asset summary including pending and invalid counts.
+- `artifacts`: byte sizes and SHA-256 hashes for visual, guard, PRD, long-page, browser, asset-plan, final JSON, and final HTML evidence.
+- `blockingReasons`: the exact reasons the phase is not passable.
+
+A bundle with `verdict.passed: true` is only credible when `requiredEvidence.missing` is empty, `blockingReasons` is empty, `browserEvidence.passed` is true, `assetPlan.passed` is true, and every required artifact is present with a hash. If any one of those checks fails, continue implementation instead of reporting completion.
+
 When PRD text mentions concrete hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered asset work, `betterref-prd` enables `autoAssetQuality`, sets `minRenderedAssets`, and writes `asset-plan.json`. Each pending asset must be generated with `imagegen` or sourced as a production asset, saved to its target path, wired into the app, verified with browser evidence, and marked `pass` only after scale and sharpness checks pass. Generic style language such as "premium neon motion" is not by itself an imagegen task unless it is attached to a specific asset subject.
 Use `betterref-imagegen --asset-plan ... --out .betterref-imagegen` to create built-in `image_gen` requests, then `betterref-imagegen --attach <asset-id>=<file> --project .` after generation so final verification can trust the asset plan. A manually edited `status: pass` is not evidence.
 

@@ -212,111 +212,76 @@ Exit code `0` means the configured thresholds passed. Exit code `1` means revise
 
 ## ภาษาไทย
 
-BetterRef คือ skill สำหรับงานที่ต้องทำภาพหรือ UI ให้ตรงกับภาพอ้างอิงมากที่สุด เช่น UI screenshot, mockup, dashboard, hero visual, landing/app redesign หรือ visual QA แบบ screenshot-to-reference
+BetterRef คือ skill และ CLI สำหรับงาน reference-driven visual QA: ทำเว็บหรือ UI ให้ตรงกับ PRD, ภาพอ้างอิง, screenshot, Figma brief หรือ mockup โดยไม่หลอกตัวเองด้วย score อย่างเดียว
 
-เป้าหมายหลักคือ **reference fidelity สูงสุด** ไม่ใช่แค่โทนคล้าย และไม่ใช่การออกแบบใหม่ตามใจ ถ้าผู้ใช้บอกว่าต้องดีกว่า reference หมายถึง composition/state เดิม แต่ polish, readability, asset quality, typography และความเรียบร้อยต้องเท่าหรือดีกว่า
+เป้าหมายหลักคือ **reference fidelity + product truth**: UI จริงต้องทำงานได้, scroll ถูกต้อง, asset คมชัด, typography อ่านได้, และทุก hard fail ต้องถูกปิดก่อนบอกว่างานผ่าน
 
 ### ใช้เมื่อไหร่
 
-- ผู้ใช้แนบภาพอ้างอิงและขอให้ทำให้เหมือน
-- ต้องแก้ UI ที่ยังไม่เหมือน reference
-- ต้องทำ hero/image/visual asset ที่ CSS หรือ SVG เลียนแบบได้ไม่พอ
-- ต้องตรวจงานด้วย screenshot เทียบ reference
-- ต้องทำงาน pixel-perfect หรือ premium visual polish
+- มี PRD หรือภาพอ้างอิง แล้วต้องสร้างหรือแก้เว็บให้ตรง
+- ต้องเทียบ current screenshot กับ reference แบบ strict
+- ต้องแยก long-page reference ออกจาก viewport screenshot
+- ต้องตรวจว่าไม่ได้เอา PDF render, full-page crop, หรือ reference screenshot มาแปะเป็น UI
+- ต้องใช้ `imagegen` สำหรับ hero, 3D, glass, cinematic, mascot, texture หรือ raster asset ที่ CSS/SVG เลียนแบบได้ไม่ดีพอ
 
 ### หลักการสำคัญ
 
-- ใช้ reference image เป็น source of truth
-- ระบุให้ชัดว่าภาพไหนคือ current และภาพไหนคือ reference
-- ทำ state ให้เหมือน reference ก่อนเทียบ: viewport, zoom, route, tab, scroll, workspace/path, folder, data state
-- วัด layout ก่อนตัดสิน: topbar, rail, sidebar, main workspace, right panel, hero, search card, KPI, status bar
-- ใช้ `imagegen` ได้เต็มที่กับ hero, glass/3D/cinematic visual, texture, raster asset และภาพ premium
-- เริ่มจากเครื่องมือ/asset/font/dependency ที่มีในเครื่องหรือใน project ก่อน ถ้ายังปิด visual gap ไม่ได้ ให้หา สร้าง หรือติดตั้งเครื่องมือเสริมแบบจำกัด scope
-- ใช้ HTML/CSS/SVG กับโครง UI ที่ต้อง deterministic เช่น panel, button, tab, card, form, layout
-- จัดการ typography เป็น requirement หลัก: font family, Thai glyph, fallback, weight, line-height, text box, line break, KPI number
-- ถ่าย screenshot จริงที่ viewport/state เดียวกับ reference แล้วทำ Visual Verdict ก่อนบอกว่างานเสร็จ
+- Treat reference as evidence, not UI. Reference image, PDF render, and crop are never shipped as page UI.
+- Build deterministic UI with code-native components: navigation, text, buttons, cards, forms, layouts, responsive states, and scroll behavior.
+- Use `imagegen` or production source assets for complex raster visuals; attach generated files into `asset-plan.json` before final verification.
+- For long-page references, compare full-page structure and section/viewport states separately. Do not scale the entire page down to fit one viewport.
+- Use browser evidence from Chrome MCP when available; when it is not exposed, use `betterref-chrome` via Chrome CDP or `betterref-capture` via Playwright.
+- A high visual score is supporting evidence only. PRD compliance, hard-fail ledger, browser evidence, and asset evidence decide the final verdict.
 
-### 14 ข้อบังคับของ BetterRef
+### Final Verdict Bundle Gate
 
-ก่อนตัดสินว่างาน reference-matching เสร็จ ต้องเช็กครบทั้ง 14 ข้อนี้:
+ก่อนบอกว่า phase หรือ PRD-to-web งานผ่าน ต้องมี final verdict bundle ที่ตรวจซ้ำได้:
 
-1. ระบุให้ชัดว่า current คือภาพไหน และ reference คือภาพไหน
-2. ทำ same-state ก่อนเทียบ: viewport, zoom, path, route, tab, scroll, folder, data state
-3. วัด layout จริง ไม่ดูจากความรู้สึก: sidebar, main, right panel, hero, search card, KPI, status bar
-4. เช็ก typography เป็นเรื่องหลัก: font family, Thai glyph, weight, line-height, line break, KPI number
-5. โฟกัสจุดใหญ่ก่อน เช่น title, chips, KPI, hero, clipping, scrollbar
-6. ใช้ `imagegen` ได้เต็มที่เมื่อ visual เป็น glass/3D/cinematic/raster ไม่ควรฝืนวาด CSS/SVG
-7. ทำ tool inventory ก่อน: browser tool, screenshot, DOM measure, pixel sampler, image processing, fonts, icons, dependencies
-8. map ทุก visual gap กับเครื่องมือหรือ asset workflow ที่จะใช้แก้
-9. ถ้าเครื่องมือในเครื่องไม่พอ ต้องหา สร้าง หรือติดตั้งเครื่องมือเสริมแบบ scoped เช่น pixel diff, SSIM, font tools, background removal, helper script
-10. ห้ามลดคุณภาพเพราะ "ไม่มีเครื่องมือ" ถ้ายังมีทางหา สร้าง ติดตั้ง หรือ script ได้
-11. ทุก escalation ต้องบอกว่าแก้ gap อะไร และต้อง verify ด้วย screenshot ใหม่
-12. ต้องมี Visual Verdict: score, pass/revise/fail, hard fail, differences, next edits
-13. ถ้ามี hard fail ห้ามบอกว่า pass ต่อให้คะแนนจากความรู้สึกสูง
-14. Final report ต้องบอก tool inventory/escalation ที่ใช้ พร้อม visual gap ที่แต่ละตัวแก้
+```bash
+npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --browser-evidence .betterref/browser-evidence.json --project . --require guard,prd,longpage,assetplan,browser --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
+```
 
-### การยกระดับเครื่องมือ
-
-BetterRef ต้องไม่ลดคุณภาพเพราะเครื่องมือเดิมไม่พอ:
-
-- ทำ inventory ก่อน: browser/screenshot tool, DOM measurement, pixel sampler, image processing, `imagegen`, local assets, installed fonts, icon libraries, project dependencies
-- map visual gap กับเครื่องมือ เช่น layout เพี้ยน, font/Thai glyph เพี้ยน, hero asset crop ผิด, มี bitmap edge, KPI ถูกตัด, scrollbar เกิน, สี/เงาไม่ตรง
-- ถ้าเครื่องมือในเครื่องยังไม่พอ ให้ใช้ `imagegen`, หา asset/font/icon/library ที่เหมาะ, เขียน helper script, หรือติดตั้ง package แบบ temporary/project-local
-- ทุก escalation ต้องบอกว่าแก้ gap อะไร และต้อง verify ด้วย screenshot ใหม่
-- หลีกเลี่ยง global install หรือ runtime dependency ใหม่ถ้าไม่จำเป็นต่อ project
+Bundle ต้องมี input paths, required evidence status, artifact hashes, browser evidence summary, asset plan summary, verdict, และ blocking reasons. ถ้ามี hard fail, missing browser evidence, pending asset, image scaled เกิน native size, blur, screenshot-as-UI, wrong crop, หรือ missing scroll ให้ถือว่างานไม่ผ่าน
 
 ### Hard Fail Gates
 
-ถ้ามีข้อใดข้อหนึ่ง ห้ามบอกว่า pass:
-
-- current/reference สลับกันหรือไม่ชัด
-- state ไม่ตรง reference เช่น path/folder/tab/route/scroll/viewport ผิด
-- content ถูกตัด ถูกบัง ซ้อน หรือ bottom/status bar บัง
-- scrollbar แปลก ๆ หรือ overflow ที่ reference ไม่มี
-- title ที่ reference เป็นบรรทัดเดียว แต่ของจริงแตกหลายบรรทัด
-- font fallback ผิด, Thai glyph ไม่เหมือน, line-height เพี้ยน, text rhythm เปลี่ยน
-- hero/raster asset เห็นกรอบ bitmap, crop ผิด, lighting/depth ต่ำกว่า reference
-- macro layout ผิดสัดส่วน เช่น sidebar, main, right panel, search card, KPI
-- right/side panel ชนกันหรือ spacing แคบกว่า reference
-- icon ดูเป็น placeholder หรือ style ไม่ตรง
-- งานเหมือนแค่สีหรือ mood แต่ spacing/composition/hierarchy ไม่เหมือน
-- ไม่มี screenshot สดจากแอปจริงก่อนตัดสิน
+- current/reference สลับกันหรือ state ไม่ตรง เช่น route, viewport, zoom, scroll, tab, data state
+- long-page reference ถูกย่อให้เห็นครบใน viewport เดียวแทนที่จะเป็นหน้า scroll
+- ใช้ screenshot, PDF render, หรือ reference crop เป็น UI จริง
+- browser evidence ไม่มี viewport, scroll, DOM text, interactive count, fonts, console/network, หรือ image dimensions
+- generated/source asset ยัง pending, ไม่มี attach metadata, ไม่ถูก render ใน browser evidence, หรือ render ใหญ่กว่า native size
+- typography ไทย fallback ผิด, line break เพี้ยน, text ถูกตัดหรือทับกัน
+- hero/raster asset เบลอ, crop ผิด, เห็น bitmap edge, หรือคุณภาพต่ำกว่า reference
+- PRD checklist ยังมี item ที่ไม่ผ่าน
 
 ### Scoring
 
 - `<80` = fail
 - `80-89` = revise
 - `90-94` = close but not complete
-- `95-97` = acceptable match ถ้าไม่มี hard fail
-- `98+` = near pixel-perfect
-
-ถ้ามี hard fail ให้ถือว่า fail/revise ไม่ว่าคะแนนจากความรู้สึกจะสูงแค่ไหน
+- `95-97` = acceptable match เฉพาะเมื่อไม่มี hard fail
+- `98+` = near pixel-perfect แต่ยังต้องผ่าน PRD, browser, guard, long-page, และ asset gates
 
 ### รายงานก่อนจบงาน
 
-ก่อนบอกว่างานเสร็จ ต้องรายงาน:
-
-- reference source และ current screenshot source
-- viewport/device scale และ same-state ผ่านหรือไม่
-- Visual Verdict: score, verdict, same_state, hard_fail_present
-- top differences
-- top next edits ถ้ายังไม่ผ่าน
-- tool inventory และ escalation ที่ใช้ พร้อม visual gap ที่แต่ละตัวแก้
-- verification ที่ทำ เช่น app run, screenshot path, pixel/overlay check, smoke test
+รายงานต้องบอก source ของ reference/current screenshot, viewport และ state, Visual Verdict, PRD checklist status, hard-fail ledger, browser evidence path, asset plan status, final verdict path, bundle path, และ next edits ถ้ายังไม่ผ่าน
 
 ### ไฟล์หลัก
 
 - `SKILL.md` - workflow หลักสำหรับ Codex
-- `agents/openai.yaml` - metadata สำหรับแสดง BetterRef ใน UI
+- `references/prd-to-web.md` - PRD-to-web runbook
+- `references/full-page-scroll.md` - long-page reference rules
+- `references/hard-fail-ledger.md` - hard-fail definitions
+- `benchmarks/betterref-eval.example.json` - pressure test manifest
 
 ### ตัวอย่าง prompt
 
 ```text
-ใช้ BetterRef ทำหน้านี้ให้เหมือนภาพอ้างอิงมากที่สุด และอย่าบอกว่า pass ถ้ายังมี hard fail
+ใช้ BetterRef ทำเว็บจาก PRD นี้ให้ตรง reference และอย่าบอกว่า pass จนกว่า final verdict bundle จะไม่มี hard fail
 ```
 
 ```text
-ใช้ BetterRef เทียบภาพ current กับ reference แล้วบอก score, hard fail, และจุดที่ต้องแก้
+ใช้ BetterRef เทียบ current กับ reference แล้วสรุป score, hard fail, PRD gap, browser evidence, asset plan, และสิ่งที่ต้องแก้ต่อ
 ```
 
 ---
