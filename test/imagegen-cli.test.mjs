@@ -151,3 +151,46 @@ test('betterref-imagegen attaches a generated asset and marks the plan item pass
   assert.equal(updatedPlan.assets[0].nativeHeight, 128);
   assert.equal(updatedPlan.assets[0].measuredSharpness >= 20, true);
 });
+
+test('betterref-imagegen auto-attaches generated files by asset id from a directory', async () => {
+  const dir = await makeCase('auto-attach');
+  const project = path.join(dir, 'project');
+  const generatedDir = path.join(dir, 'generated');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const generated = path.join(generatedDir, 'asset-001.png');
+  await mkdir(project, { recursive: true });
+  await mkdir(generatedDir, { recursive: true });
+  await writeCheckerPng(generated);
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pending',
+        role: 'cinematic-hero',
+        targetPath: 'public/betterref-assets/hero.png',
+        minNativeWidth: 96,
+        minNativeHeight: 96,
+        minSharpness: 20,
+        prompt: 'Create a premium hero.'
+      }
+    ]
+  });
+
+  const result = runImagegen([
+    '--asset-plan', assetPlan,
+    '--auto-attach-dir', generatedDir,
+    '--project', project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.schemaVersion, 'betterref.imagegen.attach.v1');
+  assert.equal(payload.attached[0].id, 'asset-001');
+  await readFile(path.join(project, 'public', 'betterref-assets', 'hero.png'));
+  const updatedPlan = JSON.parse(await readFile(assetPlan, 'utf8'));
+  assert.equal(updatedPlan.assets[0].status, 'pass');
+  assert.equal(updatedPlan.assets[0].verification, 'betterref-imagegen attach');
+});

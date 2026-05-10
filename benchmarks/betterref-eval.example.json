@@ -288,6 +288,46 @@
         "hardFailPresent": false,
         "blockingReasonIncludes": ["mobile-viewport"]
       }
+    },
+    {
+      "id": "real-prd-landing-full-evidence-pass",
+      "report": "fixtures/real-prd-landing-full-evidence/report.json",
+      "guard": "fixtures/real-prd-landing-full-evidence/guard-report.json",
+      "prd": "fixtures/real-prd-landing-full-evidence/prd-checklist.json",
+      "longpage": "fixtures/real-prd-landing-full-evidence/longpage-report.json",
+      "assetPlan": "fixtures/real-prd-landing-full-evidence/asset-plan.json",
+      "browserEvidence": "fixtures/real-prd-landing-full-evidence/browser-evidence.json",
+      "project": "fixtures/real-prd-landing-full-evidence/project",
+      "require": "guard,prd,longpage,assetplan,browser",
+      "expect": {
+        "verdict": "pass",
+        "hardFailPresent": false,
+        "minPrdCompliance": 100
+      }
+    },
+    {
+      "id": "real-dashboard-prd-gap-pressure",
+      "report": "fixtures/real-dashboard-prd-gap/report.json",
+      "guard": "fixtures/real-dashboard-prd-gap/guard-report.json",
+      "prd": "fixtures/real-dashboard-prd-gap/prd-checklist.json",
+      "expect": {
+        "verdict": "revise",
+        "hardFailPresent": false,
+        "blockingReasonIncludes": ["dashboard-filter-state"]
+      }
+    },
+    {
+      "id": "real-commerce-imagegen-rendered-pass",
+      "report": "fixtures/real-commerce-imagegen-rendered/report.json",
+      "guard": "fixtures/real-commerce-imagegen-rendered/guard-report.json",
+      "assetPlan": "fixtures/real-commerce-imagegen-rendered/asset-plan.json",
+      "browserEvidence": "fixtures/real-commerce-imagegen-rendered/browser-evidence.json",
+      "project": "fixtures/real-commerce-imagegen-rendered/project",
+      "require": "guard,assetplan,browser",
+      "expect": {
+        "verdict": "pass",
+        "hardFailPresent": false
+      }
     }
   ]
 }

@@ -1,0 +1,16 @@
+{
+  "viewport": { "width": 1440, "height": 900 },
+  "page": { "scrollHeight": 1840, "bodyTextLength": 4200, "interactiveCount": 34 },
+  "fonts": { "ready": true, "status": "loaded" },
+  "console": [],
+  "network": { "errors": [] },
+  "images": [
+    {
+      "src": "/betterref-assets/landing-hero.svg",
+      "naturalWidth": 128,
+      "naturalHeight": 96,
+      "renderedWidth": 128,
+      "renderedHeight": 96
+    }
+  ]
+}

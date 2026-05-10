@@ -53,6 +53,9 @@ Fallback order for browser evidence:
 ```bash
 npx betterref-prd --pdf PRD.pdf --out .betterref-prd --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
+npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --auto-attach-dir .betterref-imagegen/generated --project . --json
+# When evidence comes from @chrome or Chrome MCP handoff JSON:
+npx betterref-chrome-bridge --input .betterref/chrome-handoff.json --out .betterref --config-out .betterref.json --json
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 # No-CDP local alternative when Playwright is installed in the project:
 npx betterref-capture --url http://127.0.0.1:3000 --out .betterref --ref reference.png --viewport 1440x900 --full-page --section-screenshots --html
@@ -62,6 +65,7 @@ npx betterref-verify --report .betterref/report.json --guard .betterref/guard-re
 ```
 
 If you use `betterref-capture --full-page` instead of `betterref-chrome`, pass `.betterref/screenshot.png` as `--actual-full` to `betterref-longpage`. Add repeated `--selector name=css` entries when the app has stable section selectors, for example `--selector hero=[data-betterref="hero"] --selector footer=footer`.
+If you use `@chrome`, export the tab handoff as `.betterref/chrome-handoff.json`, run `betterref-chrome-bridge`, and pass the generated `.betterref/browser-evidence.json` through guard and final verification.
 
 Use tool scores as evidence, not authority. If the PRD says the page must scroll, have working cards, or include a generated hero asset, a high visual score cannot pass a fake or missing implementation.
 Use `--require guard,prd,longpage,assetplan,browser` and pass `--browser-evidence .betterref/browser-evidence.json` in final PRD verification so omitted browser evidence and pending generated/source assets fail instead of silently passing.
@@ -84,7 +88,7 @@ The bundle must include:
 A bundle with `verdict.passed: true` is only credible when `requiredEvidence.missing` is empty, `blockingReasons` is empty, `browserEvidence.passed` is true, `assetPlan.passed` is true, and every required artifact is present with a hash. If any one of those checks fails, continue implementation instead of reporting completion.
 
 When PRD text mentions concrete hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered asset work, `betterref-prd` enables `autoAssetQuality`, sets `minRenderedAssets`, and writes `asset-plan.json`. Each pending asset must be generated with `imagegen` or sourced as a production asset, saved to its target path, wired into the app, verified with browser evidence, and marked `pass` only after scale and sharpness checks pass. Generic style language such as "premium neon motion" is not by itself an imagegen task unless it is attached to a specific asset subject.
-Use `betterref-imagegen --asset-plan ... --out .betterref-imagegen` to create built-in `image_gen` requests, then `betterref-imagegen --attach <asset-id>=<file> --project .` after generation so final verification can trust the asset plan. A manually edited `status: pass` is not evidence.
+Use `betterref-imagegen --asset-plan ... --out .betterref-imagegen` to create built-in `image_gen` requests. After generation, either run `betterref-imagegen --attach <asset-id>=<file> --project .` or save generated files as `.betterref-imagegen/generated/<asset-id>.*` and run `betterref-imagegen --auto-attach-dir .betterref-imagegen/generated --project .`. A manually edited `status: pass` is not evidence.
 
 ## Benchmark Manifests
 

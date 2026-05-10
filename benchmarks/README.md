@@ -1,6 +1,6 @@
 # BetterRef Benchmarks
 
-`betterref-eval.example.json` is intentionally runnable. It includes two clean cases and eighteen pressure cases that must not pass accidentally:
+`betterref-eval.example.json` is intentionally runnable. It includes clean cases, real PRD project archetypes, and pressure cases that must not pass accidentally:
 
 - `clean-prd-page`: code-native UI with complete PRD and browser evidence.
 - `screenshot-as-ui-pressure`: high visual score, but guard hard-fails reference reuse.
@@ -22,6 +22,9 @@
 - `prd-imagegen-false-positive-pressure`: a PRD-derived asset plan keeps sticky/hover/fallback behavior out of imagegen tasks while preserving real 3D hero and game-art assets.
 - `missing-rendered-assets-pressure`: an asset-heavy PRD page has browser evidence, but no rendered production assets at all.
 - `missing-mobile-prd-pressure`: no hard fail, but PRD evidence is incomplete, so the verdict is `revise`.
+- `real-prd-landing-full-evidence-pass`: a full PRD-to-web landing page archetype with visual, guard, PRD, long-page, browser, and rendered asset evidence all present.
+- `real-dashboard-prd-gap-pressure`: an operational dashboard archetype where visual/guard pass but a product requirement remains missing, so the verdict stays `revise`.
+- `real-commerce-imagegen-rendered-pass`: a commerce/card-art archetype where a generated asset is verified, present on disk, and rendered in browser evidence.
 
 Each pressure case asserts both the verdict and at least one expected blocking-reason substring, so a case cannot pass by failing for an unrelated reason.
 

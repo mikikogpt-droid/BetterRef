@@ -526,8 +526,20 @@ test('bundled benchmark example is executable', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
   assert.equal(report.passed, true);
-  assert.equal(report.summary.total, 21);
-  assert.equal(report.summary.matched, 21);
+  assert.equal(report.summary.total, 24);
+  assert.equal(report.summary.matched, 24);
+});
+
+test('bundled benchmark example includes real PRD project archetypes', async () => {
+  const manifest = JSON.parse(await readFile(path.join(repoRoot, 'benchmarks', 'betterref-eval.example.json'), 'utf8'));
+  const ids = new Set(manifest.cases.map((item) => item.id));
+  for (const id of [
+    'real-prd-landing-full-evidence-pass',
+    'real-dashboard-prd-gap-pressure',
+    'real-commerce-imagegen-rendered-pass'
+  ]) {
+    assert.equal(ids.has(id), true, `${id} must be present in the bundled benchmark manifest`);
+  }
 });
 
 test('betterref-eval prints usage and exits code 2 without a manifest', () => {

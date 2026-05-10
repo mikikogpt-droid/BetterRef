@@ -1,0 +1,6 @@
+{
+  "items": [
+    { "id": "dashboard-table", "status": "pass", "requirement": "Dashboard table renders data rows." },
+    { "id": "dashboard-filter-state", "status": "missing", "requirement": "Saved filters survive refresh and are reflected in the URL." }
+  ]
+}

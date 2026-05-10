@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 import { parseArgs } from '../lib/args.mjs';
-import { attachGeneratedAssets, BetterRefImagegenError, buildImagegenQueue } from '../lib/imagegen.mjs';
+import {
+  attachGeneratedAssets,
+  autoAttachGeneratedAssets,
+  BetterRefImagegenError,
+  buildImagegenQueue
+} from '../lib/imagegen.mjs';
 
 const usage = `Usage: betterref-imagegen --asset-plan <asset-plan.json> [options]
 
@@ -10,6 +15,7 @@ Required:
 Options:
   --out                 Write built-in image_gen request queue and prompt markdown.
   --attach              Attach a generated file as <asset-id>=<file>.
+  --auto-attach-dir     Attach generated files named <asset-id>.* from a directory.
   --project             Project directory for resolving relative target paths.
   --json                Print JSON result to stdout.
   --help                Show this help.
@@ -41,16 +47,25 @@ async function main() {
   }
 
   try {
-    const result = values.attach
-      ? await attachGeneratedAssets({
-          assetPlanPath: values['asset-plan'],
-          attach: values.attach,
-          projectDir: values.project
-        })
-      : await buildImagegenQueue({
-          assetPlanPath: values['asset-plan'],
-          outDir: values.out
-        });
+    let result;
+    if (values['auto-attach-dir']) {
+      result = await autoAttachGeneratedAssets({
+        assetPlanPath: values['asset-plan'],
+        autoAttachDir: values['auto-attach-dir'],
+        projectDir: values.project
+      });
+    } else if (values.attach) {
+      result = await attachGeneratedAssets({
+        assetPlanPath: values['asset-plan'],
+        attach: values.attach,
+        projectDir: values.project
+      });
+    } else {
+      result = await buildImagegenQueue({
+        assetPlanPath: values['asset-plan'],
+        outDir: values.out
+      });
+    }
 
     if (flags.has('json')) {
       console.log(JSON.stringify(result, null, 2));

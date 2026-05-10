@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "hardFailPresent": false,
+  "fullPageStructure": { "passed": true, "score": 98 },
+  "sections": [
+    { "name": "header-hero", "passed": true, "score": 98 },
+    { "name": "quick-topup", "passed": true, "score": 97 },
+    { "name": "promotions", "passed": true, "score": 96 },
+    { "name": "footer", "passed": true, "score": 98 }
+  ]
+}

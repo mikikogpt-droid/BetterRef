@@ -1,0 +1,16 @@
+{
+  "viewport": { "width": 1440, "height": 900 },
+  "page": { "scrollHeight": 1400, "bodyTextLength": 2600, "interactiveCount": 18 },
+  "fonts": { "ready": true, "status": "loaded" },
+  "console": [],
+  "network": { "errors": [] },
+  "images": [
+    {
+      "src": "/betterref-assets/product-card.svg",
+      "naturalWidth": 128,
+      "naturalHeight": 96,
+      "renderedWidth": 120,
+      "renderedHeight": 90
+    }
+  ]
+}

@@ -168,12 +168,12 @@ Recommended handoff shape from Chrome MCP or any browser script:
 Then run:
 
 ```bash
-npx betterref-regions --input chrome-dom-boxes.json --out .betterref.json
+npx betterref-chrome-bridge --input chrome-handoff.json --out .betterref --config-out .betterref.json --json
 npx betterref-diff --ref reference.png --actual chrome-screenshot.png --out .betterref --config .betterref.json --regions both --html
 npx betterref-guard --project . --report .betterref/report.json --config betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
 ```
 
-`betterref-regions` clips boxes to the viewport by default and skips zero-size hidden boxes. Add `--strict-bounds` when an overflow box should fail instead of being clipped.
+`betterref-chrome-bridge` converts `@chrome`/Chrome MCP handoff JSON into `.betterref/browser-evidence.json`, `.betterref/chrome-dom-boxes.json`, and optional `.betterref.json` regions. It clips boxes to the viewport through the same region rules as `betterref-regions`; add `--strict-bounds` when an overflow box should fail instead of being clipped.
 
 ## PRD PDF Workflow
 
@@ -187,6 +187,8 @@ Then use the generated runbook:
 
 ```bash
 npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
+# After using built-in image_gen and saving files as <asset-id>.* in .betterref-imagegen/generated:
+npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --auto-attach-dir .betterref-imagegen/generated --project . --json
 npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
 npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
 npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
@@ -200,6 +202,7 @@ Outputs:
 - `.betterref-prd/prd-checklist.json` - machine-readable PRD checklist consumed by `betterref-verify`
 - `.betterref-prd/asset-plan.json` - machine-readable generated/source asset plan with imagegen prompts, target paths, native-size minimums, attach metadata, and pass/pending status
 - `.betterref-imagegen/imagegen-requests.json` and `.betterref-imagegen/imagegen-prompts.md` - built-in `image_gen` request queue for pending asset plan items
+- `.betterref-imagegen/generated/<asset-id>.*` - optional convention consumed by `betterref-imagegen --auto-attach-dir`
 - `.betterref-prd/betterref.guard.json` - generated guard config for source reuse, long-page, DOM, asset scaling, and PRD-inferred raster sharpness checks
 - `.betterref/report.json` - thresholds, metrics, pass/revise status, and visual verdict data
 - `.betterref/chrome-full-page.png` and `.betterref/sections/*.png` - native browser evidence for long-page and section review when requested

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "betterref.asset.plan.v1",
+  "imagegenRequired": true,
+  "assets": [
+    {
+      "id": "asset-001",
+      "status": "pass",
+      "role": "cinematic-hero",
+      "targetPath": "public/betterref-assets/landing-hero.svg",
+      "generatedPath": "public/betterref-assets/landing-hero.svg",
+      "nativeWidth": 128,
+      "nativeHeight": 96,
+      "minNativeWidth": 96,
+      "minNativeHeight": 72,
+      "verifiedAt": "2026-05-10T00:00:00.000Z",
+      "verification": "betterref-imagegen attach"
+    }
+  ]
+}

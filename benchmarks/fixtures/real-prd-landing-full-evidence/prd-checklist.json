@@ -1,0 +1,7 @@
+{
+  "items": [
+    { "id": "hero-navigation", "status": "pass", "requirement": "Hero and primary navigation are implemented as code-native UI." },
+    { "id": "quick-topup", "status": "pass", "requirement": "Quick top-up cards are interactive." },
+    { "id": "mobile-viewport", "status": "pass", "requirement": "Mobile viewport has responsive layout." }
+  ]
+}
