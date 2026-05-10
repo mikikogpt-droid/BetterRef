@@ -247,6 +247,40 @@ test('betterref-verify fails when required evidence is missing', async () => {
   assert.ok(verdict.blockingReasons.some((item) => item.includes('required long-page evidence is missing')));
 });
 
+test('betterref-verify treats all required evidence as including asset plan', async () => {
+  const dir = await makeCase('required-all-missing-assetplan');
+  const visual = path.join(dir, 'report.json');
+  const guard = path.join(dir, 'guard-report.json');
+  const prd = path.join(dir, 'prd-checklist.json');
+  const longpage = path.join(dir, 'longpage-report.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(prd, { items: [{ id: 'hero', status: 'pass' }] });
+  await writeJson(longpage, {
+    passed: true,
+    hardFailPresent: false,
+    fullPageStructure: { passed: true, score: 99 },
+    sections: [{ name: 'hero', passed: true, score: 99 }]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--guard', guard,
+    '--prd', prd,
+    '--longpage', longpage,
+    '--require', 'all',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.deepEqual(verdict.requiredEvidence.required, ['guard', 'prd', 'longpage', 'assetplan']);
+  assert.deepEqual(verdict.requiredEvidence.missing, ['assetplan']);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('required asset-plan evidence is missing')));
+});
+
 test('betterref-verify passes required evidence when every required report is present', async () => {
   const dir = await makeCase('required-evidence-present');
   const visual = path.join(dir, 'report.json');
