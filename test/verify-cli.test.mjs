@@ -171,10 +171,58 @@ test('betterref-verify writes a readable HTML verdict with blocking evidence', a
   assert.match(htmlBody, /long-page section promotions/);
 });
 
+test('betterref-verify writes an evidence bundle with hashed artifacts', async () => {
+  const dir = await makeCase('evidence-bundle');
+  const visual = path.join(dir, 'report.json');
+  const guard = path.join(dir, 'guard-report.json');
+  const prd = path.join(dir, 'prd-checklist.json');
+  const out = path.join(dir, 'final-verdict.json');
+  const html = path.join(dir, 'final-verdict.html');
+  const bundle = path.join(dir, 'evidence-bundle.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 97, hard_fail_present: false } });
+  await writeJson(guard, { passed: true, hardFailPresent: false, hardFails: [] });
+  await writeJson(prd, { items: [{ id: 'hero', status: 'pass' }, { id: 'mobile', status: 'pass' }] });
+
+  const result = runVerify([
+    '--report', visual,
+    '--guard', guard,
+    '--prd', prd,
+    '--out', out,
+    '--html', html,
+    '--bundle', bundle,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const evidence = JSON.parse(await readFile(bundle, 'utf8'));
+  assert.equal(evidence.schemaVersion, 1);
+  assert.equal(evidence.verdict.verdict, 'pass');
+  assert.equal(evidence.verdict.visualScore, 97);
+  assert.equal(evidence.verdict.prdScore, 100);
+  assert.deepEqual(evidence.blockingReasons, []);
+
+  const kinds = evidence.artifacts.map((artifact) => artifact.kind).sort();
+  assert.deepEqual(kinds, [
+    'final-verdict-html',
+    'final-verdict-json',
+    'guard-report',
+    'prd-checklist',
+    'visual-report'
+  ]);
+  for (const artifact of evidence.artifacts) {
+    assert.equal(artifact.present, true, artifact.kind);
+    assert.match(artifact.path, /betterref-verify-/);
+    assert.equal(typeof artifact.bytes, 'number');
+    assert.ok(artifact.bytes > 0);
+    assert.match(artifact.sha256, /^[a-f0-9]{64}$/);
+  }
+});
+
 test('betterref-verify prints usage and exits code 2 without a report', () => {
   const result = runVerify([]);
 
   assert.equal(result.status, 2);
   assert.match(result.stderr, /Usage: betterref-verify/);
   assert.match(result.stderr, /--html/);
+  assert.match(result.stderr, /--bundle/);
 });

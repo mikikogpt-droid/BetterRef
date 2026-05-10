@@ -13,6 +13,7 @@ Options:
   --longpage            betterref-longpage report JSON.
   --out                 Write final verdict JSON.
   --html                Write final verdict HTML report.
+  --bundle              Write evidence bundle JSON with artifact hashes.
   --json                Print final verdict JSON to stdout.
   --help                Show this help.
 `;
@@ -51,7 +52,8 @@ async function main() {
       prdPath: values.prd,
       longPagePath: values.longpage,
       outPath: values.out,
-      htmlPath: values.html
+      htmlPath: values.html,
+      bundlePath: values.bundle
     });
 
     if (flags.has('json')) {
