@@ -205,6 +205,30 @@ Bad behavior to catch:
 
 Required behavior: final verdict hard fails with `asset_pass_not_rendered` or equivalent until the app renders the HyperFrames video/WebM and fresh browser evidence captures it.
 
+## BR-PRESSURE-017 Flat 2D Billboard As 3D
+
+Input: Hunyuan/3D deliverable is required, but the output is a plane with the reference image mapped onto it.
+
+Required behavior: hard fail through `betterref-3d` evidence, typically `missing_mesh_stats` or `missing_render_evidence`; the model must include non-empty 3D geometry and multi-angle render evidence.
+
+## BR-PRESSURE-018 Hunyuan Request Missing Provider Evidence
+
+Input: a model file exists, but no `hunyuan-request.json`, provider type, Space/Endpoint URL, seed/settings, or response metadata exists.
+
+Required behavior: the supervisor treats this as an evidence-integrity hard fail until request and response metadata are recorded, even if the current local 3D verifier also passes mesh/render evidence.
+
+## BR-PRESSURE-019 3D Model Without Turntable Evidence
+
+Input: GLB exists and loads, but only one pretty render is attached.
+
+Required behavior: fail or revise when the task requires 3D fidelity; require front/side/three-quarter/turntable evidence.
+
+## BR-PRESSURE-020 Specialist Report Without Confidence
+
+Input: expanded agent team reports facts without specialist confidence or evidence paths.
+
+Required behavior: supervisor rejects the report and asks the specialist to return structured facts, confidence, uncertainties, and evidence.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.

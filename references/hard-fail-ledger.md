@@ -72,6 +72,16 @@ The hard-fail ledger is the authority that numeric scores cannot override.
 
 `autoAssetQuality` uses `browser-evidence.json` image URLs and checks matching local files under `public` by default. It skips unresolved external/CDN/data/blob images instead of hard-failing them; add explicit `assetQualityChecks` for assets that cannot be mapped from browser evidence. HyperFrames/video assets are verified from the asset plan's CLI evidence plus `browser-evidence.json` `videos` or `media.rendered` entries, not from raster sharpness checks.
 
+## 3D Model Hard Fails
+
+Current `betterref-3d` evidence codes include `asset_pending`, `missing_model_file`, `missing_mesh_stats`, `missing_render_evidence`, and `missing_material_evidence`.
+
+- Flat 2D billboard as 3D: fail as `missing_mesh_stats` or `missing_render_evidence` unless the evidence proves non-empty geometry from multiple angles.
+- Missing runtime/load proof: fail as `missing_model_file` when no non-empty model path is verified.
+- Missing mesh stats: fail as `missing_mesh_stats`; passed models need vertex/face/material counts.
+- Missing turntable/multi-angle proof: fail as `missing_render_evidence` when fidelity requires multi-angle render evidence.
+- Missing Hunyuan request/response metadata: treat as an evidence-integrity hard fail and do not accept the model until provider/request/response metadata is recorded.
+
 Run:
 
 ```bash

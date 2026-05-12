@@ -19,6 +19,7 @@ Every visual item must be classified before implementation:
 | Logo or known brand asset | official/local asset |
 | Glass, 3D, cinematic hero, textured background, premium raster still | `imagegen` or sourced production asset |
 | Animated cinematic hero, motion logo, reveal, loop, WebM/MP4, shader transition | `hyperframes` composition rendered through `hyperframes-cli` |
+| 3D model from object/product/character/prop reference | `betterref-reference` analysis, `betterref-3d` plan, real mesh evidence |
 | PDF render, screenshot, reference crop, Figma export | reference-only evidence |
 
 Never call the result done when any hard-fail ledger item exists. A score of 98-100 still fails if the UI is fake, blurry, non-scrollable, clipped, in the wrong state, or made from the reference itself.
@@ -37,6 +38,10 @@ Never call the result done when any hard-fail ledger item exists. A score of 98-
 | Hero/premium raster looks soft | Use `autoAssetQuality` from browser evidence or explicit `assetQualityChecks`; fail if sharpness is below threshold. |
 | Asset-heavy PRD renders only placeholders | Use `minRenderedAssets`; fail until real generated/source assets render. |
 | Generated/source asset file exists but is not rendered | Fail; wire it into the actual UI and recapture browser evidence. |
+| Reference image supplied for deep copying | Run `betterref-reference` and require `reference-analysis.json` before planning. |
+| Reference contains object/product/character/prop for 3D | Create 3D brief and run `betterref-3d` handoff. |
+| Hunyuan 3D via Hugging Face requested | Use Space/Endpoint/custom adapter and record request/response metadata. |
+| Work is PRD + visual + 3D | Use expanded tiered agent team; supervisor merges specialist reports. |
 
 ## Start Project Command
 
@@ -68,6 +73,13 @@ Treat these user phrases as BetterRef workflows:
 | `use $betterref motion assets` | Route animated/cinematic assets through HyperFrames with lint, validate, inspect, render, attach, and browser video evidence. |
 | `use $betterref browser evidence` | Capture or ingest real browser evidence through `@chrome`, Chrome MCP, CDP, or Playwright fallback. |
 | `use $betterref final gate` | Produce final verdict paths and fail if PRD, visual, guard, browser, asset, long-page, or hard-fail evidence is incomplete. |
+| `use $betterref analyze reference` | Analyze a reference image into measured facts, uncertainties, visual checklist, 3D brief, and negative prompts. |
+| `use $betterref 3d model` | Route modelable references into 3D asset plan, Hunyuan handoff, and 3D evidence verification. |
+| `use $betterref agent team` | Use the tiered BetterRef Supervisor agent architecture for deep PRD/reference/3D work. |
+
+## Reference Intelligence And 3D
+
+Reference Intelligence starts with `betterref-reference`: write `reference-analysis.json`, checklist, negative prompts, and a 3D brief when object cues exist. Route a 3D model through `betterref-3d`; Hunyuan 3D on Hugging Face must record provider, request, response, mesh/load evidence, and reject any flat 2D billboard. Use the Expanded Agent Team for PRD + reference + 3D work; the supervisor merges specialist facts, confidence, uncertainties, evidence, actions, and hard fails. Details live in `references/reference-intelligence.md`, `references/reference-to-3d.md`, `references/hunyuan-huggingface.md`, and `references/agent-team.md`.
 
 ## PRD To Web Loop
 
@@ -81,27 +93,12 @@ Treat these user phrases as BetterRef workflows:
 8. Run BetterRef diff/capture and `betterref-guard`.
 9. Mark phase complete only when PRD checklist passes, BetterRef verdict passes, and hard-fail ledger is empty.
 
-Useful commands:
-
-```bash
-npx betterref-run --pdf PRD.pdf --project . --url http://127.0.0.1:3000/ --ref reference.png --endpoint http://127.0.0.1:9222 --json
-npx betterref-run --pdf PRD.pdf --project . --url http://127.0.0.1:3000/ --ref reference.png --browser-handoff .betterref-run/chrome-handoff.json --json
-npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .betterref.json --url http://127.0.0.1:3000/ --ref reference.png
-npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --out .betterref-imagegen --json
-npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --status --out .betterref-imagegen --project . --json
-npx betterref-imagegen --asset-plan .betterref-prd/asset-plan.json --auto-attach-dir .betterref-imagegen/generated --project . --json
-npx betterref-hyperframes --asset-plan .betterref-prd/asset-plan.json --out .betterref-hyperframes --json
-npx betterref-chrome --endpoint http://127.0.0.1:9222 --url-match 127.0.0.1:3000 --out .betterref --full-page --section-screenshots --ref reference.png --regions both --html
-npx betterref-longpage --ref reference.png --actual-full .betterref/chrome-full-page.png --browser-evidence .betterref/browser-evidence.json --out .betterref-longpage --crop-reference auto --html
-npx betterref-guard --project . --report .betterref/report.json --config .betterref-prd/betterref.guard.json --browser-evidence .betterref/browser-evidence.json --out .betterref/guard-report.json
-npx betterref-verify --report .betterref/report.json --guard .betterref/guard-report.json --longpage .betterref-longpage/longpage-report.json --prd .betterref-prd/prd-checklist.json --asset-plan .betterref-prd/asset-plan.json --browser-evidence .betterref/browser-evidence.json --project . --require guard,prd,longpage,assetplan,browser --out .betterref/final-verdict.json --html .betterref/final-verdict.html --bundle .betterref/evidence-bundle.json
-```
+Use the detailed commands in README or `references/prd-to-web.md`.
 
 Do not use final-pass resizing to make screenshots agree. For final verification, compare native target viewport screenshots and report layout drift instead of squeezing images.
 For PRD/full-page verification, require the expected evidence with `--require guard,prd,longpage,assetplan,browser`; missing browser evidence, pending assets, fake-passed assets without attach metadata, and generated assets that are not rendered in browser evidence are hard fails.
-`betterref-run` exit code `3` means the orchestrator is blocked by an external action such as built-in `image_gen`, HyperFrames CLI evidence, or real browser evidence. Read `.betterref-run/next-actions.md`, complete the handoff, then rerun. If no CDP endpoint is available, use `@chrome` or Chrome MCP to write `.betterref-run/chrome-handoff.json`, then rerun with `--browser-handoff`; metadata-only Chrome evidence without real screenshot file paths is a hard fail.
-Use built-in `image_gen` for each request from `.betterref-imagegen/imagegen-requests.json` or `.betterref-run/imagegen-handoff-request.json`, then save/copy the selected output into the declared `.betterref-imagegen/generated/<asset-id>.*` output slot. Run `betterref-imagegen --status` to see pending, generated-not-attached, attached-not-rendered, and pass states, then run `betterref-imagegen --auto-attach-dir .betterref-imagegen/generated --project .` or the request-specific attach command so the asset plan records generated path, native size, sharpness, timestamp, and verification metadata. Do not leave project assets only under `$CODEX_HOME/generated_images`, do not manually flip asset status to `pass`, and do not call imagegen complete until fresh browser evidence renders the asset in the actual app.
-Use HyperFrames for each request from `.betterref-hyperframes/hyperframes-requests.json`, then run `npx hyperframes lint`, `npx hyperframes validate`, `npx hyperframes inspect --json`, and `npx hyperframes render --format webm --quality high`. Attach the rendered file with `betterref-hyperframes --attach <asset-id>=<file> --evidence <hyperframes-evidence.json> --project .`. Do not mark a motion asset `pass` without that CLI evidence and fresh browser evidence showing the rendered video/WebM in the actual app.
+`betterref-run` exit code `3` means the orchestrator is blocked by external `image_gen`, HyperFrames, Hunyuan, or browser evidence. Read `.betterref-run/next-actions.md`, complete the handoff, then rerun.
+For imagegen, HyperFrames, and 3D assets, never mark an item `pass` until attach metadata, native evidence, and fresh browser evidence prove the generated asset renders in the actual app.
 When `--project .` is used, `betterref-prd` creates or updates `AGENTS.md` with a managed BetterRef contract. Preserve user/project instructions outside the managed block, and do not overwrite them.
 
 ## Hard-Fail Ledger

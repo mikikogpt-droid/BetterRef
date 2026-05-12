@@ -144,3 +144,36 @@ test('pressure tests cover the failure modes that caused the ONETAPGG miss', asy
     assert.match(pressureTests, new RegExp(id));
   }
 });
+
+test('SKILL.md documents reference intelligence, Hunyuan 3D, and expanded agent team', async () => {
+  const skill = await readFile(skillPath, 'utf8');
+  assert.match(skill, /Reference Intelligence/i);
+  assert.match(skill, /betterref-reference/);
+  assert.match(skill, /betterref-3d/);
+  assert.match(skill, /Hunyuan 3D/i);
+  assert.match(skill, /Hugging Face/i);
+  assert.match(skill, /Expanded Agent Team/i);
+  assert.match(skill, /3D model/i);
+  assert.match(skill, /flat 2D billboard/i);
+});
+
+test('BetterRef ships reference intelligence and 3D guidance files', async () => {
+  for (const relativePath of [
+    'references/reference-intelligence.md',
+    'references/reference-to-3d.md',
+    'references/hunyuan-huggingface.md',
+    'references/agent-team.md'
+  ]) {
+    assert.equal(await fileExists(relativePath), true, `${relativePath} must exist`);
+  }
+});
+
+test('pressure tests cover 3D and expanded-agent failure modes', async () => {
+  const pressureTests = await readFile(path.join(repoRoot, 'references', 'pressure-tests.md'), 'utf8');
+  for (const id of ['BR-PRESSURE-017', 'BR-PRESSURE-018', 'BR-PRESSURE-019', 'BR-PRESSURE-020']) {
+    assert.match(pressureTests, new RegExp(id));
+  }
+  assert.match(pressureTests, /flat 2D billboard/i);
+  assert.match(pressureTests, /Hunyuan/i);
+  assert.match(pressureTests, /specialist confidence/i);
+});
