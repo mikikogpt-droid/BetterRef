@@ -19,8 +19,11 @@ Required:
 
 Options:
   --analysis               reference-analysis.json for --make-plan.
+  --asset-plan             betterref-prd asset-plan JSON for preserving PRD 3D ids/targets.
   --plan                   3d-asset-plan.json for handoff or verify.
   --evidence               3d-evidence.json for --verify.
+  --hunyuan-request        Hunyuan request metadata JSON for --verify.
+  --hunyuan-response       Hunyuan response metadata JSON for --verify.
   --format                 Target 3D format for generated assets, default glb.
   --provider               Hunyuan provider: space, endpoint, both, or custom.
   --space                  Hugging Face Space id for space provider.
@@ -79,7 +82,8 @@ async function main() {
       result = await make3DAssetPlan({
         analysisPath: requireValue(values, 'analysis', '--make-plan'),
         outDir: values.out,
-        format: values.format
+        format: values.format,
+        assetPlanPath: values['asset-plan']
       });
     } else if (mode === 'make-hunyuan-request') {
       result = await makeHunyuanRequest({
@@ -95,7 +99,9 @@ async function main() {
         planPath: requireValue(values, 'plan', '--verify'),
         evidencePath: values.evidence,
         outDir: values.out,
-        projectDir: values.project
+        projectDir: values.project,
+        hunyuanRequestPath: values['hunyuan-request'],
+        hunyuanResponsePath: values['hunyuan-response']
       });
     }
 

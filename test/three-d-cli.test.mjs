@@ -38,6 +38,27 @@ async function writeModelAndRender(project, name = 'model-001') {
   return { modelRelative, renderRelative };
 }
 
+async function writeHunyuanMetadata(dir, { id = 'model-001', targetPath = 'public/betterref-assets/model-001.glb' } = {}) {
+  const request = path.join(dir, 'hunyuan-request.json');
+  const response = path.join(dir, 'hunyuan-response.json');
+  await writeJson(request, {
+    schemaVersion: 'betterref.hunyuan.request.v1',
+    providers: ['space', 'endpoint'],
+    huggingFace: {
+      space: 'tencent/Hunyuan3D-2',
+      endpoint: 'https://hunyuan.example.endpoints.huggingface.cloud',
+      customUrl: null
+    },
+    assets: [{ id, targetPath }]
+  });
+  await writeJson(response, {
+    schemaVersion: 'betterref.hunyuan.response.v1',
+    provider: 'endpoint',
+    assets: [{ id, status: 'completed', targetPath, responseId: `${id}-hf-job` }]
+  });
+  return { request, response };
+}
+
 test('betterref-3d prints usage and exits code 2 without mode inputs', () => {
   const result = run3D([]);
 
@@ -94,6 +115,57 @@ test('betterref-3d creates a 3D asset plan from a reference analysis', async () 
   assert.equal(plan.assets[0].targetFormat, 'glb');
   assert.deepEqual(plan.assets[0].materialSlots, ['base-color', 'metal-trim']);
   assert.equal(plan.assets[0].acceptanceCriteria.some((item) => /turntable/i.test(item)), true);
+});
+
+test('betterref-3d make-plan preserves PRD 3D asset ids and target paths', async () => {
+  const dir = await makeCase('plan-from-prd-assets');
+  const analysis = path.join(dir, 'reference-analysis.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const out = path.join(dir, '3d-out');
+  await writeJson(analysis, {
+    schemaVersion: 'betterref.reference.analysis.v1',
+    source: path.join(dir, 'reference.png'),
+    targets: ['ui', '3d', 'hunyuan'],
+    objectCues: {
+      modelable: true,
+      silhouette: 'rounded mascot with glass face',
+      materialSlots: ['glass-face']
+    }
+  });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        tool: 'hunyuan3d',
+        implementation: 'hunyuan-3d-model-via-huggingface',
+        role: 'hunyuan-3d-model',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        targetFormat: 'glb',
+        requirement: 'Generate the product mascot as a GLB model.'
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--make-plan',
+    '--analysis',
+    analysis,
+    '--asset-plan',
+    assetPlan,
+    '--out',
+    out,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const plan = JSON.parse(await readFile(path.join(out, '3d-asset-plan.json'), 'utf8'));
+  assert.equal(plan.assets.length, 1);
+  assert.equal(plan.assets[0].id, 'model-001');
+  assert.equal(plan.assets[0].targetPath, 'public/betterref-assets/hunyuan-model-01.glb');
+  assert.equal(plan.assets[0].requirement, 'Generate the product mascot as a GLB model.');
 });
 
 test('betterref-3d creates a Hunyuan request with both Hugging Face adapters', async () => {
@@ -267,6 +339,7 @@ test('betterref-3d verify exits 0 when model evidence passes', async () => {
   const evidence = path.join(dir, '3d-evidence.json');
   const out = path.join(dir, '3d-out');
   const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  const metadata = await writeHunyuanMetadata(dir, { targetPath: modelRelative });
   await writeJson(plan, {
     schemaVersion: 'betterref.3d.asset.plan.v1',
     threeDRequired: true,
@@ -299,6 +372,10 @@ test('betterref-3d verify exits 0 when model evidence passes', async () => {
     plan,
     '--evidence',
     evidence,
+    '--hunyuan-request',
+    metadata.request,
+    '--hunyuan-response',
+    metadata.response,
     '--out',
     out,
     '--project',
@@ -314,13 +391,15 @@ test('betterref-3d verify exits 0 when model evidence passes', async () => {
   assert.equal(payload.hardFailPresent, false);
   assert.deepEqual(payload.blockingReasons, []);
   assert.equal(payload.assets[0].passed, true);
+  assert.equal(payload.assets[0].requestMetadataPresent, true);
+  assert.equal(payload.assets[0].responseMetadataPresent, true);
 
   const verdict = JSON.parse(await readFile(path.join(out, '3d-verdict.json'), 'utf8'));
   assert.equal(verdict.verdict, 'pass');
 });
 
-test('betterref-3d verify lets completed evidence override a pending generated plan', async () => {
-  const dir = await makeCase('pending-plan-complete-evidence');
+test('betterref-3d verify requires Hunyuan request and response metadata', async () => {
+  const dir = await makeCase('verify-missing-hunyuan-metadata');
   const project = path.join(dir, 'project');
   const plan = path.join(dir, '3d-asset-plan.json');
   const evidence = path.join(dir, '3d-evidence.json');
@@ -365,6 +444,64 @@ test('betterref-3d verify lets completed evidence override a pending generated p
     '--json'
   ]);
 
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
+  assert.equal(payload.blockingReasons.some((item) => /Hunyuan request metadata/i.test(item)), true);
+  assert.equal(payload.blockingReasons.some((item) => /Hunyuan response metadata/i.test(item)), true);
+});
+
+test('betterref-3d verify lets completed evidence override a pending generated plan', async () => {
+  const dir = await makeCase('pending-plan-complete-evidence');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  const metadata = await writeHunyuanMetadata(dir, { targetPath: modelRelative });
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetFormat: 'glb',
+        targetPath: modelRelative
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 240, faceCount: 120 },
+        renders: [renderRelative]
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--hunyuan-request',
+    metadata.request,
+    '--hunyuan-response',
+    metadata.response,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.passed, true);
@@ -379,6 +516,7 @@ test('betterref-3d verify rejects unknown evidence status on a pending plan', as
   const evidence = path.join(dir, '3d-evidence.json');
   const out = path.join(dir, '3d-out');
   const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  const metadata = await writeHunyuanMetadata(dir, { targetPath: modelRelative });
   await writeJson(plan, {
     schemaVersion: 'betterref.3d.asset.plan.v1',
     threeDRequired: true,
@@ -411,6 +549,10 @@ test('betterref-3d verify rejects unknown evidence status on a pending plan', as
     plan,
     '--evidence',
     evidence,
+    '--hunyuan-request',
+    metadata.request,
+    '--hunyuan-response',
+    metadata.response,
     '--out',
     out,
     '--project',
@@ -485,6 +627,7 @@ test('betterref-3d verify accepts required material evidence', async () => {
   const evidence = path.join(dir, '3d-evidence.json');
   const out = path.join(dir, '3d-out');
   const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  const metadata = await writeHunyuanMetadata(dir, { targetPath: modelRelative });
   await writeJson(plan, {
     schemaVersion: 'betterref.3d.asset.plan.v1',
     threeDRequired: true,
@@ -519,6 +662,10 @@ test('betterref-3d verify accepts required material evidence', async () => {
     plan,
     '--evidence',
     evidence,
+    '--hunyuan-request',
+    metadata.request,
+    '--hunyuan-response',
+    metadata.response,
     '--out',
     out,
     '--project',

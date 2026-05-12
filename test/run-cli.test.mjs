@@ -48,7 +48,55 @@ async function writeJson(filePath, value) {
 
 async function writePassingThreeDVerdict(project, generatedAt = '2026-05-12T00:00:00.000Z') {
   const verdictPath = path.join(project, '.betterref-3d', '3d-verdict.json');
+  const modelPath = path.join(project, 'public', 'betterref-assets', 'hunyuan-model-01.glb');
+  const renderPath = path.join(project, 'evidence', 'model-001-turntable-front.png');
+  const evidencePath = path.join(project, '.betterref-3d', '3d-evidence.json');
+  const requestPath = path.join(project, '.betterref-3d', 'hunyuan-request.json');
+  const responsePath = path.join(project, '.betterref-3d', 'hunyuan-response.json');
+  await mkdir(path.dirname(modelPath), { recursive: true });
+  await mkdir(path.dirname(renderPath), { recursive: true });
   await mkdir(path.dirname(verdictPath), { recursive: true });
+  await writeFile(modelPath, 'fake-glb-bytes');
+  await writeFile(renderPath, 'fake-render-bytes');
+  await writeJson(evidencePath, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        meshStats: { vertexCount: 240, faceCount: 120 },
+        renders: ['evidence/model-001-turntable-front.png']
+      }
+    ]
+  });
+  await writeJson(requestPath, {
+    schemaVersion: 'betterref.hunyuan.request.v1',
+    providers: ['space', 'endpoint'],
+    huggingFace: {
+      space: 'tencent/Hunyuan3D-2',
+      endpoint: 'https://example.endpoints.huggingface.cloud',
+      customUrl: null
+    },
+    assets: [
+      {
+        id: 'model-001',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb'
+      }
+    ]
+  });
+  await writeJson(responsePath, {
+    schemaVersion: 'betterref.hunyuan.response.v1',
+    provider: 'endpoint',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        responseId: 'hf-job-001'
+      }
+    ]
+  });
   await writeJson(verdictPath, {
     schemaVersion: 'betterref.3d.verdict.v1',
     generatedAt,
@@ -60,19 +108,25 @@ async function writePassingThreeDVerdict(project, generatedAt = '2026-05-12T00:0
         id: 'model-001',
         status: 'complete',
         passed: true,
-        modelPath: path.join(project, 'public', 'betterref-assets', 'hunyuan-model-01.glb'),
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        provider: 'hunyuan',
+        modelPath,
         modelExists: true,
         meshStatsPresent: true,
         renderEvidencePresent: true,
         materialEvidenceRequired: false,
         materialEvidencePresent: false,
+        requestMetadataPresent: true,
+        responseMetadataPresent: true,
         failures: []
       }
     ],
     blockingReasons: [],
     inputs: {
       planPath: path.join(project, '.betterref-3d', '3d-asset-plan.json'),
-      evidencePath: path.join(project, '.betterref-3d', '3d-evidence.json'),
+      evidencePath,
+      hunyuanRequestPath: requestPath,
+      hunyuanResponsePath: responsePath,
       projectDir: project
     },
     artifacts: {
@@ -347,6 +401,9 @@ test('betterref-run blocks on required Hunyuan 3D handoff before browser verific
   assert.equal(await pathExists(path.join(project, '.betterref-3d', '3d-asset-plan.json')), true);
   assert.equal(await pathExists(path.join(project, '.betterref-3d', 'hunyuan-request.json')), true);
   assert.equal(await pathExists(path.join(project, '.betterref-3d', '3d-verdict.json')), true);
+  const plan = JSON.parse(await readFile(path.join(project, '.betterref-3d', '3d-asset-plan.json'), 'utf8'));
+  assert.equal(plan.assets[0].id, 'model-001');
+  assert.equal(plan.assets[0].targetPath, 'public/betterref-assets/hunyuan-model-01.glb');
 
   const actions = await readFile(path.join(project, '.betterref-run', 'next-actions.md'), 'utf8');
   assert.match(actions, /betterref-reference/);
@@ -387,6 +444,42 @@ test('betterref-run resumes past 3D gate when a passing 3D verdict already exist
   const verdict = JSON.parse(await readFile(path.join(project, '.betterref-3d', '3d-verdict.json'), 'utf8'));
   assert.equal(verdict.passed, true);
   assert.equal(verdict.generatedAt, '2026-05-12T00:00:00.000Z');
+});
+
+test('betterref-run refuses to resume with a pass-shaped 3D verdict without evidence', async () => {
+  const dir = await makeCase('hunyuan-3d-pass-shaped-rejected');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  await mkdir(path.join(project, '.betterref-3d'), { recursive: true });
+  await writeJson(path.join(project, '.betterref-3d', '3d-verdict.json'), {
+    schemaVersion: 'betterref.3d.verdict.v1',
+    passed: true,
+    verdict: 'pass',
+    hardFailPresent: false,
+    blockingReasons: [],
+    assets: [{ id: 'model-001', passed: true }]
+  });
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    '3D acceptance: mesh must load in Three.js and provide turntable evidence.'
+  ]);
+  await writePng(ref);
+
+  const result = runCli([
+    '--pdf', pdf,
+    '--project', project,
+    '--ref', ref,
+    '--url', 'http://127.0.0.1:3000/',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 3, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.status, 'blocked');
+  assert.equal(payload.phase, '3d');
+  assert.ok(payload.blockers.some((item) => item.code === 'blocked_external_3d_generation'));
 });
 
 test('betterref-run auto-attaches generated imagegen slots before browser evidence gate', async () => {

@@ -412,6 +412,7 @@ test('betterref-verify fails when 3D verdict has hard fails', async () => {
   const threeD = path.join(dir, '3d-verdict.json');
   await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
   await writeJson(threeD, {
+    schemaVersion: 'betterref.3d.verdict.v1',
     passed: false,
     verdict: 'fail',
     hardFailPresent: true,
@@ -430,10 +431,52 @@ test('betterref-verify fails when 3D verdict has hard fails', async () => {
 
 test('betterref-verify passes required 3D evidence when 3D verdict passes', async () => {
   const dir = await makeCase('three-d-pass');
+  const project = path.join(dir, 'project');
+  const visual = path.join(dir, 'report.json');
+  const threeD = path.join(dir, '3d-verdict.json');
+  const modelPath = path.join(project, 'public', 'betterref-assets', 'model-001.glb');
+  await mkdir(path.dirname(modelPath), { recursive: true });
+  await writeFile(modelPath, 'fake-glb-bytes');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(threeD, {
+    schemaVersion: 'betterref.3d.verdict.v1',
+    passed: true,
+    verdict: 'pass',
+    hardFailPresent: false,
+    blockingReasons: [],
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        passed: true,
+        targetPath: 'public/betterref-assets/model-001.glb',
+        modelPath,
+        modelExists: true,
+        meshStatsPresent: true,
+        renderEvidencePresent: true,
+        materialEvidenceRequired: false,
+        materialEvidencePresent: false,
+        failures: []
+      }
+    ]
+  });
+
+  const result = runVerify(['--report', visual, '--three-d', threeD, '--project', project, '--require', '3d', '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'pass');
+  assert.equal(verdict.threeD.passed, true);
+  assert.deepEqual(verdict.requiredEvidence.missing, []);
+});
+
+test('betterref-verify hard fails pass-shaped 3D verdicts without verified asset proof', async () => {
+  const dir = await makeCase('three-d-pass-shaped-verdict');
   const visual = path.join(dir, 'report.json');
   const threeD = path.join(dir, '3d-verdict.json');
   await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
   await writeJson(threeD, {
+    schemaVersion: 'betterref.3d.verdict.v1',
     passed: true,
     verdict: 'pass',
     hardFailPresent: false,
@@ -443,11 +486,46 @@ test('betterref-verify passes required 3D evidence when 3D verdict passes', asyn
 
   const result = runVerify(['--report', visual, '--three-d', threeD, '--require', '3d', '--json']);
 
-  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.equal(result.status, 1, result.stderr || result.stdout);
   const verdict = JSON.parse(result.stdout);
-  assert.equal(verdict.verdict, 'pass');
-  assert.equal(verdict.threeD.passed, true);
-  assert.deepEqual(verdict.requiredEvidence.missing, []);
+  assert.equal(verdict.threeD.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => /model file evidence/i.test(item)));
+});
+
+test('betterref-verify fails strict 3D verdicts when model file evidence cannot be resolved', async () => {
+  const dir = await makeCase('three-d-unresolved-model-file');
+  const visual = path.join(dir, 'report.json');
+  const threeD = path.join(dir, '3d-verdict.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(threeD, {
+    schemaVersion: 'betterref.3d.verdict.v1',
+    passed: true,
+    verdict: 'pass',
+    hardFailPresent: false,
+    blockingReasons: [],
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        passed: true,
+        targetPath: 'public/betterref-assets/model-001.glb',
+        modelPath: 'public/betterref-assets/model-001.glb',
+        modelExists: true,
+        meshStatsPresent: true,
+        renderEvidencePresent: true,
+        materialEvidenceRequired: false,
+        materialEvidencePresent: false,
+        failures: []
+      }
+    ]
+  });
+
+  const result = runVerify(['--report', visual, '--three-d', threeD, '--require', '3d', '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.threeD.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => /model file evidence is missing or empty/i.test(item)));
 });
 
 test('betterref-verify hard fails required 3D evidence when verdict JSON is empty', async () => {
@@ -491,6 +569,7 @@ test('betterref-verify hard fails present 3D verdicts that are not explicit pass
   const threeD = path.join(dir, '3d-verdict.json');
   await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
   await writeJson(threeD, {
+    schemaVersion: 'betterref.3d.verdict.v1',
     passed: false,
     verdict: 'revise',
     hardFailPresent: false,
@@ -613,9 +692,13 @@ test('betterref-verify fails when a required asset plan still has pending genera
 
 test('betterref-verify lets 3D verdict own pending Hunyuan model assets', async () => {
   const dir = await makeCase('asset-plan-pending-3d-owned');
+  const project = path.join(dir, 'project');
   const visual = path.join(dir, 'report.json');
   const assetPlan = path.join(dir, 'asset-plan.json');
   const threeD = path.join(dir, '3d-verdict.json');
+  const modelPath = path.join(project, 'public', 'betterref-assets', 'hunyuan-model-01.glb');
+  await mkdir(path.dirname(modelPath), { recursive: true });
+  await writeFile(modelPath, 'fake-glb-bytes');
   await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
   await writeJson(assetPlan, {
     schemaVersion: 'betterref.asset.plan.v1',
@@ -635,17 +718,37 @@ test('betterref-verify lets 3D verdict own pending Hunyuan model assets', async 
     ]
   });
   await writeJson(threeD, {
+    schemaVersion: 'betterref.3d.verdict.v1',
     passed: true,
     verdict: 'pass',
     hardFailPresent: false,
     blockingReasons: [],
-    assets: [{ id: 'model-001', passed: true, targetPath: 'public/betterref-assets/hunyuan-model-01.glb' }]
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        provider: 'hunyuan',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        passed: true,
+        modelPath,
+        modelExists: true,
+        meshStatsPresent: true,
+        renderEvidencePresent: true,
+        materialEvidenceRequired: false,
+        materialEvidencePresent: false,
+        hunyuanMetadataRequired: true,
+        requestMetadataPresent: true,
+        responseMetadataPresent: true,
+        failures: []
+      }
+    ]
   });
 
   const result = runVerify([
     '--report', visual,
     '--asset-plan', assetPlan,
     '--three-d', threeD,
+    '--project', project,
     '--require', 'assetplan,3d',
     '--json'
   ]);
@@ -656,6 +759,73 @@ test('betterref-verify lets 3D verdict own pending Hunyuan model assets', async 
   assert.equal(verdict.assetPlan.passed, true);
   assert.equal(verdict.assetPlan.pending.some((item) => item.id === 'model-001'), false);
   assert.equal(verdict.blockingReasons.some((item) => item.includes('model-001')), false);
+});
+
+test('betterref-verify fails when 3D verdict does not cover the PRD model target path', async () => {
+  const dir = await makeCase('asset-plan-3d-target-mismatch');
+  const project = path.join(dir, 'project');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const threeD = path.join(dir, '3d-verdict.json');
+  const modelPath = path.join(project, 'public', 'betterref-assets', 'model-001.glb');
+  await mkdir(path.dirname(modelPath), { recursive: true });
+  await writeFile(modelPath, 'fake-glb-bytes');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: false,
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        tool: 'hunyuan3d',
+        implementation: 'hunyuan-3d-model-via-huggingface',
+        role: 'hunyuan-3d-model',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        targetFormat: 'glb',
+        requirement: 'Product mascot GLB model'
+      }
+    ]
+  });
+  await writeJson(threeD, {
+    schemaVersion: 'betterref.3d.verdict.v1',
+    passed: true,
+    verdict: 'pass',
+    hardFailPresent: false,
+    blockingReasons: [],
+    assets: [
+      {
+        id: 'model-001',
+        targetPath: 'public/betterref-assets/model-001.glb',
+        passed: true,
+        status: 'completed',
+        modelPath,
+        modelExists: true,
+        meshStatsPresent: true,
+        renderEvidencePresent: true,
+        materialEvidenceRequired: false,
+        materialEvidencePresent: false,
+        requestMetadataPresent: true,
+        responseMetadataPresent: true,
+        failures: []
+      }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--three-d', threeD,
+    '--project', project,
+    '--require', 'assetplan,3d',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.threeD.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => /does not cover PRD model model-001/i.test(item)));
 });
 
 test('betterref-verify fails when a passed imagegen asset lacks attach evidence', async () => {
