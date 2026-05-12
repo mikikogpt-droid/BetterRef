@@ -413,3 +413,47 @@ test('betterref-prd routes animated cinematic hero assets to HyperFrames', async
   assert.match(runbook, /npx hyperframes lint/);
   assert.match(runbook, /npx hyperframes render --format webm --quality high/);
 });
+
+test('betterref-prd detects Hunyuan 3D model requirements separately from raster assets', async () => {
+  const dir = await makeCase('hunyuan-3d-asset-extraction');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(dir, 'prd-out');
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Reference image: product mascot should become a real 3D model.',
+    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    '3D acceptance: mesh must load in Three.js, include texture material, and provide turntable evidence.',
+    'Hero UI text and buttons remain code-native.'
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.threeDRequired, true);
+  assert.equal(summary.hunyuanRequired, true);
+
+  const assetPlan = JSON.parse(await readFile(path.join(out, 'asset-plan.json'), 'utf8'));
+  assert.equal(assetPlan.threeDRequired, true);
+  assert.equal(assetPlan.assets.some((asset) => /Hero UI text and buttons/i.test(asset.requirement)), false);
+
+  const threeDAsset = assetPlan.assets.find((asset) => asset.tool === 'hunyuan3d');
+  assert.ok(threeDAsset);
+  assert.match(threeDAsset.targetPath, /\.glb$/);
+  assert.equal(threeDAsset.role, 'hunyuan-3d-model');
+  assert.equal(threeDAsset.implementation, 'hunyuan-3d-model-via-huggingface');
+  assert.equal(threeDAsset.acceptanceCriteria.some((item) => /turntable/i.test(item)), true);
+
+  const runbook = await readFile(path.join(out, 'betterref-runbook.md'), 'utf8');
+  assert.match(runbook, /betterref-3d --make-plan/);
+  assert.match(runbook, /betterref-3d --make-hunyuan-request/);
+  assert.match(runbook, /--three-d \.betterref-3d\/3d-verdict\.json/);
+  assert.match(runbook, /--require guard,prd,longpage,assetplan,browser,3d/);
+});
