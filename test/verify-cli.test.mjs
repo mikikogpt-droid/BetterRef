@@ -450,6 +450,45 @@ test('betterref-verify passes required 3D evidence when 3D verdict passes', asyn
   assert.deepEqual(verdict.requiredEvidence.missing, []);
 });
 
+test('betterref-verify hard fails required 3D evidence when verdict JSON is empty', async () => {
+  const dir = await makeCase('three-d-empty-verdict');
+  const visual = path.join(dir, 'report.json');
+  const threeD = path.join(dir, '3d-verdict.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(threeD, {});
+
+  const result = runVerify(['--report', visual, '--three-d', threeD, '--require', '3d', '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.equal(verdict.threeD.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('3D verdict is missing required pass fields')));
+});
+
+test('betterref-verify hard fails present 3D verdicts that are not explicit pass verdicts', async () => {
+  const dir = await makeCase('three-d-revise-verdict');
+  const visual = path.join(dir, 'report.json');
+  const threeD = path.join(dir, '3d-verdict.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(threeD, {
+    passed: false,
+    verdict: 'revise',
+    hardFailPresent: false,
+    blockingReasons: []
+  });
+
+  const result = runVerify(['--report', visual, '--three-d', threeD, '--require', '3d', '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.equal(verdict.threeD.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('3D verdict did not pass')));
+});
+
 test('betterref-verify treats all required evidence as including asset plan, browser evidence, and 3D evidence', async () => {
   const dir = await makeCase('required-all-missing-assetplan');
   const visual = path.join(dir, 'report.json');
