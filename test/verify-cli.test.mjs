@@ -391,7 +391,66 @@ test('betterref-verify fails when required browser evidence is missing', async (
   assert.ok(verdict.blockingReasons.some((item) => item.includes('required browser evidence is missing')));
 });
 
-test('betterref-verify treats all required evidence as including asset plan and browser evidence', async () => {
+test('betterref-verify treats required 3D evidence as missing when --three-d is omitted', async () => {
+  const dir = await makeCase('required-3d-evidence-missing');
+  const visual = path.join(dir, 'report.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+
+  const result = runVerify(['--report', visual, '--require', '3d', '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.deepEqual(verdict.requiredEvidence.missing, ['3d']);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('required 3D evidence is missing')));
+});
+
+test('betterref-verify fails when 3D verdict has hard fails', async () => {
+  const dir = await makeCase('three-d-hard-fail');
+  const visual = path.join(dir, 'report.json');
+  const threeD = path.join(dir, '3d-verdict.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(threeD, {
+    passed: false,
+    verdict: 'fail',
+    hardFailPresent: true,
+    blockingReasons: ['3D asset model-001 lacks mesh stats']
+  });
+
+  const result = runVerify(['--report', visual, '--three-d', threeD, '--require', '3d', '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.equal(verdict.threeD.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('3D asset model-001 lacks mesh stats')));
+});
+
+test('betterref-verify passes required 3D evidence when 3D verdict passes', async () => {
+  const dir = await makeCase('three-d-pass');
+  const visual = path.join(dir, 'report.json');
+  const threeD = path.join(dir, '3d-verdict.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(threeD, {
+    passed: true,
+    verdict: 'pass',
+    hardFailPresent: false,
+    blockingReasons: [],
+    assets: [{ id: 'model-001', passed: true }]
+  });
+
+  const result = runVerify(['--report', visual, '--three-d', threeD, '--require', '3d', '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'pass');
+  assert.equal(verdict.threeD.passed, true);
+  assert.deepEqual(verdict.requiredEvidence.missing, []);
+});
+
+test('betterref-verify treats all required evidence as including asset plan, browser evidence, and 3D evidence', async () => {
   const dir = await makeCase('required-all-missing-assetplan');
   const visual = path.join(dir, 'report.json');
   const guard = path.join(dir, 'guard-report.json');
@@ -420,10 +479,11 @@ test('betterref-verify treats all required evidence as including asset plan and 
   const verdict = JSON.parse(result.stdout);
   assert.equal(verdict.verdict, 'fail');
   assert.equal(verdict.hardFailPresent, true);
-  assert.deepEqual(verdict.requiredEvidence.required, ['guard', 'prd', 'longpage', 'assetplan', 'browser']);
-  assert.deepEqual(verdict.requiredEvidence.missing, ['assetplan', 'browser']);
+  assert.deepEqual(verdict.requiredEvidence.required, ['guard', 'prd', 'longpage', 'assetplan', 'browser', '3d']);
+  assert.deepEqual(verdict.requiredEvidence.missing, ['assetplan', 'browser', '3d']);
   assert.ok(verdict.blockingReasons.some((item) => item.includes('required asset-plan evidence is missing')));
   assert.ok(verdict.blockingReasons.some((item) => item.includes('required browser evidence is missing')));
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('required 3D evidence is missing')));
 });
 
 test('betterref-verify passes required evidence when every required report is present', async () => {
@@ -903,5 +963,6 @@ test('betterref-verify prints usage and exits code 2 without a report', () => {
   assert.match(result.stderr, /--require/);
   assert.match(result.stderr, /--asset-plan/);
   assert.match(result.stderr, /--browser-evidence/);
+  assert.match(result.stderr, /--three-d/);
   assert.match(result.stderr, /--project/);
 });
