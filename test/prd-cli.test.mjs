@@ -489,3 +489,88 @@ test('betterref-prd keeps code-native Three.js UI overlay requirements out of 3D
   assert.ok(overlayRequirement);
   assert.equal(overlayRequirement.category, 'behavior');
 });
+
+test('betterref-prd keeps 3D model assets when labels stay HTML overlays', async () => {
+  const dir = await makeCase('model-with-html-labels');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(dir, 'prd-out');
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    '3D model must be delivered as GLB, with labels remaining HTML overlays not baked into the model.'
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.threeDRequired, true);
+
+  const assetPlan = JSON.parse(await readFile(path.join(out, 'asset-plan.json'), 'utf8'));
+  const modelAsset = assetPlan.assets.find((asset) => asset.tool === 'hunyuan3d');
+  assert.ok(modelAsset);
+  assert.match(modelAsset.targetPath, /\.glb$/);
+});
+
+test('betterref-prd does not route Hugging Face brand logo mentions to 3D', async () => {
+  const dir = await makeCase('hugging-face-brand-logo');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(dir, 'prd-out');
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Partner trust badges: Hugging Face logo icon appears in the footer.'
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.threeDRequired, false);
+  assert.equal(summary.hunyuanRequired, false);
+
+  const assetPlan = JSON.parse(await readFile(path.join(out, 'asset-plan.json'), 'utf8'));
+  assert.equal(assetPlan.assets.some((asset) => asset.tool === 'hunyuan3d'), false);
+});
+
+test('betterref-prd routes animated GLB mascot requirements to 3D and HyperFrames', async () => {
+  const dir = await makeCase('animated-glb-mascot');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(dir, 'prd-out');
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Hero Motion: animated GLB mascot reveal with transparent WebM loop.'
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.threeDRequired, true);
+  assert.equal(summary.hyperframesRequired, true);
+
+  const assetPlan = JSON.parse(await readFile(path.join(out, 'asset-plan.json'), 'utf8'));
+  assert.equal(assetPlan.threeDRequired, true);
+  assert.equal(assetPlan.hyperframesRequired, true);
+  assert.equal(assetPlan.assets.some((asset) => asset.tool === 'hunyuan3d'), true);
+  assert.equal(assetPlan.assets.some((asset) => asset.tool === 'hyperframes'), true);
+});
