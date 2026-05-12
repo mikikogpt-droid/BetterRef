@@ -457,3 +457,35 @@ test('betterref-prd detects Hunyuan 3D model requirements separately from raster
   assert.match(runbook, /--three-d \.betterref-3d\/3d-verdict\.json/);
   assert.match(runbook, /--require guard,prd,longpage,assetplan,browser,3d/);
 });
+
+test('betterref-prd keeps code-native Three.js UI overlay requirements out of 3D assets', async () => {
+  const dir = await makeCase('code-native-threejs-ui');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(dir, 'prd-out');
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Three.js scene must keep UI text and buttons as code-native overlays, not model geometry.',
+    'Navigation and CTA buttons remain React/CSS.'
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.threeDRequired, false);
+
+  const assetPlan = JSON.parse(await readFile(path.join(out, 'asset-plan.json'), 'utf8'));
+  assert.equal(assetPlan.assets.some((asset) => asset.tool === 'hunyuan3d'), false);
+
+  const prdChecklist = JSON.parse(await readFile(path.join(out, 'prd-checklist.json'), 'utf8'));
+  const overlayRequirement = prdChecklist.items.find((item) => /code-native overlays/i.test(item.requirement));
+  assert.ok(overlayRequirement);
+  assert.equal(overlayRequirement.category, 'behavior');
+});
