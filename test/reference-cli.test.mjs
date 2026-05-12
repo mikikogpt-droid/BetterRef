@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -40,6 +40,18 @@ async function writeReference(filePath) {
     ])
     .png()
     .toFile(filePath);
+}
+
+async function writeLargeSvgReference(filePath) {
+  await writeFile(
+    filePath,
+    `<svg width="20000" height="15000" viewBox="0 0 20000 15000" xmlns="http://www.w3.org/2000/svg">
+      <rect width="20000" height="15000" fill="#121826"/>
+      <rect x="2200" y="1800" width="15600" height="9400" rx="900" fill="#7dd3fc"/>
+      <circle cx="7400" cy="7000" r="2600" fill="#f97316"/>
+      <rect x="11200" y="4900" width="4300" height="4100" rx="420" fill="#e5e7eb"/>
+    </svg>`
+  );
 }
 
 test('betterref-reference prints usage and exits code 2 without a reference image', () => {
@@ -102,4 +114,26 @@ test('betterref-reference analyzes a visual reference and writes supervisor arti
   const negativePrompts = await readFile(path.join(out, 'negative-prompts.md'), 'utf8');
   assert.match(negativePrompts, /flat billboard/i);
   assert.match(negativePrompts, /screenshot/i);
+});
+
+test('betterref-reference analyzes oversized design references without Sharp pixel limit failures', async () => {
+  const dir = await makeCase('large-svg');
+  const ref = path.join(dir, 'large-reference.svg');
+  const out = path.join(dir, 'reference-out');
+  await writeLargeSvgReference(ref);
+
+  const result = spawnSync(process.execPath, [
+    referenceBin,
+    '--ref',
+    ref,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const analysis = JSON.parse(await readFile(path.join(out, 'reference-analysis.json'), 'utf8'));
+  assert.equal(analysis.image.width, 20000);
+  assert.equal(analysis.image.height, 15000);
+  assert.equal(analysis.pixelFacts.aspectRatio, '4:3');
 });
