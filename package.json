@@ -7,6 +7,7 @@
   "bin": {
     "betterref-eval": "./bin/betterref-eval.mjs",
     "betterref-reference": "./bin/betterref-reference.mjs",
+    "betterref-3d": "./bin/betterref-3d.mjs",
     "betterref-guard": "./bin/betterref-guard.mjs",
     "betterref-longpage": "./bin/betterref-longpage.mjs",
     "betterref-verify": "./bin/betterref-verify.mjs",
