@@ -125,28 +125,31 @@ test('betterref-3d creates a Hunyuan request with both Hugging Face adapters', a
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const payload = JSON.parse(result.stdout);
-  assert.equal(payload.schemaVersion, 'betterref.3d.hunyuan.request.v1');
+  assert.equal(payload.schemaVersion, 'betterref.hunyuan.request.v1');
   assert.match(payload.artifacts.requestPath, /hunyuan-request\.json$/);
 
   const request = JSON.parse(await readFile(path.join(out, 'hunyuan-request.json'), 'utf8'));
-  assert.equal(request.schemaVersion, 'betterref.3d.hunyuan.request.v1');
-  assert.deepEqual(request.providers.map((item) => item.type), ['space', 'endpoint']);
-  assert.equal(request.providers[0].space, 'tencent/Hunyuan3D-2');
-  assert.equal(request.providers[1].endpoint, 'https://hunyuan.example.endpoints.huggingface.cloud');
-  assert.equal(request.auth.envVar, 'HF_TOKEN');
+  assert.equal(request.schemaVersion, 'betterref.hunyuan.request.v1');
+  assert.deepEqual(request.providers, ['space', 'endpoint']);
+  assert.deepEqual(request.huggingFace, {
+    space: 'tencent/Hunyuan3D-2',
+    endpoint: 'https://hunyuan.example.endpoints.huggingface.cloud',
+    customUrl: null
+  });
+  assert.equal(request.auth.env, 'HF_TOKEN');
   assert.equal(request.auth.available, true);
   assert.equal(request.assets.length, 1);
   assert.equal(request.assets[0].id, 'model-001');
-  assert.equal(request.assets[0].input.sourceImage, sourceImage);
-  assert.equal(request.assets[0].output.targetFormat, 'glb');
-  assert.equal(request.assets[0].output.targetPath, 'public/betterref-assets/model-001.glb');
+  assert.equal(request.assets[0].sourceImage, sourceImage);
+  assert.equal(request.assets[0].targetFormat, 'glb');
+  assert.equal(request.assets[0].targetPath, 'public/betterref-assets/model-001.glb');
+  assert.equal(request.assets[0].prompt, 'rounded device with raised circular detail');
   assert.equal(request.assets[0].acceptanceCriteria.some((item) => /Mesh stats/i.test(item)), true);
 });
 
-test('betterref-3d verify fails when required model evidence is missing or pending', async () => {
+test('betterref-3d verify treats omitted evidence as empty and writes a failing verdict', async () => {
   const dir = await makeCase('verify-fail');
   const plan = path.join(dir, '3d-asset-plan.json');
-  const evidence = path.join(dir, '3d-evidence.json');
   const out = path.join(dir, '3d-out');
   await writeJson(plan, {
     schemaVersion: 'betterref.3d.asset.plan.v1',
@@ -161,15 +164,72 @@ test('betterref-3d verify fails when required model evidence is missing or pendi
       }
     ]
   });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--out',
+    out,
+    '--project',
+    dir,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  assert.match(result.stdout, /betterref\.3d\.verdict\.v1/);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.schemaVersion, 'betterref.3d.verdict.v1');
+  assert.equal(payload.passed, false);
+  assert.equal(payload.verdict, 'fail');
+  assert.equal(payload.hardFailPresent, true);
+  assert.equal(payload.inputs.planPath, path.resolve(plan));
+  assert.equal(payload.inputs.evidencePath, null);
+  assert.match(payload.artifacts.verdictPath, /3d-verdict\.json$/);
+  assert.equal(payload.assets.length, 1);
+  assert.equal(payload.assets[0].id, 'model-001');
+  assert.equal(payload.assets[0].passed, false);
+  assert.equal(payload.blockingReasons.some((item) => /model-001 is pending/.test(item)), true);
+  assert.equal(payload.blockingReasons.some((item) => /model-001 is missing model file/.test(item)), true);
+  assert.equal(payload.blockingReasons.some((item) => /model-001 is missing mesh stats/.test(item)), true);
+  assert.equal(payload.blockingReasons.some((item) => /model-001 is missing render or turntable evidence/.test(item)), true);
+
+  const verdict = JSON.parse(await readFile(path.join(out, '3d-verdict.json'), 'utf8'));
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.passed, false);
+});
+
+test('betterref-3d verify exits 0 when model evidence passes', async () => {
+  const dir = await makeCase('verify-pass');
+  const project = path.join(dir, 'project');
+  const model = path.join(project, 'public', 'betterref-assets', 'model-001.glb');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  await mkdir(path.dirname(model), { recursive: true });
+  await writeFile(model, 'fake-glb-bytes');
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pass',
+        provider: 'hunyuan',
+        targetFormat: 'glb',
+        targetPath: 'public/betterref-assets/model-001.glb'
+      }
+    ]
+  });
   await writeJson(evidence, {
     schemaVersion: 'betterref.3d.evidence.v1',
     assets: [
       {
         id: 'model-001',
-        status: 'pending',
-        modelPath: '',
-        meshStats: null,
-        renders: []
+        status: 'completed',
+        modelPath: 'public/betterref-assets/model-001.glb',
+        meshStats: { vertexCount: 120, faceCount: 60 },
+        renders: ['turntable/front.png']
       }
     ]
   });
@@ -183,21 +243,19 @@ test('betterref-3d verify fails when required model evidence is missing or pendi
     '--out',
     out,
     '--project',
-    dir,
+    project,
     '--json'
   ]);
 
-  assert.equal(result.status, 1, result.stderr || result.stdout);
-  assert.match(result.stdout, /betterref\.3d\.verdict\.v1/);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.schemaVersion, 'betterref.3d.verdict.v1');
-  assert.equal(payload.status, 'fail');
-  assert.equal(payload.pass, false);
-  assert.equal(payload.failures.some((item) => item.code === 'asset_pending'), true);
-  assert.equal(payload.failures.some((item) => item.code === 'missing_model_file'), true);
-  assert.equal(payload.failures.some((item) => item.code === 'missing_mesh_stats'), true);
-  assert.equal(payload.failures.some((item) => item.code === 'missing_render_evidence'), true);
+  assert.equal(payload.passed, true);
+  assert.equal(payload.verdict, 'pass');
+  assert.equal(payload.hardFailPresent, false);
+  assert.deepEqual(payload.blockingReasons, []);
+  assert.equal(payload.assets[0].passed, true);
 
   const verdict = JSON.parse(await readFile(path.join(out, '3d-verdict.json'), 'utf8'));
-  assert.equal(verdict.status, 'fail');
+  assert.equal(verdict.verdict, 'pass');
 });

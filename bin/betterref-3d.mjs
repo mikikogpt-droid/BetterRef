@@ -93,7 +93,7 @@ async function main() {
     } else {
       result = await verify3D({
         planPath: requireValue(values, 'plan', '--verify'),
-        evidencePath: requireValue(values, 'evidence', '--verify'),
+        evidencePath: values.evidence,
         outDir: values.out,
         projectDir: values.project
       });
@@ -103,13 +103,13 @@ async function main() {
       console.log(JSON.stringify(result, null, 2));
     } else if (result.schemaVersion === 'betterref.3d.plan.result.v1') {
       console.log(`[betterref-3d] plan=${result.artifacts.planPath}`);
-    } else if (result.schemaVersion === 'betterref.3d.hunyuan.request.v1') {
+    } else if (result.schemaVersion === 'betterref.hunyuan.request.v1') {
       console.log(`[betterref-3d] hunyuanRequest=${result.artifacts.requestPath}`);
     } else {
-      console.log(`[betterref-3d] status=${result.status} failures=${result.failures.length}`);
+      console.log(`[betterref-3d] verdict=${result.verdict} blockingReasons=${result.blockingReasons.length}`);
     }
 
-    if (mode === 'verify' && !result.pass) {
+    if (mode === 'verify' && !result.passed) {
       process.exit(1);
     }
   } catch (error) {
