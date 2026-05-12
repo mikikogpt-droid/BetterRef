@@ -690,6 +690,43 @@ test('betterref-verify fails when a required asset plan still has pending genera
   assert.ok(verdict.blockingReasons.some((item) => item.includes('asset plan item asset-001 is pending')));
 });
 
+test('betterref-verify infers required 3D evidence from a PRD model asset plan', async () => {
+  const dir = await makeCase('asset-plan-infers-required-3d');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: false,
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        tool: 'hunyuan3d',
+        implementation: 'hunyuan-3d-model-via-huggingface',
+        role: 'hunyuan-3d-model',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        targetFormat: 'glb',
+        requirement: 'Product mascot GLB model'
+      }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--require', 'assetplan',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.threeD.present, false);
+  assert.deepEqual(verdict.requiredEvidence.missing, ['3d']);
+  assert.ok(verdict.blockingReasons.some((item) => /required 3D evidence is missing/i.test(item)));
+});
+
 test('betterref-verify lets 3D verdict own pending Hunyuan model assets', async () => {
   const dir = await makeCase('asset-plan-pending-3d-owned');
   const project = path.join(dir, 'project');
@@ -826,6 +863,73 @@ test('betterref-verify fails when 3D verdict does not cover the PRD model target
   const verdict = JSON.parse(result.stdout);
   assert.equal(verdict.threeD.passed, false);
   assert.ok(verdict.blockingReasons.some((item) => /does not cover PRD model model-001/i.test(item)));
+});
+
+test('betterref-verify fails when 3D verdict model exists away from the PRD target path', async () => {
+  const dir = await makeCase('asset-plan-3d-file-away-from-target');
+  const project = path.join(dir, 'project');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const threeD = path.join(dir, '3d-verdict.json');
+  const modelPath = path.join(project, 'tmp', 'generated-model.glb');
+  await mkdir(path.dirname(modelPath), { recursive: true });
+  await writeFile(modelPath, 'fake-glb-bytes');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: false,
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        tool: 'hunyuan3d',
+        implementation: 'hunyuan-3d-model-via-huggingface',
+        role: 'hunyuan-3d-model',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        targetFormat: 'glb',
+        requirement: 'Product mascot GLB model'
+      }
+    ]
+  });
+  await writeJson(threeD, {
+    schemaVersion: 'betterref.3d.verdict.v1',
+    passed: true,
+    verdict: 'pass',
+    hardFailPresent: false,
+    blockingReasons: [],
+    assets: [
+      {
+        id: 'model-001',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        passed: true,
+        status: 'completed',
+        modelPath,
+        modelExists: true,
+        targetPathExists: false,
+        meshStatsPresent: true,
+        renderEvidencePresent: true,
+        materialEvidenceRequired: false,
+        materialEvidencePresent: false,
+        requestMetadataPresent: true,
+        responseMetadataPresent: true,
+        failures: []
+      }
+    ]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--three-d', threeD,
+    '--project', project,
+    '--require', 'assetplan,3d',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.ok(verdict.blockingReasons.some((item) => /target path file evidence/i.test(item)));
 });
 
 test('betterref-verify fails when a passed imagegen asset lacks attach evidence', async () => {

@@ -451,6 +451,136 @@ test('betterref-3d verify requires Hunyuan request and response metadata', async
   assert.equal(payload.blockingReasons.some((item) => /Hunyuan response metadata/i.test(item)), true);
 });
 
+test('betterref-3d verify requires the model at the planned target path', async () => {
+  const dir = await makeCase('verify-target-path-missing');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const generated = path.join(project, 'tmp', 'generated-model.glb');
+  const render = path.join(project, 'evidence', 'model-001-turntable-front.png');
+  const targetPath = 'public/betterref-assets/hunyuan-model-01.glb';
+  const metadata = await writeHunyuanMetadata(dir, { targetPath });
+  await mkdir(path.dirname(generated), { recursive: true });
+  await mkdir(path.dirname(render), { recursive: true });
+  await writeFile(generated, 'fake-glb-bytes');
+  await writeFile(render, 'fake-render-bytes');
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetFormat: 'glb',
+        targetPath
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: generated,
+        meshStats: { vertexCount: 240, faceCount: 120 },
+        renders: ['evidence/model-001-turntable-front.png']
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--hunyuan-request',
+    metadata.request,
+    '--hunyuan-response',
+    metadata.response,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
+  assert.equal(payload.blockingReasons.some((item) => /target path/i.test(item)), true);
+});
+
+test('betterref-3d verify rejects placeholder Hunyuan metadata without matched asset records', async () => {
+  const dir = await makeCase('verify-placeholder-metadata');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const request = path.join(dir, 'hunyuan-request.json');
+  const response = path.join(dir, 'hunyuan-response.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetFormat: 'glb',
+        targetPath: modelRelative
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 240, faceCount: 120 },
+        renders: [renderRelative]
+      }
+    ]
+  });
+  await writeJson(request, {
+    schemaVersion: 'betterref.hunyuan.request.v1',
+    providers: ['endpoint'],
+    huggingFace: { endpoint: 'https://hunyuan.example.endpoints.huggingface.cloud' }
+  });
+  await writeJson(response, {
+    schemaVersion: 'betterref.hunyuan.response.v1',
+    generatedAt: '2026-05-12T00:00:00.000Z'
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--hunyuan-request',
+    request,
+    '--hunyuan-response',
+    response,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.blockingReasons.some((item) => /Hunyuan request metadata/i.test(item)), true);
+  assert.equal(payload.blockingReasons.some((item) => /Hunyuan response metadata/i.test(item)), true);
+});
+
 test('betterref-3d verify lets completed evidence override a pending generated plan', async () => {
   const dir = await makeCase('pending-plan-complete-evidence');
   const project = path.join(dir, 'project');
