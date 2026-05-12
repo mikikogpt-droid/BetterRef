@@ -372,6 +372,59 @@ test('betterref-3d verify lets completed evidence override a pending generated p
   assert.deepEqual(payload.blockingReasons, []);
 });
 
+test('betterref-3d verify rejects unknown evidence status on a pending plan', async () => {
+  const dir = await makeCase('pending-plan-in-progress-evidence');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetFormat: 'glb',
+        targetPath: modelRelative
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'in_progress',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 240, faceCount: 120 },
+        renders: [renderRelative]
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
+  assert.equal(payload.verdict, 'fail');
+  assert.equal(payload.blockingReasons.some((item) => /model-001 evidence status in_progress is not complete/i.test(item)), true);
+});
+
 test('betterref-3d verify requires material evidence when materials are planned', async () => {
   const dir = await makeCase('material-missing');
   const project = path.join(dir, 'project');
