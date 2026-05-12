@@ -152,6 +152,78 @@ test('betterref-imagegen ignores pending HyperFrames assets', async () => {
   assert.equal(payload.requests[0].tool, 'image_gen');
 });
 
+test('betterref-imagegen ignores pending Hunyuan 3D model assets in mixed plans', async () => {
+  const dir = await makeCase('skip-hunyuan-mixed');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const out = path.join(dir, 'imagegen');
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: true,
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'asset-001',
+        status: 'pending',
+        tool: 'image_gen',
+        role: 'cinematic-hero',
+        targetPath: 'public/betterref-assets/hero.png',
+        prompt: 'Create a 3D-looking mascot background as a raster asset.'
+      },
+      {
+        id: 'model-001',
+        status: 'pending',
+        tool: 'hunyuan3d',
+        implementation: 'hunyuan-3d-model-via-huggingface',
+        role: 'hunyuan-3d-model',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        targetFormat: 'glb',
+        prompt: 'Generate a GLB mascot model.'
+      }
+    ]
+  });
+
+  const result = runImagegen(['--asset-plan', assetPlan, '--out', out, '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.requests.length, 1);
+  assert.equal(payload.requests[0].id, 'asset-001');
+  assert.equal(payload.requests[0].targetPath, 'public/betterref-assets/hero.png');
+});
+
+test('betterref-imagegen reports no imagegen work for 3D-only model plans', async () => {
+  const dir = await makeCase('skip-hunyuan-only');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const out = path.join(dir, 'imagegen');
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: false,
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        tool: 'hunyuan3d',
+        implementation: 'hunyuan-3d-model-via-huggingface',
+        role: 'hunyuan-3d-model',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        targetFormat: 'glb'
+      }
+    ]
+  });
+
+  const queueResult = runImagegen(['--asset-plan', assetPlan, '--out', out, '--json']);
+  assert.equal(queueResult.status, 0, queueResult.stderr || queueResult.stdout);
+  const queue = JSON.parse(queueResult.stdout);
+  assert.equal(queue.requests.length, 0);
+
+  const statusResult = runImagegen(['--asset-plan', assetPlan, '--status', '--out', out, '--json']);
+  assert.equal(statusResult.status, 0, statusResult.stderr || statusResult.stdout);
+  const status = JSON.parse(statusResult.stdout);
+  assert.deepEqual(status.counts, {});
+  assert.equal(status.items.length, 0);
+});
+
 test('betterref-imagegen attaches a generated asset and marks the plan item pass', async () => {
   const dir = await makeCase('attach');
   const project = path.join(dir, 'project');

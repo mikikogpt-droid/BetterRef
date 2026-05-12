@@ -611,6 +611,53 @@ test('betterref-verify fails when a required asset plan still has pending genera
   assert.ok(verdict.blockingReasons.some((item) => item.includes('asset plan item asset-001 is pending')));
 });
 
+test('betterref-verify lets 3D verdict own pending Hunyuan model assets', async () => {
+  const dir = await makeCase('asset-plan-pending-3d-owned');
+  const visual = path.join(dir, 'report.json');
+  const assetPlan = path.join(dir, 'asset-plan.json');
+  const threeD = path.join(dir, '3d-verdict.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(assetPlan, {
+    schemaVersion: 'betterref.asset.plan.v1',
+    imagegenRequired: false,
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        tool: 'hunyuan3d',
+        implementation: 'hunyuan-3d-model-via-huggingface',
+        role: 'hunyuan-3d-model',
+        targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
+        targetFormat: 'glb',
+        requirement: 'Product mascot GLB model'
+      }
+    ]
+  });
+  await writeJson(threeD, {
+    passed: true,
+    verdict: 'pass',
+    hardFailPresent: false,
+    blockingReasons: [],
+    assets: [{ id: 'model-001', passed: true, targetPath: 'public/betterref-assets/hunyuan-model-01.glb' }]
+  });
+
+  const result = runVerify([
+    '--report', visual,
+    '--asset-plan', assetPlan,
+    '--three-d', threeD,
+    '--require', 'assetplan,3d',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'pass');
+  assert.equal(verdict.assetPlan.passed, true);
+  assert.equal(verdict.assetPlan.pending.some((item) => item.id === 'model-001'), false);
+  assert.equal(verdict.blockingReasons.some((item) => item.includes('model-001')), false);
+});
+
 test('betterref-verify fails when a passed imagegen asset lacks attach evidence', async () => {
   const dir = await makeCase('asset-plan-fake-pass');
   const visual = path.join(dir, 'report.json');
