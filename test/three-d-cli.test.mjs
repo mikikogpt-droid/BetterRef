@@ -26,6 +26,18 @@ function run3D(args, options = {}) {
   });
 }
 
+async function writeModelAndRender(project, name = 'model-001') {
+  const modelRelative = `public/betterref-assets/${name}.glb`;
+  const renderRelative = `evidence/${name}-turntable-front.png`;
+  const model = path.join(project, modelRelative);
+  const render = path.join(project, renderRelative);
+  await mkdir(path.dirname(model), { recursive: true });
+  await mkdir(path.dirname(render), { recursive: true });
+  await writeFile(model, 'fake-glb-bytes');
+  await writeFile(render, 'fake-render-bytes');
+  return { modelRelative, renderRelative };
+}
+
 test('betterref-3d prints usage and exits code 2 without mode inputs', () => {
   const result = run3D([]);
 
@@ -147,6 +159,55 @@ test('betterref-3d creates a Hunyuan request with both Hugging Face adapters', a
   assert.equal(request.assets[0].acceptanceCriteria.some((item) => /Mesh stats/i.test(item)), true);
 });
 
+test('betterref-3d rejects unusable Hunyuan provider options', async () => {
+  const dir = await makeCase('provider-validation');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const out = path.join(dir, '3d-out');
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [{ id: 'model-001', status: 'pending', sourceImage: path.join(dir, 'reference.png') }]
+  });
+
+  const cases = [
+    {
+      name: 'unknown provider',
+      args: ['--provider', 'wat'],
+      message: /Unknown Hunyuan provider/i
+    },
+    {
+      name: 'missing endpoint',
+      args: ['--provider', 'endpoint'],
+      message: /--endpoint is required/i
+    },
+    {
+      name: 'missing both endpoint',
+      args: ['--provider', 'both'],
+      message: /--endpoint is required/i
+    },
+    {
+      name: 'missing custom url',
+      args: ['--provider', 'custom'],
+      message: /--custom-url is required/i
+    }
+  ];
+
+  for (const item of cases) {
+    const result = run3D([
+      '--make-hunyuan-request',
+      '--plan',
+      plan,
+      '--out',
+      out,
+      ...item.args,
+      '--json'
+    ]);
+
+    assert.equal(result.status, 2, item.name);
+    assert.match(result.stderr, item.message, item.name);
+  }
+});
+
 test('betterref-3d verify treats omitted evidence as empty and writes a failing verdict', async () => {
   const dir = await makeCase('verify-fail');
   const plan = path.join(dir, '3d-asset-plan.json');
@@ -202,12 +263,10 @@ test('betterref-3d verify treats omitted evidence as empty and writes a failing 
 test('betterref-3d verify exits 0 when model evidence passes', async () => {
   const dir = await makeCase('verify-pass');
   const project = path.join(dir, 'project');
-  const model = path.join(project, 'public', 'betterref-assets', 'model-001.glb');
   const plan = path.join(dir, '3d-asset-plan.json');
   const evidence = path.join(dir, '3d-evidence.json');
   const out = path.join(dir, '3d-out');
-  await mkdir(path.dirname(model), { recursive: true });
-  await writeFile(model, 'fake-glb-bytes');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
   await writeJson(plan, {
     schemaVersion: 'betterref.3d.asset.plan.v1',
     threeDRequired: true,
@@ -217,7 +276,7 @@ test('betterref-3d verify exits 0 when model evidence passes', async () => {
         status: 'pass',
         provider: 'hunyuan',
         targetFormat: 'glb',
-        targetPath: 'public/betterref-assets/model-001.glb'
+        targetPath: modelRelative
       }
     ]
   });
@@ -227,9 +286,9 @@ test('betterref-3d verify exits 0 when model evidence passes', async () => {
       {
         id: 'model-001',
         status: 'completed',
-        modelPath: 'public/betterref-assets/model-001.glb',
+        modelPath: modelRelative,
         meshStats: { vertexCount: 120, faceCount: 60 },
-        renders: ['turntable/front.png']
+        renders: [renderRelative]
       }
     ]
   });
@@ -258,4 +317,214 @@ test('betterref-3d verify exits 0 when model evidence passes', async () => {
 
   const verdict = JSON.parse(await readFile(path.join(out, '3d-verdict.json'), 'utf8'));
   assert.equal(verdict.verdict, 'pass');
+});
+
+test('betterref-3d verify lets completed evidence override a pending generated plan', async () => {
+  const dir = await makeCase('pending-plan-complete-evidence');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetFormat: 'glb',
+        targetPath: modelRelative
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 240, faceCount: 120 },
+        renders: [renderRelative]
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, true);
+  assert.equal(payload.verdict, 'pass');
+  assert.deepEqual(payload.blockingReasons, []);
+});
+
+test('betterref-3d verify requires material evidence when materials are planned', async () => {
+  const dir = await makeCase('material-missing');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pass',
+        provider: 'hunyuan',
+        targetPath: modelRelative,
+        materialSlots: ['metal-trim'],
+        acceptanceCriteria: ['Material texture must preserve the metal trim.']
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 120, faceCount: 60 },
+        renders: [renderRelative]
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
+  assert.equal(payload.blockingReasons.some((item) => /material\/texture evidence/i.test(item)), true);
+});
+
+test('betterref-3d verify accepts required material evidence', async () => {
+  const dir = await makeCase('material-pass');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetPath: modelRelative,
+        materialSlots: ['metal-trim'],
+        acceptanceCriteria: ['PBR texture maps are required.']
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 120, faceCount: 60 },
+        renders: [renderRelative],
+        materialEvidence: { slots: ['metal-trim'], textureMaps: ['baseColor'] }
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, true);
+});
+
+test('betterref-3d verify fails when render evidence paths do not exist', async () => {
+  const dir = await makeCase('missing-render-file');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative } = await writeModelAndRender(project);
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pass',
+        provider: 'hunyuan',
+        targetPath: modelRelative
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 120, faceCount: 60 },
+        renders: ['evidence/missing-turntable.png']
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
+  assert.equal(payload.blockingReasons.some((item) => /missing render or turntable evidence/i.test(item)), true);
 });
