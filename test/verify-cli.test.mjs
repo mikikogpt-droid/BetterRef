@@ -467,6 +467,24 @@ test('betterref-verify hard fails required 3D evidence when verdict JSON is empt
   assert.ok(verdict.blockingReasons.some((item) => item.includes('3D verdict is missing required pass fields')));
 });
 
+test('betterref-verify hard fails supplied scalar 3D verdict JSON even when 3D evidence is not required', async () => {
+  const dir = await makeCase('three-d-scalar-verdict');
+  const visual = path.join(dir, 'report.json');
+  const threeD = path.join(dir, '3d-verdict.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeFile(threeD, 'false');
+
+  const result = runVerify(['--report', visual, '--three-d', threeD, '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.equal(verdict.threeD.present, true);
+  assert.equal(verdict.threeD.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('3D verdict is missing required pass fields')));
+});
+
 test('betterref-verify hard fails present 3D verdicts that are not explicit pass verdicts', async () => {
   const dir = await makeCase('three-d-revise-verdict');
   const visual = path.join(dir, 'report.json');
