@@ -41,6 +41,47 @@ async function writePng(filePath, base64 = pngBase64) {
   await writeFile(filePath, Buffer.from(base64, 'base64'));
 }
 
+async function writeJson(filePath, value) {
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+async function writePassingThreeDVerdict(project, generatedAt = '2026-05-12T00:00:00.000Z') {
+  const verdictPath = path.join(project, '.betterref-3d', '3d-verdict.json');
+  await mkdir(path.dirname(verdictPath), { recursive: true });
+  await writeJson(verdictPath, {
+    schemaVersion: 'betterref.3d.verdict.v1',
+    generatedAt,
+    passed: true,
+    verdict: 'pass',
+    hardFailPresent: false,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'complete',
+        passed: true,
+        modelPath: path.join(project, 'public', 'betterref-assets', 'hunyuan-model-01.glb'),
+        modelExists: true,
+        meshStatsPresent: true,
+        renderEvidencePresent: true,
+        materialEvidenceRequired: false,
+        materialEvidencePresent: false,
+        failures: []
+      }
+    ],
+    blockingReasons: [],
+    inputs: {
+      planPath: path.join(project, '.betterref-3d', '3d-asset-plan.json'),
+      evidencePath: path.join(project, '.betterref-3d', '3d-evidence.json'),
+      projectDir: project
+    },
+    artifacts: {
+      verdictPath
+    }
+  });
+  return verdictPath;
+}
+
 async function solidPngBase64(width, height, color) {
   const buffer = await sharp({
     create: {
@@ -273,6 +314,81 @@ test('betterref-run bootstraps PRD artifacts and blocks on pending imagegen asse
   assert.match(actions, /--auto-attach-dir/);
 });
 
+test('betterref-run blocks on required Hunyuan 3D handoff before browser verification', async () => {
+  const dir = await makeCase('hunyuan-3d-blocker');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  await mkdir(project, { recursive: true });
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    '3D acceptance: mesh must load in Three.js and provide turntable evidence.'
+  ]);
+  await writePng(ref);
+
+  const result = runCli([
+    '--pdf', pdf,
+    '--project', project,
+    '--ref', ref,
+    '--url', 'http://127.0.0.1:3000/',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 3, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.status, 'blocked');
+  assert.equal(payload.phase, '3d');
+  assert.ok(payload.blockers.some((item) => item.code === 'blocked_external_3d_generation'));
+  assert.match(payload.artifacts.threeDPlanPath, /3d-asset-plan\.json$/);
+  assert.match(payload.artifacts.hunyuanRequestPath, /hunyuan-request\.json$/);
+  assert.match(payload.artifacts.threeDVerdictPath, /3d-verdict\.json$/);
+  assert.equal(payload.artifacts.imagegenQueuePath, undefined);
+  assert.equal(await pathExists(path.join(project, '.betterref-3d', '3d-asset-plan.json')), true);
+  assert.equal(await pathExists(path.join(project, '.betterref-3d', 'hunyuan-request.json')), true);
+  assert.equal(await pathExists(path.join(project, '.betterref-3d', '3d-verdict.json')), true);
+
+  const actions = await readFile(path.join(project, '.betterref-run', 'next-actions.md'), 'utf8');
+  assert.match(actions, /betterref-reference/);
+  assert.match(actions, /betterref-3d --make-plan/);
+  assert.match(actions, /betterref-3d --make-hunyuan-request/);
+  assert.match(actions, /betterref-3d --verify/);
+});
+
+test('betterref-run resumes past 3D gate when a passing 3D verdict already exists', async () => {
+  const dir = await makeCase('hunyuan-3d-resume-browser');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  await mkdir(project, { recursive: true });
+  await writePassingThreeDVerdict(project);
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    '3D acceptance: mesh must load in Three.js and provide turntable evidence.'
+  ]);
+  await writePng(ref);
+
+  const result = runCli([
+    '--pdf', pdf,
+    '--project', project,
+    '--ref', ref,
+    '--url', 'http://127.0.0.1:3000/',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 3, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.status, 'blocked');
+  assert.equal(payload.phase, 'browser');
+  assert.equal(payload.blockers.some((item) => item.code === 'blocked_external_3d_generation'), false);
+  assert.match(payload.artifacts.threeDVerdictPath, /3d-verdict\.json$/);
+
+  const verdict = JSON.parse(await readFile(path.join(project, '.betterref-3d', '3d-verdict.json'), 'utf8'));
+  assert.equal(verdict.passed, true);
+  assert.equal(verdict.generatedAt, '2026-05-12T00:00:00.000Z');
+});
+
 test('betterref-run auto-attaches generated imagegen slots before browser evidence gate', async () => {
   const dir = await makeCase('imagegen-auto-resume');
   const project = path.join(dir, 'project');
@@ -435,6 +551,69 @@ test('betterref-run accepts @chrome handoff evidence and completes final verific
   const evidence = JSON.parse(await readFile(path.join(project, '.betterref', 'browser-evidence.json'), 'utf8'));
   assert.equal(evidence.source.tool, '@chrome');
   assert.match(evidence.screenshotPath, /chrome-viewport\.png$/);
+});
+
+test('betterref-run includes passing 3D verdict in final verification', async () => {
+  const dir = await makeCase('browser-handoff-3d-present');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const ref = path.join(dir, 'reference.png');
+  const screenshot = path.join(dir, 'chrome-viewport.png');
+  const fullPage = path.join(dir, 'chrome-full-page.png');
+  const handoff = path.join(dir, 'chrome-handoff.json');
+  const screenshotBase64 = await solidPngBase64(1440, 900, { r: 255, g: 255, b: 255 });
+  await mkdir(project, { recursive: true });
+  await writePassingThreeDVerdict(project);
+  await writePng(ref, screenshotBase64);
+  await writePng(screenshot, screenshotBase64);
+  await writePng(fullPage, screenshotBase64);
+  await writePdf(pdf, [
+    'Viewport: 1440x900.',
+    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    '3D acceptance: mesh must load in Three.js and provide turntable evidence.'
+  ]);
+  await writeFile(handoff, JSON.stringify({
+    source: { tool: '@chrome' },
+    screenshots: {
+      viewport: screenshot,
+      fullPage,
+      sections: [
+        { name: 'hero', selector: '.hero', path: screenshot, clip: { x: 0, y: 0, width: 1440, height: 900 } }
+      ]
+    },
+    viewport: { width: 1440, height: 900, deviceScaleFactor: 1 },
+    page: {
+      url: 'http://127.0.0.1:3000/',
+      title: 'ONETAPGG Local',
+      scrollHeight: 900,
+      bodyTextLength: 24,
+      interactiveCount: 2
+    },
+    fonts: { ready: true, status: 'loaded' },
+    console: [],
+    network: { errors: [] },
+    images: [],
+    elements: [
+      { name: 'hero', selector: '.hero', boundingBox: { x: 0, y: 0, width: 1440, height: 900 } }
+    ]
+  }, null, 2));
+
+  const result = runCli([
+    '--pdf', pdf,
+    '--project', project,
+    '--ref', ref,
+    '--url', 'http://127.0.0.1:3000/',
+    '--browser-handoff', handoff,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.phase, 'final');
+  assert.equal(payload.finalVerdict.threeD.present, true);
+  assert.equal(payload.finalVerdict.threeD.passed, true);
+  assert.ok(payload.finalVerdict.requiredEvidence.required.includes('3d'));
+  assert.match(payload.finalVerdict.inputs.threeD, /3d-verdict\.json$/);
 });
 
 test('betterref-run returns pass after browser capture, guard, and final verify all pass', async () => {
