@@ -4,6 +4,7 @@ import {
   BetterRef3DError,
   make3DAssetPlan,
   makeHunyuanRequest,
+  makePostHunyuanRefinePlan,
   verify3D
 } from '../lib/threeD.mjs';
 
@@ -12,6 +13,7 @@ const usage = `Usage: betterref-3d <mode> --out <dir> [options]
 Modes:
   --make-plan              Create 3d-asset-plan.json from reference analysis.
   --make-hunyuan-request   Create hunyuan-request.json from a 3D asset plan.
+  --make-refine-plan       Create post-Hunyuan refinement plan and checklist.
   --verify                 Verify model files, mesh stats, and render evidence.
 
 Required:
@@ -22,8 +24,9 @@ Options:
   --asset-plan             betterref-prd asset-plan JSON for preserving PRD 3D ids/targets.
   --plan                   3d-asset-plan.json for handoff or verify.
   --evidence               3d-evidence.json for --verify.
-  --hunyuan-request        Hunyuan request metadata JSON for --verify.
-  --hunyuan-response       Hunyuan response metadata JSON for --verify.
+  --hunyuan-request        Hunyuan request metadata JSON for --verify or --make-refine-plan.
+  --hunyuan-response       Hunyuan response metadata JSON for --verify or --make-refine-plan.
+  --asset-brief            BetterRef Asset Brief JSON for texture refs and Roblox gates.
   --format                 Target 3D format for generated assets, default glb.
   --provider               Hunyuan provider: space, endpoint, both, custom, or tencent.
   --space                  Hugging Face Space id for space provider.
@@ -74,9 +77,9 @@ async function main() {
     return;
   }
 
-  const modes = ['make-plan', 'make-hunyuan-request', 'verify'].filter((mode) => hasMode(parsed, mode));
+  const modes = ['make-plan', 'make-hunyuan-request', 'make-refine-plan', 'verify'].filter((mode) => hasMode(parsed, mode));
   if (modes.length !== 1) {
-    failUsage('Specify exactly one mode: --make-plan, --make-hunyuan-request, or --verify.');
+    failUsage('Specify exactly one mode: --make-plan, --make-hunyuan-request, --make-refine-plan, or --verify.');
   }
   if (!values.out) {
     failUsage('Missing required --out.');
@@ -108,6 +111,16 @@ async function main() {
         enablePBR: values['enable-pbr'],
         faceCount: values['face-count']
       });
+    } else if (mode === 'make-refine-plan') {
+      result = await makePostHunyuanRefinePlan({
+        planPath: requireValue(values, 'plan', '--make-refine-plan'),
+        outDir: values.out,
+        hunyuanResponsePath: requireValue(values, 'hunyuan-response', '--make-refine-plan'),
+        hunyuanRequestPath: values['hunyuan-request'],
+        evidencePath: values.evidence,
+        assetBriefPath: values['asset-brief'],
+        projectDir: values.project
+      });
     } else {
       result = await verify3D({
         planPath: requireValue(values, 'plan', '--verify'),
@@ -125,6 +138,8 @@ async function main() {
       console.log(`[betterref-3d] plan=${result.artifacts.planPath}`);
     } else if (result.schemaVersion === 'betterref.hunyuan.request.v1') {
       console.log(`[betterref-3d] hunyuanRequest=${result.artifacts.requestPath}`);
+    } else if (result.schemaVersion === 'betterref.3d.refine.result.v1') {
+      console.log(`[betterref-3d] refinePlan=${result.artifacts.refinePlanPath}`);
     } else {
       console.log(`[betterref-3d] verdict=${result.verdict} blockingReasons=${result.blockingReasons.length}`);
     }

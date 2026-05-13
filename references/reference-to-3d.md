@@ -21,4 +21,5 @@ When multiple refs describe one game asset, first create an Asset Brief:
 - Missing turntable or multi-angle render evidence when fidelity matters.
 - Material or texture mismatch hidden behind a high visual score.
 - Texture refs mixed into mesh generation in a way that distorts shape or silhouette.
+- Raw Hunyuan/Tencent output accepted as final Roblox asset without post-Hunyuan refinement, triangle-budget, baked texture, import, and preview evidence.
 - Export target missing or not loadable in the intended runtime.

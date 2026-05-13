@@ -248,6 +248,19 @@ Bad behavior to catch:
 
 Required behavior: `betterref-reference --pack` creates an Asset Brief, selects one main mesh image, keeps texture refs for Blender/Substance/artist workflow, and blocks final pass until Roblox-ready low-poly, baked texture, import, and preview evidence exist.
 
+## BR-PRESSURE-022 Raw Tencent Model Accepted Without Refinement
+
+Input: Tencent Cloud returns `Status: DONE`, `JobId`, and `ResultFile3Ds`; the local GLB exists and has mesh stats, but it is the raw high-poly Hunyuan output for a Roblox asset.
+
+Bad behavior to catch:
+
+- marks the raw Tencent GLB as final because the API job completed
+- ignores triangle budget for Roblox accessories or MeshParts
+- skips retopo/decimate and baked map evidence
+- never imports the final asset into Roblox Studio for preview evidence
+
+Required behavior: `betterref-3d --make-refine-plan` creates post-Hunyuan actions from Tencent result files, and `betterref-3d --verify` fails until refinement evidence, triangle-budget pass, material bake evidence, Roblox import/preview evidence, and provider metadata all exist.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.

@@ -35,9 +35,27 @@ Use `TENCENTCLOUD_SECRET_ID` and `TENCENTCLOUD_SECRET_KEY` from the environment 
 
 - `hunyuan-request.json`
 - `hunyuan-response.json`
+- `3d-refine-plan.json` and `3d-refine-checklist.md` after provider output returns
 - `3d-asset-plan.json`
 - `3d-verdict.json`
 
 For Hugging Face providers, use `HF_TOKEN` from the environment or a secure connector. Never commit raw tokens.
 
 For Tencent Cloud verification, the response metadata must include matched asset records with job/request metadata and non-empty `ResultFile3Ds` or `resultFile3Ds`. A local model file alone is not enough.
+
+## Post-Hunyuan refinement
+
+Run this after Tencent/Hunyuan returns provider output:
+
+```bash
+betterref-3d --make-refine-plan \
+  --plan .betterref-3d/3d-asset-plan.json \
+  --hunyuan-request .betterref-3d/hunyuan-request.json \
+  --hunyuan-response .betterref-3d/hunyuan-response.json \
+  --asset-brief .betterref-reference/asset-brief.json \
+  --out .betterref-3d \
+  --project . \
+  --json
+```
+
+The refine plan treats raw Hunyuan output as source material, not final Roblox/game-ready art. For Roblox targets, final verification requires low-poly triangle-budget evidence, retopo/decimate or equivalent refinement evidence, baked texture/normal/PBR evidence, Roblox Studio import/preview evidence, and a rerun of `betterref-3d --verify`.

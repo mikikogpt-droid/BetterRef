@@ -154,6 +154,7 @@ test('SKILL.md documents reference intelligence, Hunyuan 3D, and expanded agent 
   assert.match(skill, /betterref-3d/);
   assert.match(skill, /Hunyuan 3D/i);
   assert.match(skill, /Hugging Face/i);
+  assert.match(skill, /post-Hunyuan refine plan/i);
   assert.match(skill, /Expanded Agent Team/i);
   assert.match(skill, /3D model/i);
   assert.match(skill, /flat 2D billboard/i);
@@ -172,11 +173,12 @@ test('BetterRef ships reference intelligence and 3D guidance files', async () =>
 
 test('pressure tests cover 3D and expanded-agent failure modes', async () => {
   const pressureTests = await readFile(path.join(repoRoot, 'references', 'pressure-tests.md'), 'utf8');
-  for (const id of ['BR-PRESSURE-017', 'BR-PRESSURE-018', 'BR-PRESSURE-019', 'BR-PRESSURE-020', 'BR-PRESSURE-021']) {
+  for (const id of ['BR-PRESSURE-017', 'BR-PRESSURE-018', 'BR-PRESSURE-019', 'BR-PRESSURE-020', 'BR-PRESSURE-021', 'BR-PRESSURE-022']) {
     assert.match(pressureTests, new RegExp(id));
   }
   assert.match(pressureTests, /flat 2D billboard/i);
   assert.match(pressureTests, /Hunyuan/i);
   assert.match(pressureTests, /Reference Pack/i);
+  assert.match(pressureTests, /Raw Tencent Model/i);
   assert.match(pressureTests, /specialist confidence/i);
 });

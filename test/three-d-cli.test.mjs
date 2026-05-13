@@ -103,6 +103,7 @@ test('betterref-3d prints usage and exits code 2 without mode inputs', () => {
   assert.match(result.stderr, /Usage: betterref-3d/);
   assert.match(result.stderr, /--make-plan/);
   assert.match(result.stderr, /--make-hunyuan-request/);
+  assert.match(result.stderr, /--make-refine-plan/);
   assert.match(result.stderr, /--verify/);
 });
 
@@ -626,6 +627,126 @@ test('betterref-3d verify accepts Tencent Cloud Hunyuan request and response met
   assert.equal(payload.assets[0].responseMetadataPresent, true);
 });
 
+test('betterref-3d creates a post-Hunyuan refine plan from Tencent result files', async () => {
+  const dir = await makeCase('post-hunyuan-refine-plan');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const assetBrief = path.join(dir, 'asset-brief.json');
+  const out = path.join(dir, '3d-out');
+  const response = path.join(dir, 'hunyuan-response.json');
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetFormat: 'glb',
+        targetPath: 'public/betterref-assets/roblox-mascot.glb',
+        targetPlatform: 'roblox',
+        targetUse: 'accessory',
+        materialSlots: ['base-color', 'metal-trim']
+      }
+    ]
+  });
+  await writeJson(assetBrief, {
+    schemaVersion: 'betterref.asset.brief.v1',
+    assetId: 'roblox-mascot',
+    targetPlatform: 'roblox',
+    targetUse: 'accessory',
+    textureReferences: [
+      {
+        id: 'metal-trim',
+        path: path.join(dir, 'refs', 'metal.png'),
+        materialSlot: 'metal-trim',
+        workflowTargets: ['Blender', 'Substance', 'artist']
+      }
+    ],
+    roblox: {
+      triangleBudgets: {
+        genericMeshPartMaxTriangles: 20000,
+        accessoryMaxTriangles: 4000,
+        avatarBodyTotalMaxTriangles: 10742
+      }
+    }
+  });
+  await writeJson(response, {
+    schemaVersion: 'betterref.hunyuan.response.v1',
+    provider: 'tencent',
+    requestId: 'tc-request-001',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'DONE',
+        targetPath: 'public/betterref-assets/roblox-mascot.glb',
+        jobId: 'tc-job-001',
+        requestId: 'tc-request-001',
+        resultFile3Ds: [
+          { type: 'GLB', url: 'https://cos.example/tencent/raw-mascot.glb' },
+          { type: 'Texture', url: 'https://cos.example/tencent/raw-texture.zip' }
+        ]
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--make-refine-plan',
+    '--plan',
+    plan,
+    '--hunyuan-response',
+    response,
+    '--asset-brief',
+    assetBrief,
+    '--out',
+    out,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.schemaVersion, 'betterref.3d.refine.result.v1');
+  assert.match(payload.artifacts.refinePlanPath, /3d-refine-plan\.json$/);
+  assert.match(payload.artifacts.checklistPath, /3d-refine-checklist\.md$/);
+
+  const refinePlan = JSON.parse(await readFile(path.join(out, '3d-refine-plan.json'), 'utf8'));
+  assert.equal(refinePlan.schemaVersion, 'betterref.3d.refine.plan.v1');
+  assert.equal(refinePlan.assets.length, 1);
+  assert.equal(refinePlan.assets[0].id, 'model-001');
+  assert.equal(refinePlan.assets[0].targetPlatform, 'roblox');
+  assert.equal(refinePlan.assets[0].targetUse, 'accessory');
+  assert.equal(refinePlan.assets[0].triangleBudget.maxTriangles, 4000);
+  assert.equal(refinePlan.assets[0].source.provider, 'tencent');
+  assert.equal(refinePlan.assets[0].source.resultFiles[0].url, 'https://cos.example/tencent/raw-mascot.glb');
+  assert.equal(refinePlan.assets[0].textureReferences[0].id, 'metal-trim');
+  assert.deepEqual(
+    refinePlan.assets[0].actions.map((item) => item.id),
+    [
+      'download_tencent_result',
+      'place_target_model',
+      'inspect_mesh_stats',
+      'retopo_or_decimate',
+      'bake_texture_maps',
+      'render_turntable',
+      'roblox_import_preview',
+      'rerun_betterref_verify'
+    ]
+  );
+  assert.deepEqual(refinePlan.assets[0].requiredEvidence, [
+    'modelPath',
+    'meshStats',
+    'refinementEvidence',
+    'materialEvidence',
+    'turntableEvidence',
+    'robloxImportEvidence'
+  ]);
+
+  const checklist = await readFile(path.join(out, '3d-refine-checklist.md'), 'utf8');
+  assert.match(checklist, /Post-Hunyuan Refinement Plan/);
+  assert.match(checklist, /Tencent result/);
+  assert.match(checklist, /Roblox import/);
+  assert.match(checklist, /betterref-3d --verify/);
+});
+
 test('betterref-3d verify rejects Tencent Cloud Hunyuan metadata without result files', async () => {
   const dir = await makeCase('verify-tencent-hunyuan-missing-result-files');
   const project = path.join(dir, 'project');
@@ -707,6 +828,152 @@ test('betterref-3d verify rejects Tencent Cloud Hunyuan metadata without result 
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.passed, false);
   assert.equal(payload.blockingReasons.some((item) => /Hunyuan response metadata/i.test(item)), true);
+});
+
+test('betterref-3d verify fails Roblox Hunyuan output without post-Hunyuan refinement evidence', async () => {
+  const dir = await makeCase('verify-roblox-raw-hunyuan-fails');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  const metadata = await writeTencentHunyuanMetadata(dir, { targetPath: modelRelative });
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetPlatform: 'roblox',
+        targetUse: 'accessory',
+        targetFormat: 'glb',
+        targetPath: modelRelative,
+        materialSlots: ['base-color'],
+        acceptanceCriteria: ['Roblox-ready low-poly mesh and baked texture evidence are required.']
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 65000, faceCount: 52000 },
+        renders: [renderRelative],
+        materialEvidence: { textureMaps: ['baseColor', 'normal'] }
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--hunyuan-request',
+    metadata.request,
+    '--hunyuan-response',
+    metadata.response,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
+  assert.equal(payload.assets[0].refinementEvidenceRequired, true);
+  assert.equal(payload.assets[0].postHunyuanRefinementPresent, false);
+  assert.equal(payload.assets[0].robloxImportEvidencePresent, false);
+  assert.equal(payload.assets[0].triangleBudget.passed, false);
+  assert.equal(payload.blockingReasons.some((item) => /post-Hunyuan refinement/i.test(item)), true);
+  assert.equal(payload.blockingReasons.some((item) => /Roblox triangle budget/i.test(item)), true);
+  assert.equal(payload.blockingReasons.some((item) => /Roblox import evidence/i.test(item)), true);
+});
+
+test('betterref-3d verify passes Roblox Hunyuan output after refinement, budget, and import evidence', async () => {
+  const dir = await makeCase('verify-roblox-refined-pass');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  const robloxPreview = path.join(project, 'evidence', 'model-001-roblox-preview.png');
+  await mkdir(path.dirname(robloxPreview), { recursive: true });
+  await writeFile(robloxPreview, 'fake-roblox-preview-bytes');
+  const metadata = await writeTencentHunyuanMetadata(dir, { targetPath: modelRelative });
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetPlatform: 'roblox',
+        targetUse: 'accessory',
+        targetFormat: 'glb',
+        targetPath: modelRelative,
+        materialSlots: ['base-color'],
+        acceptanceCriteria: ['Roblox-ready low-poly mesh and baked texture evidence are required.']
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 3600, faceCount: 3600 },
+        renders: [renderRelative],
+        materialEvidence: { textureMaps: ['baseColor', 'normal'] },
+        refinementEvidence: {
+          retopo: true,
+          decimate: true,
+          bakedMaps: ['baseColor', 'normal'],
+          finalModelPath: modelRelative
+        },
+        robloxImportEvidence: {
+          previewPath: 'evidence/model-001-roblox-preview.png',
+          imported: true
+        }
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--hunyuan-request',
+    metadata.request,
+    '--hunyuan-response',
+    metadata.response,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, true);
+  assert.equal(payload.assets[0].refinementEvidenceRequired, true);
+  assert.equal(payload.assets[0].postHunyuanRefinementPresent, true);
+  assert.equal(payload.assets[0].robloxImportEvidencePresent, true);
+  assert.equal(payload.assets[0].triangleBudget.passed, true);
 });
 
 test('betterref-3d verify rejects Tencent Cloud Hunyuan metadata without DONE status', async () => {

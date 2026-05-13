@@ -76,6 +76,13 @@ Use `betterref-3d` to create `3d-asset-plan.json`, `hunyuan-request.json`, and `
 npx betterref-3d --make-hunyuan-request --plan .betterref-3d/3d-asset-plan.json --out .betterref-3d --provider tencent --tencent-region ap-guangzhou --tencent-edition pro --tencent-model 3.1 --result-format GLB --enable-pbr true --face-count 50000 --json
 ```
 
+After Tencent returns `hunyuan-response.json`, create the post-Hunyuan refinement loop before final verification. Raw Hunyuan output is treated as source material; Roblox targets must show retopo/decimate evidence, baked texture/normal/PBR evidence, Roblox Studio import/preview evidence, and a fresh `betterref-3d --verify` pass:
+
+```bash
+npx betterref-3d --make-refine-plan --plan .betterref-3d/3d-asset-plan.json --hunyuan-request .betterref-3d/hunyuan-request.json --hunyuan-response .betterref-3d/hunyuan-response.json --asset-brief .betterref-reference/asset-brief.json --out .betterref-3d --project . --json
+npx betterref-3d --verify --plan .betterref-3d/3d-asset-plan.json --evidence .betterref-3d/3d-evidence.json --hunyuan-request .betterref-3d/hunyuan-request.json --hunyuan-response .betterref-3d/hunyuan-response.json --out .betterref-3d --project . --json
+```
+
 The PRD bridge writes `prd-summary.json`, `requirements.md`, `visual-checklist.md`, `prd-checklist.json`, `asset-plan.json`, `betterref.guard.json`, `betterref-runbook.md`, and a generated `.betterref.json` scaffold. With `--project .`, it also creates or updates `AGENTS.md` at the project root with a managed BetterRef/Karpathy/Superpowers contract while preserving existing project instructions outside the managed block. It extracts text directly in Node and uses the PDF as the requirement source; page rendering remains a separate PDF-skill/Poppler step when layout inspection of the PDF pages is needed. If the PRD mentions concrete static hero, mascot, image, raster, 3D, glass, texture, background, illustration, or rendered still-asset work, the generated guard config enables `autoAssetQuality` and the asset plan lists imagegen/production-asset prompts, target paths, native-size minimums, and acceptance criteria. If it mentions animated, motion, reveal, loop, WebM/MP4, shader transition, or HyperFrames work, the asset plan routes that item to HyperFrames and requires CLI render evidence plus browser video evidence. Code-native behavior such as sticky headers, hover zoom, parallax limits, mobile menus, and fallback-only rules stays in the PRD checklist instead of becoming generated asset tasks.
 
 Generate built-in `image_gen` requests for pending assets. Each request includes an output slot, target path, attach command, auto-attach command, and public URL candidates:
