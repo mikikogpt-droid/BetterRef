@@ -41,6 +41,7 @@ Never call the result done when any hard-fail ledger item exists. A score of 98-
 | Reference image supplied for deep copying | Run `betterref-reference` and require `reference-analysis.json` before planning. |
 | Reference contains object/product/character/prop for 3D | Create 3D brief and run `betterref-3d` handoff. |
 | Hunyuan 3D via Hugging Face requested | Use Space/Endpoint/custom adapter and record request/response metadata. |
+| Hunyuan 3D via Tencent Cloud requested | Use `--provider tencent`, record Tencent request/response metadata, and require `ResultFile3Ds`. |
 | Work is PRD + visual + 3D | Use expanded tiered agent team; supervisor merges specialist reports. |
 
 ## Start Project Command
@@ -79,7 +80,7 @@ Treat these user phrases as BetterRef workflows:
 
 ## Reference Intelligence And 3D
 
-Reference Intelligence starts with `betterref-reference`: write `reference-analysis.json`, checklist, negative prompts, and a 3D brief when object cues exist. Route a 3D model through `betterref-3d`; Hunyuan 3D on Hugging Face must record provider, request, response, mesh/load evidence, and reject any flat 2D billboard. Use the Expanded Agent Team for PRD + reference + 3D work; the supervisor merges specialist facts, confidence, uncertainties, evidence, actions, and hard fails. Details live in `references/reference-intelligence.md`, `references/reference-to-3d.md`, `references/hunyuan-huggingface.md`, and `references/agent-team.md`.
+Reference Intelligence starts with `betterref-reference`: write `reference-analysis.json`, checklist, negative prompts, and a 3D brief when object cues exist. Route a 3D model through `betterref-3d`; Hunyuan 3D on Hugging Face or Tencent Cloud must record provider, request, response, mesh/load evidence, and reject any flat 2D billboard. Tencent Cloud responses must include matched job/request metadata plus non-empty `ResultFile3Ds`. Use the Expanded Agent Team for PRD + reference + 3D work; the supervisor merges specialist facts, confidence, uncertainties, evidence, actions, and hard fails. Details live in `references/reference-intelligence.md`, `references/reference-to-3d.md`, `references/hunyuan-huggingface.md`, and `references/agent-team.md`.
 
 ## PRD To Web Loop
 

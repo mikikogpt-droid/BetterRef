@@ -59,6 +59,43 @@ async function writeHunyuanMetadata(dir, { id = 'model-001', targetPath = 'publi
   return { request, response };
 }
 
+async function writeTencentHunyuanMetadata(dir, { id = 'model-001', targetPath = 'public/betterref-assets/model-001.glb' } = {}) {
+  const request = path.join(dir, 'hunyuan-request.json');
+  const response = path.join(dir, 'hunyuan-response.json');
+  await writeJson(request, {
+    schemaVersion: 'betterref.hunyuan.request.v1',
+    providers: ['tencent'],
+    tencentCloud: {
+      endpoint: 'hunyuan3d.tencentcloudapi.com',
+      region: 'ap-guangzhou',
+      edition: 'pro',
+      submitAction: 'SubmitHunyuanTo3DProJob',
+      queryAction: 'QueryHunyuanTo3DProJob',
+      model: '3.1',
+      resultFormat: 'GLB',
+      enablePBR: true,
+      faceCount: 50000
+    },
+    assets: [{ id, targetPath }]
+  });
+  await writeJson(response, {
+    schemaVersion: 'betterref.hunyuan.response.v1',
+    provider: 'tencent',
+    requestId: 'tc-request-001',
+    assets: [
+      {
+        id,
+        status: 'DONE',
+        targetPath,
+        jobId: `${id}-tc-job`,
+        requestId: 'tc-request-001',
+        resultFile3Ds: [{ type: 'GLB', url: 'https://cos.example/model.glb' }]
+      }
+    ]
+  });
+  return { request, response };
+}
+
 test('betterref-3d prints usage and exits code 2 without mode inputs', () => {
   const result = run3D([]);
 
@@ -231,6 +268,81 @@ test('betterref-3d creates a Hunyuan request with both Hugging Face adapters', a
   assert.equal(request.assets[0].acceptanceCriteria.some((item) => /Mesh stats/i.test(item)), true);
 });
 
+test('betterref-3d creates a Hunyuan request with the Tencent Cloud adapter', async () => {
+  const dir = await makeCase('tencent-hunyuan-request');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const out = path.join(dir, '3d-out');
+  const sourceImage = path.join(dir, 'reference.png');
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        sourceImage,
+        targetFormat: 'glb',
+        prompt: 'rounded mascot with glass face',
+        targetPath: 'public/betterref-assets/model-001.glb',
+        acceptanceCriteria: ['PBR material evidence is required.']
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--make-hunyuan-request',
+    '--plan',
+    plan,
+    '--out',
+    out,
+    '--provider',
+    'tencent',
+    '--tencent-region',
+    'ap-guangzhou',
+    '--tencent-edition',
+    'pro',
+    '--tencent-model',
+    '3.1',
+    '--result-format',
+    'GLB',
+    '--enable-pbr',
+    'true',
+    '--face-count',
+    '50000',
+    '--json'
+  ], {
+    env: {
+      ...process.env,
+      TENCENTCLOUD_SECRET_ID: 'secret-id',
+      TENCENTCLOUD_SECRET_KEY: 'secret-key'
+    }
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.schemaVersion, 'betterref.hunyuan.request.v1');
+
+  const request = JSON.parse(await readFile(path.join(out, 'hunyuan-request.json'), 'utf8'));
+  assert.deepEqual(request.providers, ['tencent']);
+  assert.deepEqual(request.tencentCloud, {
+    endpoint: 'hunyuan3d.tencentcloudapi.com',
+    region: 'ap-guangzhou',
+    edition: 'pro',
+    submitAction: 'SubmitHunyuanTo3DProJob',
+    queryAction: 'QueryHunyuanTo3DProJob',
+    model: '3.1',
+    resultFormat: 'GLB',
+    enablePBR: true,
+    faceCount: 50000
+  });
+  assert.equal(request.auth.type, 'tencentcloud-secret');
+  assert.deepEqual(request.auth.env, ['TENCENTCLOUD_SECRET_ID', 'TENCENTCLOUD_SECRET_KEY']);
+  assert.equal(request.auth.available, true);
+  assert.equal(request.assets[0].provider, 'hunyuan');
+  assert.equal(request.assets[0].targetPath, 'public/betterref-assets/model-001.glb');
+});
+
 test('betterref-3d rejects unusable Hunyuan provider options', async () => {
   const dir = await makeCase('provider-validation');
   const plan = path.join(dir, '3d-asset-plan.json');
@@ -261,6 +373,11 @@ test('betterref-3d rejects unusable Hunyuan provider options', async () => {
       name: 'missing custom url',
       args: ['--provider', 'custom'],
       message: /--custom-url is required/i
+    },
+    {
+      name: 'unknown Tencent edition',
+      args: ['--provider', 'tencent', '--tencent-edition', 'gold'],
+      message: /Unknown Tencent Hunyuan3D edition/i
     }
   ];
 
@@ -448,6 +565,230 @@ test('betterref-3d verify requires Hunyuan request and response metadata', async
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.passed, false);
   assert.equal(payload.blockingReasons.some((item) => /Hunyuan request metadata/i.test(item)), true);
+  assert.equal(payload.blockingReasons.some((item) => /Hunyuan response metadata/i.test(item)), true);
+});
+
+test('betterref-3d verify accepts Tencent Cloud Hunyuan request and response metadata', async () => {
+  const dir = await makeCase('verify-tencent-hunyuan-pass');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  const metadata = await writeTencentHunyuanMetadata(dir, { targetPath: modelRelative });
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetFormat: 'glb',
+        targetPath: modelRelative
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 240, faceCount: 120 },
+        renders: [renderRelative]
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--hunyuan-request',
+    metadata.request,
+    '--hunyuan-response',
+    metadata.response,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, true);
+  assert.equal(payload.assets[0].requestMetadataPresent, true);
+  assert.equal(payload.assets[0].responseMetadataPresent, true);
+});
+
+test('betterref-3d verify rejects Tencent Cloud Hunyuan metadata without result files', async () => {
+  const dir = await makeCase('verify-tencent-hunyuan-missing-result-files');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const request = path.join(dir, 'hunyuan-request.json');
+  const response = path.join(dir, 'hunyuan-response.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  await writeJson(request, {
+    schemaVersion: 'betterref.hunyuan.request.v1',
+    providers: ['tencent'],
+    tencentCloud: {
+      endpoint: 'hunyuan3d.tencentcloudapi.com',
+      region: 'ap-guangzhou',
+      edition: 'pro',
+      submitAction: 'SubmitHunyuanTo3DProJob',
+      queryAction: 'QueryHunyuanTo3DProJob'
+    },
+    assets: [{ id: 'model-001', targetPath: modelRelative }]
+  });
+  await writeJson(response, {
+    schemaVersion: 'betterref.hunyuan.response.v1',
+    provider: 'tencent',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'DONE',
+        targetPath: modelRelative,
+        jobId: 'model-001-tc-job',
+        requestId: 'tc-request-001'
+      }
+    ]
+  });
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetFormat: 'glb',
+        targetPath: modelRelative
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 240, faceCount: 120 },
+        renders: [renderRelative]
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--hunyuan-request',
+    request,
+    '--hunyuan-response',
+    response,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
+  assert.equal(payload.blockingReasons.some((item) => /Hunyuan response metadata/i.test(item)), true);
+});
+
+test('betterref-3d verify rejects Tencent Cloud Hunyuan metadata without DONE status', async () => {
+  const dir = await makeCase('verify-tencent-hunyuan-missing-done-status');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const request = path.join(dir, 'hunyuan-request.json');
+  const response = path.join(dir, 'hunyuan-response.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  await writeJson(request, {
+    schemaVersion: 'betterref.hunyuan.request.v1',
+    providers: ['tencent'],
+    tencentCloud: {
+      endpoint: 'hunyuan3d.tencentcloudapi.com',
+      region: 'ap-guangzhou',
+      edition: 'pro',
+      submitAction: 'SubmitHunyuanTo3DProJob',
+      queryAction: 'QueryHunyuanTo3DProJob'
+    },
+    assets: [{ id: 'model-001', targetPath: modelRelative }]
+  });
+  await writeJson(response, {
+    schemaVersion: 'betterref.hunyuan.response.v1',
+    provider: 'tencent',
+    assets: [
+      {
+        id: 'model-001',
+        targetPath: modelRelative,
+        jobId: 'model-001-tc-job',
+        requestId: 'tc-request-001',
+        resultFile3Ds: [{ type: 'GLB', url: 'https://cos.example/model.glb' }]
+      }
+    ]
+  });
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pending',
+        provider: 'hunyuan',
+        targetFormat: 'glb',
+        targetPath: modelRelative
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 240, faceCount: 120 },
+        renders: [renderRelative]
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--hunyuan-request',
+    request,
+    '--hunyuan-response',
+    response,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
   assert.equal(payload.blockingReasons.some((item) => /Hunyuan response metadata/i.test(item)), true);
 });
 

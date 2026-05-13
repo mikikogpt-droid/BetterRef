@@ -25,10 +25,17 @@ Options:
   --hunyuan-request        Hunyuan request metadata JSON for --verify.
   --hunyuan-response       Hunyuan response metadata JSON for --verify.
   --format                 Target 3D format for generated assets, default glb.
-  --provider               Hunyuan provider: space, endpoint, both, or custom.
+  --provider               Hunyuan provider: space, endpoint, both, custom, or tencent.
   --space                  Hugging Face Space id for space provider.
   --endpoint               Hugging Face Inference Endpoint URL.
   --custom-url             Custom Hunyuan wrapper URL.
+  --tencent-endpoint       Tencent Cloud Hunyuan3D endpoint host, default hunyuan3d.tencentcloudapi.com.
+  --tencent-region         Tencent Cloud region, default ap-guangzhou.
+  --tencent-edition        Tencent Hunyuan3D API edition: pro or rapid, default pro.
+  --tencent-model          Tencent Hunyuan3D model version, default 3.1 for pro.
+  --result-format          Tencent output format, default GLB.
+  --enable-pbr             Tencent PBR material generation flag, default true for pro.
+  --face-count             Tencent target face count when supported.
   --project                Project directory for resolving model evidence paths.
   --json                   Print JSON result to stdout.
   --help                   Show this help.
@@ -92,7 +99,14 @@ async function main() {
         provider: values.provider,
         space: values.space,
         endpoint: values.endpoint,
-        customUrl: values['custom-url']
+        customUrl: values['custom-url'],
+        tencentEndpoint: values['tencent-endpoint'],
+        tencentRegion: values['tencent-region'],
+        tencentEdition: values['tencent-edition'],
+        tencentModel: values['tencent-model'],
+        resultFormat: values['result-format'],
+        enablePBR: values['enable-pbr'],
+        faceCount: values['face-count']
       });
     } else {
       result = await verify3D({

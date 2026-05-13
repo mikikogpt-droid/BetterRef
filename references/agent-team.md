@@ -20,7 +20,7 @@ Use a tiered team for PRD/reference/3D work.
 - Layout Agent
 - Asset Agent
 - 3D Shape Agent
-- Hunyuan API Agent
+- Hunyuan API Agent: selects Hugging Face Space/Endpoint/custom or Tencent Cloud Hunyuan3D, records request/response metadata, and flags missing provider output evidence.
 - 3D QA Agent
 - Accessibility/UX Agent
 

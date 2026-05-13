@@ -454,6 +454,8 @@ test('betterref-prd detects Hunyuan 3D model requirements separately from raster
   const runbook = await readFile(path.join(out, 'betterref-runbook.md'), 'utf8');
   assert.match(runbook, /betterref-3d --make-plan/);
   assert.match(runbook, /betterref-3d --make-hunyuan-request/);
+  assert.match(runbook, /--provider tencent/);
+  assert.match(runbook, /TENCENTCLOUD_SECRET_ID/);
   assert.match(runbook, /--three-d \.betterref-3d\/3d-verdict\.json/);
   assert.match(runbook, /--require guard,prd,longpage,assetplan,browser,3d/);
 });
