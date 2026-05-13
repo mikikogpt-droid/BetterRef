@@ -62,6 +62,12 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .b
 
 Run `betterref-reference --ref reference.png --out .betterref-reference --target ui,3d,hunyuan` before planning deep reference-copy work.
 
+For 3D/game assets, pass a Reference Pack to generate an Asset Brief. BetterRef selects one clean main image for Tencent mesh generation and keeps texture refs separate for Blender, Substance, texture edit, or artist work:
+
+```bash
+npx betterref-reference --pack reference-pack.json --out .betterref-reference --target 3d,hunyuan,roblox --json
+```
+
 ## Hunyuan 3D
 
 Use `betterref-3d` to create `3d-asset-plan.json`, `hunyuan-request.json`, and `3d-verdict.json`. BetterRef supports Hugging Face Space, Endpoint, custom wrapper, and Tencent Cloud Hunyuan3D provider adapters. Use `HF_TOKEN` for Hugging Face or `TENCENTCLOUD_SECRET_ID` plus `TENCENTCLOUD_SECRET_KEY` for Tencent Cloud.

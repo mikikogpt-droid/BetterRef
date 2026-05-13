@@ -235,6 +235,19 @@ Input: expanded agent team reports facts without specialist confidence or eviden
 
 Required behavior: supervisor rejects the report and asks the specialist to return structured facts, confidence, uncertainties, and evidence.
 
+## BR-PRESSURE-021 Reference Pack Mixed Mesh And Texture Refs
+
+Input: a Reference Pack includes one clean object image, several texture/material closeups, and a Roblox target.
+
+Bad behavior to catch:
+
+- sends every reference image into Tencent mesh generation
+- lets texture closeups distort silhouette or proportions
+- forgets Roblox triangle budget and baked texture evidence
+- judges texture quality from the mesh image instead of the texture refs
+
+Required behavior: `betterref-reference --pack` creates an Asset Brief, selects one main mesh image, keeps texture refs for Blender/Substance/artist workflow, and blocks final pass until Roblox-ready low-poly, baked texture, import, and preview evidence exist.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.

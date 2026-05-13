@@ -42,6 +42,10 @@ async function writeReference(filePath) {
     .toFile(filePath);
 }
 
+async function writeJson(filePath, value) {
+  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
 async function writeLargeSvgReference(filePath) {
   await writeFile(
     filePath,
@@ -136,4 +140,90 @@ test('betterref-reference analyzes oversized design references without Sharp pix
   assert.equal(analysis.image.width, 20000);
   assert.equal(analysis.image.height, 15000);
   assert.equal(analysis.pixelFacts.aspectRatio, '4:3');
+});
+
+test('betterref-reference converts a reference pack into an asset brief with separate mesh and texture refs', async () => {
+  const dir = await makeCase('reference-pack');
+  const meshRef = path.join(dir, 'front-main.png');
+  const textureRef = path.join(dir, 'metal-texture.png');
+  const colorRef = path.join(dir, 'paint-color.png');
+  const pack = path.join(dir, 'reference-pack.json');
+  const out = path.join(dir, 'reference-out');
+  await writeReference(meshRef);
+  await writeReference(textureRef);
+  await writeReference(colorRef);
+  await writeJson(pack, {
+    schemaVersion: 'betterref.reference.pack.v1',
+    assetId: 'roblox-mascot',
+    targetPlatform: 'roblox',
+    targetUse: 'generic-prop',
+    references: [
+      {
+        id: 'front-main',
+        path: meshRef,
+        role: 'main',
+        purpose: 'mesh',
+        view: 'front',
+        notes: 'single object, simple background, object occupies most of the frame'
+      },
+      {
+        id: 'brushed-metal',
+        path: textureRef,
+        role: 'texture',
+        purpose: 'material',
+        materialSlot: 'metal-trim',
+        workflow: ['Blender', 'Substance', 'artist']
+      },
+      {
+        id: 'paint-color',
+        path: colorRef,
+        role: 'texture',
+        purpose: 'color',
+        materialSlot: 'base-color'
+      }
+    ]
+  });
+
+  const result = spawnSync(process.execPath, [
+    referenceBin,
+    '--pack',
+    pack,
+    '--out',
+    out,
+    '--target',
+    '3d,hunyuan,roblox',
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.schemaVersion, 'betterref.reference.pack.result.v1');
+  assert.match(payload.artifacts.assetBriefPath, /asset-brief\.json$/);
+  assert.match(payload.artifacts.assetBriefMarkdownPath, /asset-brief\.md$/);
+  assert.match(payload.artifacts.textureHandoffPath, /texture-refs\.md$/);
+
+  const brief = JSON.parse(await readFile(path.join(out, 'asset-brief.json'), 'utf8'));
+  assert.equal(brief.schemaVersion, 'betterref.asset.brief.v1');
+  assert.equal(brief.assetId, 'roblox-mascot');
+  assert.equal(brief.targetPlatform, 'roblox');
+  assert.equal(brief.meshReference.id, 'front-main');
+  assert.equal(brief.meshReference.tencentMeshInput, true);
+  assert.equal(brief.textureReferences.length, 2);
+  assert.deepEqual(brief.textureReferences.map((item) => item.materialSlot), ['metal-trim', 'base-color']);
+  assert.equal(brief.textureReferences[0].workflowTargets.includes('Substance'), true);
+  assert.equal(brief.roblox.triangleBudgets.genericMeshPartMaxTriangles, 20000);
+  assert.equal(brief.roblox.triangleBudgets.accessoryMaxTriangles, 4000);
+  assert.equal(brief.roblox.triangleBudgets.avatarBodyTotalMaxTriangles, 10742);
+  assert.equal(brief.roblox.qualityPrinciple, 'looks high quality in Roblox, not high-poly everywhere');
+  assert.equal(brief.acceptanceGates.some((item) => /baked texture/i.test(item)), true);
+
+  const markdown = await readFile(path.join(out, 'asset-brief.md'), 'utf8');
+  assert.match(markdown, /# BetterRef Asset Brief/);
+  assert.match(markdown, /Tencent Mesh Input/);
+  assert.match(markdown, /Roblox Quality Gate/);
+
+  const textureHandoff = await readFile(path.join(out, 'texture-refs.md'), 'utf8');
+  assert.match(textureHandoff, /brushed-metal/);
+  assert.match(textureHandoff, /Blender/);
+  assert.match(textureHandoff, /Substance/);
 });
