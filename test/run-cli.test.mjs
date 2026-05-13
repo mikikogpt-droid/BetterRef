@@ -72,11 +72,11 @@ async function writePassingThreeDVerdict(project, generatedAt = '2026-05-12T00:0
   });
   await writeJson(requestPath, {
     schemaVersion: 'betterref.hunyuan.request.v1',
-    providers: ['space', 'endpoint'],
-    huggingFace: {
-      space: 'tencent/Hunyuan3D-2',
-      endpoint: 'https://example.endpoints.huggingface.cloud',
-      customUrl: null
+    providers: ['tencent'],
+    tencentCloud: {
+      endpoint: 'hunyuan3d.tencentcloudapi.com',
+      region: 'ap-guangzhou',
+      edition: 'pro'
     },
     assets: [
       {
@@ -87,13 +87,14 @@ async function writePassingThreeDVerdict(project, generatedAt = '2026-05-12T00:0
   });
   await writeJson(responsePath, {
     schemaVersion: 'betterref.hunyuan.response.v1',
-    provider: 'endpoint',
+    provider: 'tencent',
     assets: [
       {
         id: 'model-001',
         status: 'completed',
         targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
-        responseId: 'hf-job-001'
+        jobId: 'tencent-job-001',
+        resultFile3Ds: [{ type: 'GLB', url: 'public/betterref-assets/hunyuan-model-01.glb' }]
       }
     ]
   });
@@ -376,7 +377,7 @@ test('betterref-run blocks on required Hunyuan 3D handoff before browser verific
   await mkdir(project, { recursive: true });
   await writePdf(pdf, [
     'Viewport: 1440x900.',
-    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    'Hunyuan 3D: generate GLB model through Tencent Cloud API.',
     '3D acceptance: mesh must load in Three.js and provide turntable evidence.'
   ]);
   await writePng(ref);
@@ -421,7 +422,7 @@ test('betterref-run resumes past 3D gate when a passing 3D verdict already exist
   await writePassingThreeDVerdict(project);
   await writePdf(pdf, [
     'Viewport: 1440x900.',
-    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    'Hunyuan 3D: generate GLB model through Tencent Cloud API.',
     '3D acceptance: mesh must load in Three.js and provide turntable evidence.'
   ]);
   await writePng(ref);
@@ -462,7 +463,7 @@ test('betterref-run refuses to resume with a pass-shaped 3D verdict without evid
   });
   await writePdf(pdf, [
     'Viewport: 1440x900.',
-    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    'Hunyuan 3D: generate GLB model through Tencent Cloud API.',
     '3D acceptance: mesh must load in Three.js and provide turntable evidence.'
   ]);
   await writePng(ref);
@@ -662,7 +663,7 @@ test('betterref-run includes passing 3D verdict in final verification', async ()
   await writePng(fullPage, screenshotBase64);
   await writePdf(pdf, [
     'Viewport: 1440x900.',
-    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    'Hunyuan 3D: generate GLB model through Tencent Cloud API.',
     '3D acceptance: mesh must load in Three.js and provide turntable evidence.'
   ]);
   await writeFile(handoff, JSON.stringify({

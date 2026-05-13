@@ -1,4 +1,4 @@
-# BetterRef Supervisor Implementation Plan
+﻿# BetterRef Supervisor Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -27,7 +27,7 @@
 - Modify `test/run-cli.test.mjs`: tests for 3D blocker/handoff artifacts.
 - Modify `package.json`: add `betterref-reference` and `betterref-3d` bin entries.
 - Modify `README.md`, `SKILL.md`, `agents/openai.yaml`: document reference intelligence, 3D lane, Hunyuan adapter, expanded agent team.
-- Create `references/reference-intelligence.md`, `references/reference-to-3d.md`, `references/hunyuan-huggingface.md`, `references/agent-team.md`.
+- Create `references/reference-intelligence.md`, `references/reference-to-3d.md`, `references/hunyuan-tencent.md`, `references/agent-team.md`.
 - Modify `references/pressure-tests.md`, `references/hard-fail-ledger.md`, `test/skill-contract.test.mjs`.
 
 ## Task 1: Reference Intelligence CLI
@@ -556,7 +556,7 @@ test('betterref-3d creates a 3D asset plan from a reference analysis', async () 
   assert.equal(plan.assets[0].acceptanceCriteria.some((item) => /turntable/i.test(item)), true);
 });
 
-test('betterref-3d creates a Hugging Face Hunyuan request for both adapter support', async () => {
+test('betterref-3d creates a Tencent Cloud Hunyuan request', async () => {
   const dir = await makeCase('hunyuan-request');
   const plan = path.join(dir, '3d-asset-plan.json');
   const out = path.join(dir, '3d-out');
@@ -588,7 +588,7 @@ test('betterref-3d creates a Hugging Face Hunyuan request for both adapter suppo
     '--space',
     'tencent/Hunyuan3D-2',
     '--endpoint',
-    'https://example.endpoints.huggingface.cloud',
+    'hunyuan3d.tencentcloudapi.com',
     '--json'
   ], { cwd: repoRoot, encoding: 'utf8' });
 
@@ -596,9 +596,9 @@ test('betterref-3d creates a Hugging Face Hunyuan request for both adapter suppo
   const request = JSON.parse(await readFile(path.join(out, 'hunyuan-request.json'), 'utf8'));
   assert.equal(request.schemaVersion, 'betterref.hunyuan.request.v1');
   assert.deepEqual(request.providers, ['space', 'endpoint']);
-  assert.equal(request.huggingFace.space, 'tencent/Hunyuan3D-2');
-  assert.equal(request.huggingFace.endpoint, 'https://example.endpoints.huggingface.cloud');
-  assert.equal(request.auth.env, 'HF_TOKEN');
+  assert.equal(request.tencentCloud.space, 'tencent/Hunyuan3D-2');
+  assert.equal(request.tencentCloud.endpoint, 'hunyuan3d.tencentcloudapi.com');
+  assert.equal(request.auth.env, 'TENCENTCLOUD_SECRET_ID/TENCENTCLOUD_SECRET_KEY');
   assert.equal(request.assets[0].id, 'model-001');
 });
 
@@ -731,8 +731,8 @@ export async function makeHunyuanRequest(options) {
     schemaVersion: 'betterref.hunyuan.request.v1',
     generatedAt: new Date().toISOString(),
     providers: providers(provider),
-    auth: { env: 'HF_TOKEN' },
-    huggingFace: {
+    auth: { env: 'TENCENTCLOUD_SECRET_ID/TENCENTCLOUD_SECRET_KEY' },
+    tencentCloud: {
       space: space || null,
       endpoint: endpoint || null,
       customUrl: customUrl || null
@@ -837,8 +837,8 @@ Options:
   --out <dir>                  Output directory.
   --format <glb|obj|usdz>      Target 3D format. Default: glb.
   --provider <space|endpoint|custom|both>
-  --space <id>                 Hugging Face Space id.
-  --endpoint <url>             Hugging Face Endpoint URL.
+  --tencent-endpoint <host>     Tencent Cloud Hunyuan3D endpoint host.
+  --tencent-region <region>    Tencent Cloud region.
   --custom-url <url>           Custom Hunyuan wrapper URL.
   --project <dir>              Project root for resolving model files.
   --json                       Print JSON result to stdout.
@@ -1220,7 +1220,7 @@ test('betterref-prd detects Hunyuan 3D model requirements separately from raster
   await writePdf(pdf, [
     'Viewport: 1440x900.',
     'Reference image: product mascot should become a real 3D model.',
-    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    'Hunyuan 3D: generate GLB model through Tencent Cloud API.',
     '3D acceptance: mesh must load in Three.js, include texture material, and provide turntable evidence.',
     'Hero UI text and buttons remain code-native.'
   ]);
@@ -1302,7 +1302,7 @@ const threeDAssets = threeDRequirements.map((requirement, index) => ({
   role: 'hunyuan-3d-model',
   requirement,
   tool: 'hunyuan3d',
-  implementation: 'hunyuan-3d-model-via-huggingface',
+  implementation: 'hunyuan-3d-model-via-tencent-api',
   targetPath: `public/betterref-assets/hunyuan-model-${String(index + 1).padStart(2, '0')}.glb`,
   targetFormat: 'glb',
   acceptanceCriteria: [
@@ -1363,7 +1363,7 @@ const threeDSection = threeDRequired
 \`\`\`bash
 betterref-reference --ref ${reference} --out .betterref-reference --target ui,3d,hunyuan --json
 betterref-3d --make-plan --analysis .betterref-reference/reference-analysis.json --out .betterref-3d --format glb --json
-betterref-3d --make-hunyuan-request --plan .betterref-3d/3d-asset-plan.json --out .betterref-3d --provider both --space tencent/Hunyuan3D-2 --endpoint https://example.endpoints.huggingface.cloud --json
+betterref-3d --make-hunyuan-request --plan .betterref-3d/3d-asset-plan.json --out .betterref-3d --provider tencent --tencent-region ap-guangzhou --tencent-edition pro --tencent-model 3.1 --result-format GLB --enable-pbr true --face-count 50000 --json
 # After Hunyuan returns a model and render evidence:
 betterref-3d --verify --plan .betterref-3d/3d-asset-plan.json --evidence .betterref-3d/3d-evidence.json --project . --out .betterref-3d --json
 \`\`\`
@@ -1419,7 +1419,7 @@ test('betterref-run blocks on required Hunyuan 3D handoff before browser verific
   await mkdir(project, { recursive: true });
   await writePdf(pdf, [
     'Viewport: 1440x900.',
-    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    'Hunyuan 3D: generate GLB model through Tencent Cloud API.',
     '3D acceptance: mesh must load in Three.js and provide turntable evidence.'
   ]);
   await writePng(ref);
@@ -1491,7 +1491,7 @@ if (assetPlan.threeDRequired || summary.threeDRequired) {
   blockers.push({
     code: 'blocked_external_3d_generation',
     message: 'A Hunyuan 3D model is required. Generate the 3D model, attach evidence, and run betterref-3d --verify before final verification can pass.',
-    nextAction: `betterref-reference --ref ${path.resolve(options.referencePath)} --out ${paths.referenceOut} --target ui,3d,hunyuan --json && betterref-3d --make-plan --analysis ${path.join(paths.referenceOut, 'reference-analysis.json')} --out ${paths.threeDOut} --format glb --json && betterref-3d --make-hunyuan-request --plan ${paths.threeDPlanPath} --out ${paths.threeDOut} --provider both --space tencent/Hunyuan3D-2 --endpoint https://example.endpoints.huggingface.cloud --json`
+    nextAction: `betterref-reference --ref ${path.resolve(options.referencePath)} --out ${paths.referenceOut} --target ui,3d,hunyuan --json && betterref-3d --make-plan --analysis ${path.join(paths.referenceOut, 'reference-analysis.json')} --out ${paths.threeDOut} --format glb --json && betterref-3d --make-hunyuan-request --plan ${paths.threeDPlanPath} --out ${paths.threeDOut} --provider tencent --tencent-region ap-guangzhou --tencent-edition pro --tencent-model 3.1 --result-format GLB --enable-pbr true --face-count 50000 --json`
   });
 }
 ```
@@ -1534,7 +1534,7 @@ git commit -m "Block BetterRef runs on required 3D handoffs"
 - Modify: `agents/openai.yaml`
 - Create: `references/reference-intelligence.md`
 - Create: `references/reference-to-3d.md`
-- Create: `references/hunyuan-huggingface.md`
+- Create: `references/hunyuan-tencent.md`
 - Create: `references/agent-team.md`
 - Modify: `references/pressure-tests.md`
 - Modify: `references/hard-fail-ledger.md`
@@ -1551,7 +1551,7 @@ test('SKILL.md documents reference intelligence, Hunyuan 3D, and expanded agent 
   assert.match(skill, /betterref-reference/);
   assert.match(skill, /betterref-3d/);
   assert.match(skill, /Hunyuan 3D/i);
-  assert.match(skill, /Hugging Face/i);
+  assert.match(skill, /Tencent Cloud/i);
   assert.match(skill, /Expanded Agent Team/i);
   assert.match(skill, /3D model/i);
   assert.match(skill, /flat 2D billboard/i);
@@ -1561,7 +1561,7 @@ test('BetterRef ships reference intelligence and 3D guidance files', async () =>
   for (const relativePath of [
     'references/reference-intelligence.md',
     'references/reference-to-3d.md',
-    'references/hunyuan-huggingface.md',
+    'references/hunyuan-tencent.md',
     'references/agent-team.md'
   ]) {
     assert.equal(await fileExists(relativePath), true, `${relativePath} must exist`);
@@ -1604,7 +1604,7 @@ Add quick decision rows:
 ```markdown
 | Reference image supplied for deep copying | Run `betterref-reference` and require `reference-analysis.json` before planning. |
 | Reference contains object/product/character/prop for 3D | Create 3D brief and run `betterref-3d` handoff. |
-| Hunyuan 3D via Hugging Face requested | Use Space/Endpoint/custom adapter and record request/response metadata. |
+| Hunyuan 3D via Tencent Cloud requested | Use Space/Endpoint/custom adapter and record request/response metadata. |
 | Work is PRD + visual + 3D | Use expanded tiered agent team; supervisor merges specialist reports. |
 ```
 
@@ -1656,19 +1656,19 @@ Include silhouette, major volumes, visible proportions, camera angle, material s
 - Export target missing or not loadable in the intended runtime.
 ```
 
-- [ ] **Step 6: Create `references/hunyuan-huggingface.md`**
+- [ ] **Step 6: Create `references/hunyuan-tencent.md`**
 
 Use:
 
 ```markdown
-# Hunyuan 3D Through Hugging Face
+# Hunyuan 3D Through Tencent Cloud
 
-BetterRef supports provider adapters instead of hardcoding one Hugging Face API shape.
+BetterRef supports provider adapters instead of hardcoding one Tencent Cloud API shape.
 
 ## Providers
 
-- `space`: Hugging Face Space or Gradio-style call.
-- `endpoint`: dedicated Hugging Face Inference Endpoint.
+- `space`: Tencent Cloud API or Gradio-style call.
+- `endpoint`: dedicated Tencent Cloud Inference Endpoint.
 - `custom`: explicit wrapper URL.
 
 ## Required artifacts
@@ -1678,7 +1678,7 @@ BetterRef supports provider adapters instead of hardcoding one Hugging Face API 
 - `3d-asset-plan.json`
 - `3d-verdict.json`
 
-Use `HF_TOKEN` from the environment or a secure connector. Never commit raw tokens.
+Use `TENCENTCLOUD_SECRET_ID/TENCENTCLOUD_SECRET_KEY` from the environment or a secure connector. Never commit raw tokens.
 ```
 
 - [ ] **Step 7: Create `references/agent-team.md`**
@@ -1801,7 +1801,7 @@ Expected: PASS.
 Run:
 
 ```bash
-git add SKILL.md README.md agents/openai.yaml references/reference-intelligence.md references/reference-to-3d.md references/hunyuan-huggingface.md references/agent-team.md references/pressure-tests.md references/hard-fail-ledger.md test/skill-contract.test.mjs
+git add SKILL.md README.md agents/openai.yaml references/reference-intelligence.md references/reference-to-3d.md references/hunyuan-tencent.md references/agent-team.md references/pressure-tests.md references/hard-fail-ledger.md test/skill-contract.test.mjs
 git commit -m "Document BetterRef supervisor reference and 3D workflows"
 ```
 
@@ -1858,7 +1858,7 @@ Expected: no unintended generated evidence directories are tracked.
 If Task 7 required fixes, commit only the touched implementation and test files:
 
 ```bash
-git add package.json SKILL.md README.md agents/openai.yaml bin/betterref-reference.mjs bin/betterref-3d.mjs bin/betterref-verify.mjs lib/reference.mjs lib/threeD.mjs lib/verify.mjs lib/prd.mjs lib/run.mjs test/reference-cli.test.mjs test/three-d-cli.test.mjs test/verify-cli.test.mjs test/prd-cli.test.mjs test/run-cli.test.mjs test/skill-contract.test.mjs references/reference-intelligence.md references/reference-to-3d.md references/hunyuan-huggingface.md references/agent-team.md references/pressure-tests.md references/hard-fail-ledger.md
+git add package.json SKILL.md README.md agents/openai.yaml bin/betterref-reference.mjs bin/betterref-3d.mjs bin/betterref-verify.mjs lib/reference.mjs lib/threeD.mjs lib/verify.mjs lib/prd.mjs lib/run.mjs test/reference-cli.test.mjs test/three-d-cli.test.mjs test/verify-cli.test.mjs test/prd-cli.test.mjs test/run-cli.test.mjs test/skill-contract.test.mjs references/reference-intelligence.md references/reference-to-3d.md references/hunyuan-tencent.md references/agent-team.md references/pressure-tests.md references/hard-fail-ledger.md
 git commit -m "Stabilize BetterRef supervisor verification"
 ```
 
@@ -1868,10 +1868,10 @@ Expected: commit succeeds or no changes remain.
 
 - Spec coverage:
   - Reference Intelligence Layer: Task 1 and Task 6.
-  - Hunyuan 3D via Hugging Face adapters: Task 2, Task 4, Task 6.
+  - Hunyuan 3D via Tencent Cloud adapter: Task 2, Task 4, Task 6.
   - 3D model evidence gates: Task 2, Task 3, Task 5.
   - Expanded tiered agent team: Task 6.
   - Final evidence gates: Task 3, Task 5, Task 7.
 - TDD coverage: every code task starts with a failing test and expected RED command.
-- Scope control: live Hugging Face API calls are not required in tests; adapter handoff artifacts are tested locally.
+- Scope control: live Tencent Cloud API calls are not required in tests; adapter handoff artifacts are tested locally.
 - Integration path: `betterref-prd` detects 3D needs, `betterref-run` blocks on 3D handoff, `betterref-verify` enforces 3D evidence.

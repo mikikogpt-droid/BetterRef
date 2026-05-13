@@ -70,7 +70,7 @@ npx betterref-reference --pack reference-pack.json --out .betterref-reference --
 
 ## Hunyuan 3D
 
-Use `betterref-3d` to create `3d-asset-plan.json`, `hunyuan-request.json`, and `3d-verdict.json`. BetterRef supports Hugging Face Space, Endpoint, custom wrapper, and Tencent Cloud Hunyuan3D provider adapters. Use `HF_TOKEN` for Hugging Face or `TENCENTCLOUD_SECRET_ID` plus `TENCENTCLOUD_SECRET_KEY` for Tencent Cloud.
+Use `betterref-3d` to create `3d-asset-plan.json`, `hunyuan-request.json`, and `3d-verdict.json`. BetterRef uses Tencent Cloud Hunyuan3D API only. Use `TENCENTCLOUD_SECRET_ID` plus `TENCENTCLOUD_SECRET_KEY` for Tencent Cloud.
 
 ```bash
 npx betterref-3d --make-hunyuan-request --plan .betterref-3d/3d-asset-plan.json --out .betterref-3d --provider tencent --tencent-region ap-guangzhou --tencent-edition pro --tencent-model 3.1 --result-format GLB --enable-pbr true --face-count 50000 --json

@@ -8,7 +8,7 @@ The approved direction is the full BetterRef Supervisor with:
 
 - PRD/PDF extraction and checklist generation.
 - Reference image intelligence for 2D UI, visual assets, and 3D object cues.
-- Hunyuan 3D support through Hugging Face Space and Hugging Face Endpoint/custom URL adapters.
+- Hunyuan 3D support through Tencent Cloud Hunyuan3D API.
 - A tiered manager/specialist agent team.
 - Hard-fail gates that prevent fake UI, fake 3D, missing evidence, and score-only passes.
 
@@ -20,7 +20,7 @@ Current reference-reading quality is approximately 6/10 overall: strong for exis
 2. Extract product behavior, copy/content, visual requirements, responsive states, asset needs, hard fails, and 3D modeling needs from PRDs and references.
 3. Produce structured artifacts that future agents and CLIs can consume without relying on conversation memory.
 4. Route object/product/character/prop references into a 3D model lane, including Hunyuan 3D handoff and model QA.
-5. Support both Hugging Face Space and Hugging Face Endpoint/custom URL adapters for Hunyuan 3D.
+5. Support Tencent Cloud Hunyuan3D API request/response handoff.
 6. Use a tiered agent team: always-on core agents plus specialist agents selected by the supervisor based on task complexity.
 7. Require fresh evidence before final pass claims.
 
@@ -80,7 +80,7 @@ Reference-reading outputs:
 - `3d-brief.md`: modeling brief for Hunyuan 3D or human/modeling workflows.
 - `negative-prompts.md`: concrete things the output must avoid.
 
-## Hunyuan 3D And Hugging Face
+## Hunyuan 3D And Tencent Cloud
 
 BetterRef will add a Hunyuan 3D lane for references that contain an object, product, character, prop, logo object, game asset, mascot, or other modelable subject.
 
@@ -91,15 +91,13 @@ Before API call:
 - Build a `3d-brief.md` with shape, proportions, material slots, texture cues, lighting/camera notes, and known unknowns.
 - Build a `3d-asset-plan.json` item with target format, acceptance criteria, and evidence requirements.
 
-Hugging Face adapters:
+Tencent Cloud adapter:
 
-- `space`: for Hugging Face Space or Gradio-style calls.
-- `endpoint`: for dedicated Hugging Face Inference Endpoint or custom server URL.
-- `custom`: explicit URL and payload mapping, for self-hosted or wrapper services.
+- `tencent`: Tencent Cloud Hunyuan3D API request metadata with edition, model, PBR, face-count, and result-format options.
 
 Shared Hunyuan artifacts:
 
-- `hunyuan-request.json`: provider, model/space/endpoint id, input image path, options, seed/settings, output target, and retry metadata.
+- `hunyuan-request.json`: Tencent Cloud provider config, model/edition, input image path, options, seed/settings, output target, and retry metadata.
 - `hunyuan-response.json`: raw response metadata, output paths, timings, and provider status.
 - `3d-verdict.json`: mesh, texture, material, silhouette, render, loadability, and export verdict.
 - `3d-verdict.html`: human-readable model QA report.
@@ -144,7 +142,7 @@ Tier 2 specialist agents called when needed:
 - Layout Agent: grid, spacing, responsive behavior, long-page section mapping.
 - Asset Agent: imagegen, HyperFrames, existing assets, generated asset wiring.
 - 3D Shape Agent: silhouette, volumes, topology hints, scale, modelability.
-- Hunyuan API Agent: Hugging Face Space/Endpoint payloads, retry metadata, response handling.
+- Hunyuan API Agent: Tencent Cloud request payloads, retry metadata, and response handling.
 - 3D QA Agent: mesh load, turntable evidence, materials, export validation.
 - Accessibility/UX Agent: contrast, states, controls, usability, interaction checks.
 
@@ -188,7 +186,7 @@ Planned new or expanded commands:
 
 - `betterref-reference`: analyze image references, emit `reference-analysis.json`, optional overlay, visual checklist, and 3D brief.
 - `betterref-3d`: create or validate `3d-asset-plan.json`, `hunyuan-request.json`, and `3d-verdict.json`.
-- `betterref-hunyuan`: provider adapter for Hugging Face Space, Hugging Face Endpoint, and custom URLs.
+- `betterref-hunyuan`: provider adapter for Tencent Cloud Hunyuan3D API.
 - `betterref-verify`: expand final verification to include required 3D evidence when any 3D model item exists.
 - `betterref-run`: orchestrate PRD, reference image, asset, browser, and 3D handoffs together.
 
@@ -196,7 +194,7 @@ Planned reference files:
 
 - `references/reference-intelligence.md`
 - `references/reference-to-3d.md`
-- `references/hunyuan-huggingface.md`
+- `references/hunyuan-tencent.md`
 - `references/agent-team.md`
 - Expanded `references/pressure-tests.md`
 - Expanded `references/hard-fail-ledger.md`
@@ -233,8 +231,8 @@ Add pressure tests for:
 
 ## Open Assumptions
 
-- Hugging Face credentials will come from environment variables or secure connector setup, not hardcoded files.
-- Hunyuan provider details may vary between Space, Endpoint, and custom wrappers; BetterRef should use adapter interfaces rather than baking one API shape into the skill contract.
+- Tencent Cloud credentials will come from environment variables or secure connector setup, not hardcoded files.
+- Hunyuan provider details are Tencent Cloud only for this project; BetterRef should keep request/response artifacts explicit enough to audit retries and output files.
 - 3D validation can start with metadata and render evidence, then grow into deeper mesh comparisons.
 - The first implementation should prioritize structured artifacts and hard-fail gates before advanced visual/3D scoring.
 
@@ -244,5 +242,5 @@ The user approved:
 
 - Full BetterRef Supervisor direction.
 - 3D Model Lane.
-- Hunyuan 3D through Hugging Face with support for both Space and Endpoint/custom URL adapters.
+- Hunyuan 3D through Tencent Cloud Hunyuan3D API.
 - Expanded tiered agent team.

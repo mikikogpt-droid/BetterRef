@@ -75,18 +75,18 @@ async function writeHunyuanMetadata(dir, { id = 'model-001', targetPath = 'publi
   const response = path.join(dir, 'hunyuan-response.json');
   await writeJson(request, {
     schemaVersion: 'betterref.hunyuan.request.v1',
-    providers: ['space', 'endpoint'],
-    huggingFace: {
-      space: 'tencent/Hunyuan3D-2',
-      endpoint: 'https://hunyuan.example.endpoints.huggingface.cloud',
-      customUrl: null
+    providers: ['tencent'],
+    tencentCloud: {
+      endpoint: 'hunyuan3d.tencentcloudapi.com',
+      region: 'ap-guangzhou',
+      edition: 'pro'
     },
     assets: [{ id, targetPath }]
   });
   await writeJson(response, {
     schemaVersion: 'betterref.hunyuan.response.v1',
-    provider: 'endpoint',
-    assets: [{ id, status: 'completed', targetPath, responseId: `${id}-hf-job` }]
+    provider: 'tencent',
+    assets: [{ id, status: 'completed', targetPath, jobId: `${id}-tencent-job`, resultFile3Ds: [{ type: 'GLB', url: targetPath }] }]
   });
   return { request, response };
 }
@@ -210,7 +210,7 @@ test('betterref-3d make-plan preserves PRD 3D asset ids and target paths', async
         id: 'model-001',
         status: 'pending',
         tool: 'hunyuan3d',
-        implementation: 'hunyuan-3d-model-via-huggingface',
+        implementation: 'hunyuan-3d-model-via-tencent-api',
         role: 'hunyuan-3d-model',
         targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
         targetFormat: 'glb',
@@ -238,8 +238,8 @@ test('betterref-3d make-plan preserves PRD 3D asset ids and target paths', async
   assert.equal(plan.assets[0].requirement, 'Generate the product mascot as a GLB model.');
 });
 
-test('betterref-3d creates a Hunyuan request with both Hugging Face adapters', async () => {
-  const dir = await makeCase('hunyuan-request');
+test('betterref-3d creates a Tencent Cloud Hunyuan request by default', async () => {
+  const dir = await makeCase('hunyuan-tencent-default-request');
   const plan = path.join(dir, '3d-asset-plan.json');
   const out = path.join(dir, '3d-out');
   const sourceImage = path.join(dir, 'reference.png');
@@ -266,15 +266,13 @@ test('betterref-3d creates a Hunyuan request with both Hugging Face adapters', a
     plan,
     '--out',
     out,
-    '--provider',
-    'both',
-    '--space',
-    'tencent/Hunyuan3D-2',
-    '--endpoint',
-    'https://hunyuan.example.endpoints.huggingface.cloud',
     '--json'
   ], {
-    env: { ...process.env, HF_TOKEN: 'hf_test_token' }
+    env: {
+      ...process.env,
+      TENCENTCLOUD_SECRET_ID: 'secret-id',
+      TENCENTCLOUD_SECRET_KEY: 'secret-key'
+    }
   });
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -284,14 +282,14 @@ test('betterref-3d creates a Hunyuan request with both Hugging Face adapters', a
 
   const request = JSON.parse(await readFile(path.join(out, 'hunyuan-request.json'), 'utf8'));
   assert.equal(request.schemaVersion, 'betterref.hunyuan.request.v1');
-  assert.deepEqual(request.providers, ['space', 'endpoint']);
-  assert.deepEqual(request.huggingFace, {
-    space: 'tencent/Hunyuan3D-2',
-    endpoint: 'https://hunyuan.example.endpoints.huggingface.cloud',
-    customUrl: null
-  });
-  assert.equal(request.auth.env, 'HF_TOKEN');
+  assert.deepEqual(request.providers, ['tencent']);
+  assert.equal(Object.hasOwn(request, 'hugging' + 'Face'), false);
+  assert.equal(request.auth.type, 'tencentcloud-secret');
+  assert.deepEqual(request.auth.env, ['TENCENTCLOUD_SECRET_ID', 'TENCENTCLOUD_SECRET_KEY']);
   assert.equal(request.auth.available, true);
+  assert.equal(request.tencentCloud.endpoint, 'hunyuan3d.tencentcloudapi.com');
+  assert.equal(request.tencentCloud.region, 'ap-guangzhou');
+  assert.equal(request.tencentCloud.edition, 'pro');
   assert.equal(request.assets.length, 1);
   assert.equal(request.assets[0].id, 'model-001');
   assert.equal(request.assets[0].sourceImage, sourceImage);
@@ -390,22 +388,32 @@ test('betterref-3d rejects unusable Hunyuan provider options', async () => {
     {
       name: 'unknown provider',
       args: ['--provider', 'wat'],
-      message: /Unknown Hunyuan provider/i
+      message: /only supported Hunyuan3D provider/i
     },
     {
-      name: 'missing endpoint',
-      args: ['--provider', 'endpoint'],
-      message: /--endpoint is required/i
+      name: 'space provider removed',
+      args: ['--provider', 'space'],
+      message: /only supported Hunyuan3D provider/i
     },
     {
-      name: 'missing both endpoint',
+      name: 'both provider removed',
       args: ['--provider', 'both'],
-      message: /--endpoint is required/i
+      message: /only supported Hunyuan3D provider/i
     },
     {
-      name: 'missing custom url',
+      name: 'endpoint provider removed',
+      args: ['--provider', 'endpoint'],
+      message: /only supported Hunyuan3D provider/i
+    },
+    {
+      name: 'custom provider removed',
       args: ['--provider', 'custom'],
-      message: /--custom-url is required/i
+      message: /only supported Hunyuan3D provider/i
+    },
+    {
+      name: 'legacy adapter option removed',
+      args: ['--provider', 'tencent', '--endpoint', 'https://legacy.example.test'],
+      message: /Legacy provider adapter options/i
     },
     {
       name: 'unknown Tencent edition',
@@ -1378,8 +1386,8 @@ test('betterref-3d verify rejects placeholder Hunyuan metadata without matched a
   });
   await writeJson(request, {
     schemaVersion: 'betterref.hunyuan.request.v1',
-    providers: ['endpoint'],
-    huggingFace: { endpoint: 'https://hunyuan.example.endpoints.huggingface.cloud' }
+    providers: ['tencent'],
+    tencentCloud: { endpoint: 'hunyuan3d.tencentcloudapi.com' }
   });
   await writeJson(response, {
     schemaVersion: 'betterref.hunyuan.response.v1',

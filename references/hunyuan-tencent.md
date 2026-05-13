@@ -1,17 +1,10 @@
-# Hunyuan 3D Providers
+# Tencent Hunyuan3D Provider
 
-BetterRef supports provider adapters instead of hardcoding one Hunyuan API shape.
-
-## Providers
-
-- `space`: Hugging Face Space or Gradio-style call.
-- `endpoint`: dedicated Hugging Face Inference Endpoint.
-- `custom`: explicit wrapper URL.
-- `tencent`: Tencent Cloud Hunyuan3D API.
+BetterRef uses Tencent Cloud Hunyuan3D as the only Hunyuan3D provider. Do not route production 3D jobs through alternate wrappers.
 
 ## Tencent Cloud
 
-Use `--provider tencent` when the project should call Tencent Cloud directly instead of Hugging Face:
+Create the Tencent request metadata with:
 
 ```bash
 betterref-3d --make-hunyuan-request \
@@ -38,8 +31,6 @@ Use `TENCENTCLOUD_SECRET_ID` and `TENCENTCLOUD_SECRET_KEY` from the environment 
 - `3d-refine-plan.json` and `3d-refine-checklist.md` after provider output returns
 - `3d-asset-plan.json`
 - `3d-verdict.json`
-
-For Hugging Face providers, use `HF_TOKEN` from the environment or a secure connector. Never commit raw tokens.
 
 For Tencent Cloud verification, the response metadata must include matched asset records with job/request metadata and non-empty `ResultFile3Ds` or `resultFile3Ds`. A local model file alone is not enough.
 

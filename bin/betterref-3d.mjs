@@ -44,10 +44,7 @@ Options:
   --poll-interval-ms       Roblox operation poll interval, default 1000.
   --poll-attempts          Roblox operation poll attempts, default 30.
   --format                 Target 3D format for generated assets, default glb.
-  --provider               Hunyuan provider: space, endpoint, both, custom, or tencent.
-  --space                  Hugging Face Space id for space provider.
-  --endpoint               Hugging Face Inference Endpoint URL.
-  --custom-url             Custom Hunyuan wrapper URL.
+  --provider               Hunyuan provider; only tencent is supported.
   --tencent-endpoint       Tencent Cloud Hunyuan3D endpoint host, default hunyuan3d.tencentcloudapi.com.
   --tencent-region         Tencent Cloud region, default ap-guangzhou.
   --tencent-edition        Tencent Hunyuan3D API edition: pro or rapid, default pro.

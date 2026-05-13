@@ -153,7 +153,7 @@ test('SKILL.md documents reference intelligence, Hunyuan 3D, and expanded agent 
   assert.match(skill, /betterref-reference/);
   assert.match(skill, /betterref-3d/);
   assert.match(skill, /Hunyuan 3D/i);
-  assert.match(skill, /Hugging Face/i);
+  assert.match(skill, /Tencent Cloud/i);
   assert.match(skill, /--auto-refine/i);
   assert.match(skill, /--roblox-upload/i);
   assert.match(skill, /Expanded Agent Team/i);
@@ -165,7 +165,7 @@ test('BetterRef ships reference intelligence and 3D guidance files', async () =>
   for (const relativePath of [
     'references/reference-intelligence.md',
     'references/reference-to-3d.md',
-    'references/hunyuan-huggingface.md',
+    'references/hunyuan-tencent.md',
     'references/agent-team.md'
   ]) {
     assert.equal(await fileExists(relativePath), true, `${relativePath} must exist`);

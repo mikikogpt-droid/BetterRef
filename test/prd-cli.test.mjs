@@ -421,7 +421,7 @@ test('betterref-prd detects Hunyuan 3D model requirements separately from raster
   await writePdf(pdf, [
     'Viewport: 1440x900.',
     'Reference image: product mascot should become a real 3D model.',
-    'Hunyuan 3D: generate GLB model through Hugging Face Space or Endpoint.',
+    'Hunyuan 3D: generate GLB model through Tencent Cloud API.',
     '3D acceptance: mesh must load in Three.js, include texture material, and provide turntable evidence.',
     'Hero UI text and buttons remain code-native.'
   ]);
@@ -448,7 +448,7 @@ test('betterref-prd detects Hunyuan 3D model requirements separately from raster
   assert.ok(threeDAsset);
   assert.match(threeDAsset.targetPath, /\.glb$/);
   assert.equal(threeDAsset.role, 'hunyuan-3d-model');
-  assert.equal(threeDAsset.implementation, 'hunyuan-3d-model-via-huggingface');
+  assert.equal(threeDAsset.implementation, 'hunyuan-3d-model-via-tencent-api');
   assert.equal(threeDAsset.acceptanceCriteria.some((item) => /turntable/i.test(item)), true);
 
   const runbook = await readFile(path.join(out, 'betterref-runbook.md'), 'utf8');
@@ -520,13 +520,13 @@ test('betterref-prd keeps 3D model assets when labels stay HTML overlays', async
   assert.match(modelAsset.targetPath, /\.glb$/);
 });
 
-test('betterref-prd does not route Hugging Face brand logo mentions to 3D', async () => {
-  const dir = await makeCase('hugging-face-brand-logo');
+test('betterref-prd does not route provider brand logo mentions to 3D', async () => {
+  const dir = await makeCase('provider-brand-logo');
   const pdf = path.join(dir, 'prd.pdf');
   const out = path.join(dir, 'prd-out');
   await writePdf(pdf, [
     'Viewport: 1440x900.',
-    'Partner trust badges: Hugging Face logo icon appears in the footer.'
+    'Partner trust badges: AI provider logo icon appears in the footer.'
   ]);
 
   const result = spawnSync(process.execPath, [

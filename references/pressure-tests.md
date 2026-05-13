@@ -213,7 +213,7 @@ Required behavior: hard fail through `betterref-3d` evidence, typically `missing
 
 ## BR-PRESSURE-018 Hunyuan Request Missing Provider Evidence
 
-Input: a model file exists, but no `hunyuan-request.json`, provider type, Space/Endpoint/Tencent Cloud config, seed/settings, or response metadata exists.
+Input: a model file exists, but no `hunyuan-request.json`, Tencent Cloud config, seed/settings, or response metadata exists.
 
 Required behavior: the supervisor treats this as an evidence-integrity hard fail until request and response metadata are recorded, even if the current local 3D verifier also passes mesh/render evidence.
 

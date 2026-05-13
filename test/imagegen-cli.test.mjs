@@ -173,7 +173,7 @@ test('betterref-imagegen ignores pending Hunyuan 3D model assets in mixed plans'
         id: 'model-001',
         status: 'pending',
         tool: 'hunyuan3d',
-        implementation: 'hunyuan-3d-model-via-huggingface',
+        implementation: 'hunyuan-3d-model-via-tencent-api',
         role: 'hunyuan-3d-model',
         targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
         targetFormat: 'glb',
@@ -204,7 +204,7 @@ test('betterref-imagegen reports no imagegen work for 3D-only model plans', asyn
         id: 'model-001',
         status: 'pending',
         tool: 'hunyuan3d',
-        implementation: 'hunyuan-3d-model-via-huggingface',
+        implementation: 'hunyuan-3d-model-via-tencent-api',
         role: 'hunyuan-3d-model',
         targetPath: 'public/betterref-assets/hunyuan-model-01.glb',
         targetFormat: 'glb'
