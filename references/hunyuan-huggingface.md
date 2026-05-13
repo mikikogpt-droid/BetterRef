@@ -59,3 +59,33 @@ betterref-3d --make-refine-plan \
 ```
 
 The refine plan treats raw Hunyuan output as source material, not final Roblox/game-ready art. For Roblox targets, final verification requires low-poly triangle-budget evidence, retopo/decimate or equivalent refinement evidence, baked texture/normal/PBR evidence, Roblox Studio import/preview evidence, and a rerun of `betterref-3d --verify`.
+
+## Auto production 3D
+
+Use Blender automation after the refine plan exists:
+
+```bash
+betterref-3d --auto-refine \
+  --refine-plan .betterref-3d/3d-refine-plan.json \
+  --out .betterref-3d \
+  --project . \
+  --blender "C:\Program Files\Blender Foundation\Blender 4.3\blender.exe" \
+  --json
+```
+
+`--auto-refine` writes `blender/betterref-auto-refine.py`, imports the raw model, applies cleanup and decimation toward the Roblox triangle budget, exports the final GLB, renders turntable evidence, and updates `3d-evidence.json`. Use `--dry-run` when Blender is not installed to inspect the generated script and command.
+
+Upload the refined model with Roblox Open Cloud:
+
+```bash
+betterref-3d --roblox-upload \
+  --evidence .betterref-3d/3d-evidence.json \
+  --out .betterref-3d \
+  --project . \
+  --asset-id model-001 \
+  --creator-user-id 1234567 \
+  --display-name "BetterRef Asset" \
+  --json
+```
+
+Use `ROBLOX_OPEN_CLOUD_API_KEY` or `--roblox-api-key`. The upload step writes `robloxImportEvidence` into `3d-evidence.json`, then `betterref-3d --verify` can decide whether the model is passable.

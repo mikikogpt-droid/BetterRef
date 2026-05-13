@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { once } from 'node:events';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const threeDBin = path.join(repoRoot, 'bin', 'betterref-3d.mjs');
@@ -26,6 +28,28 @@ function run3D(args, options = {}) {
   });
 }
 
+function run3DAsync(args, options = {}) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [threeDBin, ...args], {
+      cwd: repoRoot,
+      ...options
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+    child.on('close', (status) => {
+      resolve({ status, stdout, stderr });
+    });
+  });
+}
+
 async function writeModelAndRender(project, name = 'model-001') {
   const modelRelative = `public/betterref-assets/${name}.glb`;
   const renderRelative = `evidence/${name}-turntable-front.png`;
@@ -36,6 +60,14 @@ async function writeModelAndRender(project, name = 'model-001') {
   await writeFile(model, 'fake-glb-bytes');
   await writeFile(render, 'fake-render-bytes');
   return { modelRelative, renderRelative };
+}
+
+async function readRequestBody(request) {
+  const chunks = [];
+  for await (const chunk of request) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
 }
 
 async function writeHunyuanMetadata(dir, { id = 'model-001', targetPath = 'public/betterref-assets/model-001.glb' } = {}) {
@@ -745,6 +777,194 @@ test('betterref-3d creates a post-Hunyuan refine plan from Tencent result files'
   assert.match(checklist, /Tencent result/);
   assert.match(checklist, /Roblox import/);
   assert.match(checklist, /betterref-3d --verify/);
+});
+
+test('betterref-3d auto-refine writes Blender automation artifacts in dry-run mode', async () => {
+  const dir = await makeCase('auto-refine-dry-run');
+  const project = path.join(dir, 'project');
+  const out = path.join(dir, '3d-out');
+  const rawModel = path.join(dir, 'raw-hunyuan.glb');
+  const refinePlan = path.join(dir, '3d-refine-plan.json');
+  await writeFile(rawModel, 'raw-glb-bytes');
+  await writeJson(refinePlan, {
+    schemaVersion: 'betterref.3d.refine.plan.v1',
+    projectDir: project,
+    assets: [
+      {
+        id: 'model-001',
+        targetPath: 'public/betterref-assets/roblox-mascot.glb',
+        targetFormat: 'glb',
+        targetPlatform: 'roblox',
+        source: {
+          provider: 'tencent',
+          resultFiles: [{ type: 'GLB', url: rawModel }]
+        },
+        triangleBudget: {
+          maxTriangles: 4000,
+          source: 'accessoryMaxTriangles'
+        },
+        textureReferences: [
+          {
+            id: 'metal-trim',
+            path: path.join(dir, 'refs', 'metal.png'),
+            materialSlot: 'metal-trim'
+          }
+        ],
+        requiredEvidence: [
+          'modelPath',
+          'meshStats',
+          'refinementEvidence',
+          'materialEvidence',
+          'turntableEvidence',
+          'robloxImportEvidence'
+        ]
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--auto-refine',
+    '--refine-plan',
+    refinePlan,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--dry-run',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.schemaVersion, 'betterref.3d.auto_refine.result.v1');
+  assert.equal(payload.status, 'planned');
+  assert.match(payload.artifacts.blenderScriptPath, /betterref-auto-refine\.py$/);
+  assert.match(payload.artifacts.evidencePath, /3d-evidence\.json$/);
+  assert.equal(payload.assets.length, 1);
+  assert.equal(payload.assets[0].id, 'model-001');
+  assert.equal(payload.assets[0].triangleBudget.maxTriangles, 4000);
+  assert.equal(payload.assets[0].ranBlender, false);
+  assert.equal(payload.assets[0].sourceModelPath, rawModel);
+  assert.match(payload.assets[0].command.join(' '), /betterref-auto-refine\.py/);
+
+  const script = await readFile(path.join(out, 'blender', 'betterref-auto-refine.py'), 'utf8');
+  assert.match(script, /bpy\.ops\.import_scene\.gltf/);
+  assert.match(script, /DECIMATE/);
+  assert.match(script, /export_scene\.gltf/);
+  assert.match(script, /turntable/);
+  assert.match(script, /betterref-output/);
+});
+
+test('betterref-3d roblox-upload uses Open Cloud and records import evidence', async () => {
+  const dir = await makeCase('roblox-upload');
+  const project = path.join(dir, 'project');
+  const out = path.join(dir, '3d-out');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 3000, faceCount: 3000, triangleCount: 3000 },
+        renders: [renderRelative],
+        materialEvidence: { textureMaps: ['baseColor', 'normal'] },
+        refinementEvidence: {
+          tool: 'blender',
+          decimate: true,
+          bakedMaps: ['baseColor', 'normal'],
+          finalModelPath: modelRelative
+        }
+      }
+    ]
+  });
+
+  const calls = [];
+  const server = createServer(async (request, response) => {
+    const body = await readRequestBody(request);
+    calls.push({
+      method: request.method,
+      url: request.url,
+      apiKey: request.headers['x-api-key'],
+      contentType: request.headers['content-type'],
+      body: body.toString('utf8')
+    });
+
+    if (request.method === 'POST' && request.url === '/assets/v1/assets') {
+      response.writeHead(200, { 'content-type': 'application/json', connection: 'close' });
+      response.end(JSON.stringify({ path: 'operations/op-001' }));
+      return;
+    }
+    if (request.method === 'GET' && request.url === '/assets/v1/operations/op-001') {
+      response.writeHead(200, { 'content-type': 'application/json', connection: 'close' });
+      response.end(JSON.stringify({ done: true, response: { assetId: '987654321' } }));
+      return;
+    }
+    response.writeHead(404, { 'content-type': 'application/json', connection: 'close' });
+    response.end(JSON.stringify({ error: 'not found' }));
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const { port } = server.address();
+
+  try {
+    const result = await run3DAsync([
+      '--roblox-upload',
+      '--evidence',
+      evidence,
+      '--out',
+      out,
+      '--project',
+      project,
+      '--asset-id',
+      'model-001',
+      '--creator-user-id',
+      '1234567',
+      '--display-name',
+      'BetterRef Mascot',
+      '--description',
+      'Generated through BetterRef automated 3D production.',
+      '--roblox-api-base',
+      `http://127.0.0.1:${port}`,
+      '--roblox-api-key',
+      'test-api-key',
+      '--poll-interval-ms',
+      '1',
+      '--json'
+    ]);
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.schemaVersion, 'betterref.roblox.upload.result.v1');
+    assert.equal(payload.status, 'completed');
+    assert.equal(payload.assetId, 'model-001');
+    assert.equal(payload.roblox.assetId, '987654321');
+    assert.equal(payload.roblox.operationId, 'op-001');
+    assert.match(payload.artifacts.requestPath, /roblox-upload-request\.json$/);
+    assert.match(payload.artifacts.resultPath, /roblox-upload-result\.json$/);
+
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0].method, 'POST');
+    assert.equal(calls[0].apiKey, 'test-api-key');
+    assert.match(calls[0].contentType, /multipart\/form-data/);
+    assert.match(calls[0].body, /"assetType":"Model"/);
+    assert.match(calls[0].body, /"userId":"1234567"/);
+    assert.match(calls[0].body, /BetterRef Mascot/);
+    assert.equal(calls[1].url, '/assets/v1/operations/op-001');
+
+    const updatedEvidence = JSON.parse(await readFile(evidence, 'utf8'));
+    const updatedAsset = updatedEvidence.assets[0];
+    assert.equal(updatedAsset.robloxImportEvidence.imported, true);
+    assert.equal(updatedAsset.robloxImportEvidence.method, 'open-cloud-assets-api');
+    assert.equal(updatedAsset.robloxImportEvidence.assetId, '987654321');
+    assert.equal(updatedAsset.robloxImportEvidence.operationId, 'op-001');
+    assert.equal(updatedAsset.robloxImportEvidence.sourceModelPath, modelRelative);
+  } finally {
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test('betterref-3d verify rejects Tencent Cloud Hunyuan metadata without result files', async () => {

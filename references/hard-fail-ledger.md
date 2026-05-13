@@ -74,13 +74,16 @@ The hard-fail ledger is the authority that numeric scores cannot override.
 
 ## 3D Model Hard Fails
 
-Current `betterref-3d` evidence codes include `asset_pending`, `missing_model_file`, `missing_mesh_stats`, `missing_render_evidence`, and `missing_material_evidence`.
+Current `betterref-3d` evidence codes include `asset_pending`, `missing_model_file`, `missing_target_model_file`, `missing_mesh_stats`, `missing_render_evidence`, `missing_material_evidence`, `missing_hunyuan_request_metadata`, `missing_hunyuan_response_metadata`, `missing_post_hunyuan_refinement`, `roblox_triangle_budget_exceeded`, and `missing_roblox_import_evidence`.
 
 - Flat 2D billboard as 3D: fail as `missing_mesh_stats` or `missing_render_evidence` unless the evidence proves non-empty geometry from multiple angles.
 - Missing runtime/load proof: fail as `missing_model_file` when no non-empty model path is verified.
 - Missing mesh stats: fail as `missing_mesh_stats`; passed models need vertex/face/material counts.
 - Missing turntable/multi-angle proof: fail as `missing_render_evidence` when fidelity requires multi-angle render evidence.
 - Missing Hunyuan request/response metadata: treat as an evidence-integrity hard fail and do not accept the model until provider/request/response metadata is recorded.
+- Raw Hunyuan/Tencent output accepted as final: fail as `missing_post_hunyuan_refinement` until Blender/manual refinement evidence exists.
+- Roblox triangle budget exceeded: fail as `roblox_triangle_budget_exceeded`; raw high-poly output is not Roblox-ready.
+- Missing Roblox upload/import proof: fail as `missing_roblox_import_evidence` until Open Cloud upload evidence or Studio import/preview evidence exists.
 
 Run:
 
