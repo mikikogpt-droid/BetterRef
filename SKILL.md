@@ -82,7 +82,7 @@ Treat these user phrases as BetterRef workflows:
 
 ## Reference Intelligence And 3D
 
-Reference Intelligence starts with `betterref-reference`: write analysis, checklist, negative prompts, and a 3D brief. For a Reference Pack, use `--pack` to create an Asset Brief, choose one Tencent mesh image, and keep texture refs for Blender/Substance/artist work. Route models through `betterref-3d`; Hunyuan 3D must use Tencent Cloud API only, record request/response, mesh/load evidence, reject flat 2D billboards, and require `ResultFile3Ds`. Raw Hunyuan output is source material; Roblox targets need `--auto-refine`, `--roblox-upload`, triangle-budget/baked-material evidence, and fresh `--verify`. Expanded Agent Team merges facts, confidence, uncertainties, evidence, actions, and hard fails. See `references/reference-intelligence.md`, `references/reference-to-3d.md`, `references/hunyuan-tencent.md`, and `references/agent-team.md`.
+Reference Intelligence starts with `betterref-reference`: analysis, checklist, negative prompts, 3D brief. 3D chain: Reference Pack -> Asset Brief -> Tencent main image -> Tencent job -> refine plan -> auto-refine -> roblox-upload -> verify. Use Tencent Cloud only; require `ResultFile3Ds`, mesh/load evidence, triangle-budget/baked-material evidence, Roblox evidence, and no flat 2D billboard. Expanded Agent Team must start from a Supervisor Packet and merge specialist facts, confidence, uncertainties, evidence, actions, and hard fails. See `references/reference-intelligence.md`, `references/reference-to-3d.md`, `references/hunyuan-tencent.md`, and `references/agent-team.md`.
 
 ## PRD To Web Loop
 

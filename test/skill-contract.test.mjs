@@ -156,6 +156,8 @@ test('SKILL.md documents reference intelligence, Hunyuan 3D, and expanded agent 
   assert.match(skill, /Tencent Cloud/i);
   assert.match(skill, /--auto-refine/i);
   assert.match(skill, /--roblox-upload/i);
+  assert.match(skill, /Reference Pack -> Asset Brief -> Tencent main image -> Tencent job -> refine plan -> auto-refine -> roblox-upload -> verify/i);
+  assert.match(skill, /Supervisor Packet/i);
   assert.match(skill, /Expanded Agent Team/i);
   assert.match(skill, /3D model/i);
   assert.match(skill, /flat 2D billboard/i);
@@ -172,9 +174,28 @@ test('BetterRef ships reference intelligence and 3D guidance files', async () =>
   }
 });
 
+test('agent team guidance defines operational supervisor packets and specialist schemas', async () => {
+  const agentTeam = await readFile(path.join(repoRoot, 'references', 'agent-team.md'), 'utf8');
+  assert.match(agentTeam, /Supervisor Packet/i);
+  assert.match(agentTeam, /Specialist Report Schema/i);
+  for (const key of ['taskId', 'assetId', 'role', 'facts', 'evidence', 'confidence', 'uncertainties', 'hardFails']) {
+    assert.match(agentTeam, new RegExp(key));
+  }
+  assert.match(agentTeam, /Supervisor Merge/i);
+});
+
+test('reference-to-3d guidance scores mesh and texture refs with uncertainty gates', async () => {
+  const referenceTo3D = await readFile(path.join(repoRoot, 'references', 'reference-to-3d.md'), 'utf8');
+  for (const key of ['meshSuitabilityScore', 'textureSuitabilityScore', 'ambiguityScore', 'hiddenSides', 'uncertaintyPolicy']) {
+    assert.match(referenceTo3D, new RegExp(key));
+  }
+  assert.match(referenceTo3D, /single-view/i);
+  assert.match(referenceTo3D, /must not invent/i);
+});
+
 test('pressure tests cover 3D and expanded-agent failure modes', async () => {
   const pressureTests = await readFile(path.join(repoRoot, 'references', 'pressure-tests.md'), 'utf8');
-  for (const id of ['BR-PRESSURE-017', 'BR-PRESSURE-018', 'BR-PRESSURE-019', 'BR-PRESSURE-020', 'BR-PRESSURE-021', 'BR-PRESSURE-022', 'BR-PRESSURE-023']) {
+  for (const id of ['BR-PRESSURE-017', 'BR-PRESSURE-018', 'BR-PRESSURE-019', 'BR-PRESSURE-020', 'BR-PRESSURE-021', 'BR-PRESSURE-022', 'BR-PRESSURE-023', 'BR-PRESSURE-024', 'BR-PRESSURE-025']) {
     assert.match(pressureTests, new RegExp(id));
   }
   assert.match(pressureTests, /flat 2D billboard/i);
@@ -182,5 +203,7 @@ test('pressure tests cover 3D and expanded-agent failure modes', async () => {
   assert.match(pressureTests, /Reference Pack/i);
   assert.match(pressureTests, /Raw Tencent Model/i);
   assert.match(pressureTests, /Auto Production 3D/i);
+  assert.match(pressureTests, /Supervisor Packet/i);
+  assert.match(pressureTests, /single-view/i);
   assert.match(pressureTests, /specialist confidence/i);
 });

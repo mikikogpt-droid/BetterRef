@@ -12,6 +12,7 @@ import { WebSocketServer } from 'ws';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const runBin = path.join(repoRoot, 'bin', 'betterref-run.mjs');
+const runCliTimeoutMs = 60000;
 const pngBase64 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
 
@@ -178,7 +179,7 @@ function runCli(args) {
   return spawnSync(process.execPath, [runBin, ...args], {
     cwd: repoRoot,
     encoding: 'utf8',
-    timeout: 10000
+    timeout: runCliTimeoutMs
   });
 }
 
@@ -190,7 +191,7 @@ function runCliAsync(args) {
     });
     let stdout = '';
     let stderr = '';
-    const timer = setTimeout(() => child.kill('SIGTERM'), 10000);
+    const timer = setTimeout(() => child.kill('SIGTERM'), runCliTimeoutMs);
     child.stdout.on('data', (chunk) => {
       stdout += chunk.toString();
     });

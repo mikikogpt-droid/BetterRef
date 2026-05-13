@@ -27,4 +27,5 @@ Facts must include confidence. Critical low-confidence facts block final pass or
 - Select exactly one clean main image for Tencent mesh generation unless a multi-view mesh pass is explicitly planned.
 - Keep texture, color, material, surface, and PBR refs separate for Blender, Substance, texture edit, or artist work.
 - The Asset Brief must name mesh likeness gates separately from texture/material likeness gates.
+- Score candidate refs with `meshSuitabilityScore`, `textureSuitabilityScore`, `ambiguityScore`, `hiddenSides`, and `uncertaintyPolicy`.
 - For Roblox, quality means low-poly with baked texture/normal/PBR evidence, not raw high-poly output.

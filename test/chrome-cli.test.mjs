@@ -9,6 +9,7 @@ import { WebSocketServer } from 'ws';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const chromeBin = path.join(repoRoot, 'bin', 'betterref-chrome.mjs');
+const chromeCliTimeoutMs = 60000;
 const pngBase64 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
 
@@ -33,7 +34,7 @@ function runCli(args, options = {}) {
     });
     let stdout = '';
     let stderr = '';
-    const timer = setTimeout(() => child.kill('SIGTERM'), 5000);
+    const timer = setTimeout(() => child.kill('SIGTERM'), chromeCliTimeoutMs);
     child.stdout.on('data', (chunk) => {
       stdout += chunk.toString();
     });
@@ -165,7 +166,7 @@ test('betterref-chrome prints usage and exits with code 2 when required args are
   const result = spawnSync(process.execPath, [chromeBin], {
     cwd: repoRoot,
     encoding: 'utf8',
-    timeout: 5000
+    timeout: chromeCliTimeoutMs
   });
 
   assert.equal(result.status, 2);

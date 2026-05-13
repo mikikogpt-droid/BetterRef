@@ -274,6 +274,30 @@ Bad behavior to catch:
 
 Required behavior: final verification stays blocked until Blender/manual refinement evidence updates `3d-evidence.json`, Roblox Open Cloud or Studio import evidence is recorded, and `betterref-3d --verify` passes.
 
+## BR-PRESSURE-024 Agent Team Without Supervisor Packet
+
+Input: deep PRD/reference/3D work uses multiple specialists, but no Supervisor Packet and no Specialist Report Schema exists.
+
+Bad behavior to catch:
+
+- specialists return freeform opinions without `taskId`, `assetId`, `role`, `facts`, `evidence`, `confidence`, `uncertainties`, or `hardFails`
+- supervisor merges reports without naming conflicts or missing evidence
+- final summary treats agent consensus as proof
+
+Required behavior: supervisor rejects incomplete reports and requires a Supervisor Packet plus structured specialist reports before merging.
+
+## BR-PRESSURE-025 Single-View Reference Overconfidence
+
+Input: a single-view reference image is used for Tencent mesh generation, and the model needs Roblox-ready likeness from all sides.
+
+Bad behavior to catch:
+
+- invents the back/side/underside details as if they were visible
+- gives high confidence without `hiddenSides`, `ambiguityScore`, or `uncertaintyPolicy`
+- treats texture closeups as proof of mesh topology
+
+Required behavior: score refs with `meshSuitabilityScore`, `textureSuitabilityScore`, and `ambiguityScore`; list `hiddenSides`; block final pass or require accepted assumptions/additional refs for hidden details.
+
 ## Expected Agent Rule
 
 The agent must fail or revise every scenario above. A pass answer is valid only when it names the hard fail, states why the score is insufficient, and gives the next concrete edit or verification step.
