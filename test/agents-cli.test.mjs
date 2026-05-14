@@ -77,6 +77,58 @@ test('betterref-agents plan creates a supervisor packet for PRD reference and Te
   }
 });
 
+test('betterref-agents can force the full named 29-agent roster', async () => {
+  const out = path.join(await makeCase('all-agents'), '.betterref-agents');
+
+  const result = runAgents([
+    '--plan',
+    '--task',
+    'Use the BetterRef named 29-agent roster for PRD reference Tencent 3D Roblox work.',
+    '--all-agents',
+    '--out',
+    out,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const packet = JSON.parse(await readFile(path.join(out, 'supervisor-packet.json'), 'utf8'));
+  assert.equal(packet.selectionMode, 'full-roster');
+  assert.equal(packet.selectedAgents.length, 29);
+  for (const name of [
+    'Plato',
+    'Dalton',
+    'Lagrange',
+    'Descartes',
+    'Laplace',
+    'Einstein',
+    'Pauli',
+    'Hilbert',
+    'Maxwell'
+  ]) {
+    assert.equal(packet.selectedAgents.includes(name), true);
+  }
+});
+
+test('betterref-agents auto-selects all 29 agents when the task asks for the named roster', async () => {
+  const out = path.join(await makeCase('auto-all-agents'), '.betterref-agents');
+
+  const result = runAgents([
+    '--plan',
+    '--task',
+    'Run the named 29-agent roster and visible agent team for a full BetterRef audit.',
+    '--out',
+    out,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const packet = JSON.parse(await readFile(path.join(out, 'supervisor-packet.json'), 'utf8'));
+  assert.equal(packet.selectionMode, 'full-roster');
+  assert.equal(packet.selectedAgents.length, 29);
+  assert.equal(packet.selectedTeams.includes('Skill Docs + Agent-Team Contract'), true);
+  assert.equal(packet.selectedTeams.includes('Final Whole-Feature Review'), true);
+});
+
 test('betterref-agents run structured writes visible dispatch log reports and supervisor merge', async () => {
   const out = path.join(await makeCase('run'), '.betterref-agents');
 

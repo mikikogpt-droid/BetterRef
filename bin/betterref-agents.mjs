@@ -22,6 +22,7 @@ Options:
   --out                   Output directory. Default .betterref-agents.
   --project               Project root; default out becomes <project>/.betterref-agents.
   --runtime-mode          spawned, structured, or blocked. Default structured.
+  --all-agents            Force the full named 29-agent roster.
   --input                 Input artifact path. Repeatable.
   --json                  Print JSON to stdout.
   --help                  Show this help.
@@ -63,6 +64,7 @@ async function main() {
       projectDir: values.project,
       assetId: values['asset-id'],
       runtimeMode: values['runtime-mode'] || 'structured',
+      allAgents: flags.has('all-agents') || flags.has('all'),
       inputs: values.input
     };
     let result;

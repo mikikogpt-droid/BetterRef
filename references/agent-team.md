@@ -165,7 +165,7 @@ When file output is not appropriate, present the same packet, report, and merge 
 - Skill or contract changes: Einstein team.
 - Final release or push: Pauli, Hilbert, and Maxwell whole-feature review.
 
-Do not spawn or simulate every agent for every task. Select the smallest team that covers the risk.
+Do not spawn or simulate every agent for every task. Select the smallest team that covers the risk. If the user explicitly asks for the complete named roster, run `betterref-agents --all-agents` and require all 29 specialist reports before merge.
 
 Every specialist report must include facts, evidence, confidence, uncertainties, recommended actions, and hard fails.
 
