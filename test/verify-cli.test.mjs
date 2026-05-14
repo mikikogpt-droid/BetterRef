@@ -391,6 +391,84 @@ test('betterref-verify fails when required browser evidence is missing', async (
   assert.ok(verdict.blockingReasons.some((item) => item.includes('required browser evidence is missing')));
 });
 
+test('betterref-verify treats required agent evidence as missing when --agent-merge is omitted', async () => {
+  const dir = await makeCase('required-agent-evidence-missing');
+  const visual = path.join(dir, 'report.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+
+  const result = runVerify(['--report', visual, '--require', 'agents', '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'fail');
+  assert.equal(verdict.hardFailPresent, true);
+  assert.deepEqual(verdict.requiredEvidence.missing, ['agents']);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('required agent evidence is missing')));
+});
+
+test('betterref-verify fails when supplied agent merge is missing report evidence', async () => {
+  const dir = await makeCase('agent-merge-incomplete');
+  const visual = path.join(dir, 'report.json');
+  const agentMerge = path.join(dir, 'supervisor-merge.json');
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(agentMerge, {
+    schemaVersion: 'betterref.agents.supervisor_merge.v1',
+    passed: true,
+    runtimeMode: 'structured',
+    selectedAgents: ['Einstein'],
+    reports: [{ agent: 'Einstein', reportPath: path.join(dir, 'reports', 'einstein.json'), status: 'pass' }],
+    blockingReasons: []
+  });
+
+  const result = runVerify(['--report', visual, '--agent-merge', agentMerge, '--require', 'agents', '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.agentEvidence.passed, false);
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('agent report evidence is missing')));
+});
+
+test('betterref-verify accepts required agent evidence with valid merge and report files', async () => {
+  const dir = await makeCase('agent-merge-pass');
+  const visual = path.join(dir, 'report.json');
+  const reportPath = path.join(dir, 'reports', 'einstein.json');
+  const agentMerge = path.join(dir, 'supervisor-merge.json');
+  await mkdir(path.dirname(reportPath), { recursive: true });
+  await writeJson(visual, { passed: true, verdict: { verdict: 'pass', score: 99, hard_fail_present: false } });
+  await writeJson(reportPath, {
+    schemaVersion: 'betterref.agents.specialist_report.v1',
+    taskId: 'betterref-task-001',
+    assetId: 'asset-001',
+    runtimeMode: 'structured',
+    team: 'Skill Docs + Agent-Team Contract',
+    agent: 'Einstein',
+    role: 'skill docs lead',
+    status: 'pass',
+    facts: [{ claim: 'Roster documented', evidence: 'references/agent-team.md', confidence: 'high' }],
+    evidence: ['references/agent-team.md'],
+    confidence: 'high',
+    uncertainties: [],
+    recommendedActions: [],
+    hardFails: []
+  });
+  await writeJson(agentMerge, {
+    schemaVersion: 'betterref.agents.supervisor_merge.v1',
+    passed: true,
+    runtimeMode: 'structured',
+    selectedAgents: ['Einstein'],
+    reports: [{ agent: 'Einstein', reportPath, status: 'pass' }],
+    blockingReasons: []
+  });
+
+  const result = runVerify(['--report', visual, '--agent-merge', agentMerge, '--require', 'agents', '--json']);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const verdict = JSON.parse(result.stdout);
+  assert.equal(verdict.verdict, 'pass');
+  assert.equal(verdict.agentEvidence.passed, true);
+  assert.deepEqual(verdict.requiredEvidence.missing, []);
+});
+
 test('betterref-verify treats required 3D evidence as missing when --three-d is omitted', async () => {
   const dir = await makeCase('required-3d-evidence-missing');
   const visual = path.join(dir, 'report.json');
@@ -586,7 +664,7 @@ test('betterref-verify hard fails present 3D verdicts that are not explicit pass
   assert.ok(verdict.blockingReasons.some((item) => item.includes('3D verdict did not pass')));
 });
 
-test('betterref-verify treats all required evidence as including asset plan, browser evidence, and 3D evidence', async () => {
+test('betterref-verify treats all required evidence as including asset plan, browser, 3D, and agent evidence', async () => {
   const dir = await makeCase('required-all-missing-assetplan');
   const visual = path.join(dir, 'report.json');
   const guard = path.join(dir, 'guard-report.json');
@@ -615,11 +693,12 @@ test('betterref-verify treats all required evidence as including asset plan, bro
   const verdict = JSON.parse(result.stdout);
   assert.equal(verdict.verdict, 'fail');
   assert.equal(verdict.hardFailPresent, true);
-  assert.deepEqual(verdict.requiredEvidence.required, ['guard', 'prd', 'longpage', 'assetplan', 'browser', '3d']);
-  assert.deepEqual(verdict.requiredEvidence.missing, ['assetplan', 'browser', '3d']);
+  assert.deepEqual(verdict.requiredEvidence.required, ['guard', 'prd', 'longpage', 'assetplan', 'browser', '3d', 'agents']);
+  assert.deepEqual(verdict.requiredEvidence.missing, ['assetplan', 'browser', '3d', 'agents']);
   assert.ok(verdict.blockingReasons.some((item) => item.includes('required asset-plan evidence is missing')));
   assert.ok(verdict.blockingReasons.some((item) => item.includes('required browser evidence is missing')));
   assert.ok(verdict.blockingReasons.some((item) => item.includes('required 3D evidence is missing')));
+  assert.ok(verdict.blockingReasons.some((item) => item.includes('required agent evidence is missing')));
 });
 
 test('betterref-verify passes required evidence when every required report is present', async () => {

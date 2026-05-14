@@ -5,6 +5,7 @@
   "type": "module",
   "private": false,
   "bin": {
+    "betterref-agents": "./bin/betterref-agents.mjs",
     "betterref-eval": "./bin/betterref-eval.mjs",
     "betterref-reference": "./bin/betterref-reference.mjs",
     "betterref-3d": "./bin/betterref-3d.mjs",

@@ -189,6 +189,7 @@ test('agent team guidance preserves the named 29-agent roster and visible workfl
   const agentTeam = await readFile(path.join(repoRoot, 'references', 'agent-team.md'), 'utf8');
   assert.match(skill, /Named 29-Agent Roster/i);
   assert.match(skill, /Visible Agent Mode/i);
+  assert.match(skill, /betterref-agents/i);
   for (const name of [
     'Plato',
     'Volta',

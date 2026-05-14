@@ -399,15 +399,26 @@ test('betterref-run blocks on required Hunyuan 3D handoff before browser verific
   assert.match(payload.artifacts.threeDPlanPath, /3d-asset-plan\.json$/);
   assert.match(payload.artifacts.hunyuanRequestPath, /hunyuan-request\.json$/);
   assert.match(payload.artifacts.threeDVerdictPath, /3d-verdict\.json$/);
+  assert.match(payload.artifacts.agentSupervisorPacketPath, /supervisor-packet\.json$/);
+  assert.match(payload.artifacts.agentRunLogPath, /run-log\.md$/);
+  assert.match(payload.artifacts.agentMergePath, /supervisor-merge\.json$/);
   assert.equal(payload.artifacts.imagegenQueuePath, undefined);
   assert.equal(await pathExists(path.join(project, '.betterref-3d', '3d-asset-plan.json')), true);
   assert.equal(await pathExists(path.join(project, '.betterref-3d', 'hunyuan-request.json')), true);
   assert.equal(await pathExists(path.join(project, '.betterref-3d', '3d-verdict.json')), true);
+  assert.equal(await pathExists(path.join(project, '.betterref-agents', 'supervisor-packet.json')), true);
+  assert.equal(await pathExists(path.join(project, '.betterref-agents', 'run-log.md')), true);
+  assert.equal(await pathExists(path.join(project, '.betterref-agents', 'supervisor-merge.json')), true);
+  const agentMerge = JSON.parse(await readFile(path.join(project, '.betterref-agents', 'supervisor-merge.json'), 'utf8'));
+  assert.equal(agentMerge.runtimeMode, 'structured');
+  assert.equal(agentMerge.selectedAgents.includes('Dalton'), true);
+  assert.equal(agentMerge.selectedAgents.includes('Lagrange'), true);
   const plan = JSON.parse(await readFile(path.join(project, '.betterref-3d', '3d-asset-plan.json'), 'utf8'));
   assert.equal(plan.assets[0].id, 'model-001');
   assert.equal(plan.assets[0].targetPath, 'public/betterref-assets/hunyuan-model-01.glb');
 
   const actions = await readFile(path.join(project, '.betterref-run', 'next-actions.md'), 'utf8');
+  assert.match(actions, /betterref-agents/);
   assert.match(actions, /betterref-reference/);
   assert.match(actions, /betterref-3d --make-plan/);
   assert.match(actions, /betterref-3d --make-hunyuan-request/);

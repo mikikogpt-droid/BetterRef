@@ -14,6 +14,7 @@ Options:
   --asset-plan          betterref-prd asset-plan JSON.
   --browser-evidence    Browser evidence JSON from betterref-chrome or equivalent.
   --three-d            BetterRef 3D verdict JSON from betterref-3d.
+  --agent-merge         BetterRef agent supervisor merge JSON from betterref-agents.
   --project             Project directory for verifying generated/source asset files.
   --out                 Write final verdict JSON.
   --html                Write final verdict HTML report.
@@ -59,6 +60,7 @@ async function main() {
       assetPlanPath: values['asset-plan'],
       browserEvidencePath: values['browser-evidence'],
       threeDPath: values['three-d'],
+      agentMergePath: values['agent-merge'],
       projectDir: values.project,
       outPath: values.out,
       htmlPath: values.html,

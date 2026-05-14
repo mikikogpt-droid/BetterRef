@@ -82,7 +82,7 @@ Treat these user phrases as BetterRef workflows:
 
 ## Named 29-Agent Roster
 
-For deep PRD/reference/3D work, use `references/agent-team.md`. Select the smallest team, issue a Supervisor Packet, show dispatch, require reports, merge, and state `runtimeMode`. If no subagents ran, say no runtime spawn occurred.
+For deep PRD/reference/3D work, use `references/agent-team.md` and `betterref-agents`. Select the smallest team, issue a Supervisor Packet, show dispatch, require reports, merge, and state `runtimeMode`. If no subagents ran, say no runtime spawn occurred.
 
 ## Reference Intelligence And 3D
 

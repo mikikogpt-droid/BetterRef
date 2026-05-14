@@ -9,6 +9,7 @@ Use this when a PRD PDF, written product spec, Figma brief, or visual target is 
 - `prd-checklist.json`: machine-readable checklist consumed by `betterref-verify`.
 - `asset-plan.json`: machine-readable generated/source asset plan with imagegen and HyperFrames prompts, target paths, native-size or CLI evidence requirements, and pass/pending status.
 - `.betterref-run/run-state.json`, `.betterref-run/next-actions.md`, and `.betterref-run/final-summary.json`: hybrid orchestrator state and handoff trail from `betterref-run`.
+- `.betterref-agents/supervisor-packet.json`, `.betterref-agents/run-log.md`, `.betterref-agents/reports/*.json`, and `.betterref-agents/supervisor-merge.json`: visible agent-team evidence for PRD/reference/3D work.
 - `AGENTS.md`: project-root BetterRef/Karpathy/Superpowers contract generated only when `betterref-prd` receives `--project`.
 - `.betterref.json`: viewport, regions, ignore areas, and thresholds.
 - `betterref.guard.json`: hard-fail config for source scans, long-page mode, asset scaling, rendered asset coverage, and auto raster quality when the PRD mentions hero/image/premium assets.
@@ -80,6 +81,8 @@ If you use `@chrome`, export the tab handoff as `.betterref/chrome-handoff.json`
 
 Use tool scores as evidence, not authority. If the PRD says the page must scroll, have working cards, include a generated hero asset, or include an animated motion asset, a high visual score cannot pass a fake or missing implementation.
 Use `--require guard,prd,longpage,assetplan,browser` and pass `--browser-evidence .betterref/browser-evidence.json` in final PRD verification so omitted browser evidence and pending generated/source assets fail instead of silently passing.
+
+When the PRD requires 3D or a named agent team, include visible agent evidence. `betterref-run` creates `.betterref-agents/*` during 3D runs; final verification should add `--agent-merge .betterref-agents/supervisor-merge.json --require agents` or use `--require all`.
 
 `betterref-prd --project .` creates or updates `AGENTS.md` with a managed contract that forces future agents to read `using-superpowers`, `karpathy-guidelines`, and `betterref` before non-trivial PRD-to-web work. Existing project instructions outside the managed block are preserved. `betterref-prd` also sets `requireBrowserEvidence: true` in the generated guard config. The final phase cannot pass from static screenshots, reports alone, or placeholder browser evidence; final verification requires browser evidence with viewport, scroll, DOM text, interactive count, font, console, and image-scale fields.
 

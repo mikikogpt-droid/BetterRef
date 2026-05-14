@@ -25,6 +25,7 @@ Use these short prompts in any project after the skill is installed:
 | `use $betterref motion assets` | Route animated/cinematic assets through HyperFrames evidence. |
 | `use $betterref browser evidence` | Capture or ingest real Chrome/browser evidence. |
 | `use $betterref final gate` | Run the final PRD, visual, guard, browser, asset, and hard-fail gate. |
+| `use $betterref agent team` | Create visible supervisor packet, dispatch log, specialist reports, and merge evidence. |
 
 Capture directly from a running Chrome tab through Chrome DevTools Protocol:
 
@@ -58,6 +59,18 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .b
 
 `betterref-run` is the hybrid orchestrator for PRD-to-web work. It bootstraps PRD artifacts and `AGENTS.md`, writes imagegen/HyperFrames request queues when external asset work is pending, captures CDP browser evidence when `--endpoint` is provided, ingests `@chrome`/Chrome MCP evidence when `--browser-handoff` is provided, runs long-page/guard/final verification when evidence is available, and writes `.betterref-run/run-state.json`, `.betterref-run/next-actions.md`, and `.betterref-run/final-summary.json`. Exit code `3` means the run is blocked by required external action, not complete.
 
+## Visible Agent Team
+
+Use `betterref-agents` when BetterRef needs the named 29-agent roster to be visible instead of implied. The current CLI runs deterministic `structured` mode: no subagents are spawned, but the supervisor packet, dispatch log, specialist reports, and merge artifact are written so the claim is auditable.
+
+```bash
+npx betterref-agents --run --task "Reference Pack to Roblox-ready Tencent Hunyuan 3D asset" --out .betterref-agents --json
+npx betterref-agents --status --out .betterref-agents --json
+npx betterref-agents --report --out .betterref-agents --json
+```
+
+The output lives in `.betterref-agents/supervisor-packet.json`, `.betterref-agents/run-log.md`, `.betterref-agents/reports/*.json`, and `.betterref-agents/supervisor-merge.json`. When 3D work is detected, `betterref-run` creates these artifacts and `betterref-verify --require agents` validates the merge and report files.
+
 ## Reference Intelligence
 
 Run `betterref-reference --ref reference.png --out .betterref-reference --target ui,3d,hunyuan` before planning deep reference-copy work.
@@ -83,6 +96,7 @@ npx betterref-3d --make-refine-plan --plan .betterref-3d/3d-asset-plan.json --hu
 npx betterref-3d --auto-refine --refine-plan .betterref-3d/3d-refine-plan.json --out .betterref-3d --project . --blender "C:\Program Files\Blender Foundation\Blender 4.3\blender.exe" --json
 npx betterref-3d --roblox-upload --evidence .betterref-3d/3d-evidence.json --out .betterref-3d --project . --asset-id model-001 --creator-user-id 1234567 --display-name "BetterRef Asset" --json
 npx betterref-3d --verify --plan .betterref-3d/3d-asset-plan.json --evidence .betterref-3d/3d-evidence.json --hunyuan-request .betterref-3d/hunyuan-request.json --hunyuan-response .betterref-3d/hunyuan-response.json --out .betterref-3d --project . --json
+npx betterref-agents --status --out .betterref-agents --json
 ```
 
 `--auto-refine` writes and runs a Blender headless script when Blender is available; otherwise use `--dry-run` to inspect the script and command. `--roblox-upload` uses Roblox Open Cloud Assets API with `ROBLOX_OPEN_CLOUD_API_KEY` or `--roblox-api-key`, then writes `robloxImportEvidence` back into `3d-evidence.json`.
@@ -289,6 +303,7 @@ Outputs:
 - `.betterref-prd/asset-plan.json` - machine-readable generated/source asset plan with imagegen and HyperFrames prompts, target paths, native-size/minimum evidence requirements, attach metadata, and pass/pending status
 - `.betterref-run/run-state.json`, `.betterref-run/next-actions.md`, and `.betterref-run/final-summary.json` - orchestrator state, required external handoff, and final run summary from `betterref-run`
 - `.betterref-run/imagegen-handoff-request.json` and `.betterref-run/imagegen-handoff-prompt.md` - first-class handoff for Codex built-in `image_gen` when generated raster assets block a run
+- `.betterref-agents/supervisor-packet.json`, `.betterref-agents/run-log.md`, `.betterref-agents/reports/*.json`, and `.betterref-agents/supervisor-merge.json` - visible 29-agent roster evidence from `betterref-agents`
 - `AGENTS.md` - project-root managed BetterRef/Karpathy/Superpowers contract, created only when `betterref-prd` receives `--project`
 - `.betterref-imagegen/imagegen-requests.json` and `.betterref-imagegen/imagegen-prompts.md` - built-in `image_gen` request queue for pending asset plan items
 - `.betterref-imagegen/generated/<asset-id>.*` - default generated output slot consumed by `betterref-imagegen --auto-attach-dir` and `betterref-run` auto-resume
