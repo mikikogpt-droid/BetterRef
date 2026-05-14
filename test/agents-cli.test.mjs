@@ -72,6 +72,17 @@ test('betterref-agents plan creates a supervisor packet for PRD reference and Te
   assert.equal(packet.selectedTeams.includes('3D Asset Plan + Tencent Hunyuan Handoff'), true);
   assert.equal(packet.selectedTeams.includes('Final Verify 3D Evidence Gate'), true);
   assert.equal(packet.selectedTeams.includes('PRD Extraction + 3D Requirements'), true);
+  assert.equal(packet.dispatchStrategy, 'parallel-by-team');
+  assert.equal(packet.reportFormat, 'concise-json');
+  assert.equal(packet.fullRosterPolicy, 'explicit-only');
+  assert.equal(packet.contextPackPath.endsWith('context-pack.json'), true);
+  assert.deepEqual(packet.cachePolicy.reuseArtifacts, [
+    '.betterref-prd',
+    '.betterref-reference',
+    '.betterref-3d',
+    '.betterref-agents/supervisor-merge.json'
+  ]);
+  assert.ok(packet.dispatchGroups.some((group) => group.team === 'Reference Intelligence CLI'));
   for (const name of ['Plato', 'Dalton', 'Lagrange', 'Descartes', 'Laplace']) {
     assert.equal(packet.selectedAgents.includes(name), true);
   }
@@ -129,6 +140,28 @@ test('betterref-agents auto-selects all 29 agents when the task asks for the nam
   assert.equal(packet.selectedTeams.includes('Final Whole-Feature Review'), true);
 });
 
+test('betterref-agents keeps visible agent team requests risk-scoped unless full roster is explicit', async () => {
+  const out = path.join(await makeCase('risk-scoped-agent-team'), '.betterref-agents');
+
+  const result = runAgents([
+    '--plan',
+    '--task',
+    'Use agents for a Tencent Hunyuan 3D Roblox reference audit.',
+    '--out',
+    out,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const packet = JSON.parse(await readFile(path.join(out, 'supervisor-packet.json'), 'utf8'));
+  assert.equal(packet.fullRosterPolicy, 'explicit-only');
+  assert.equal(packet.selectionMode, 'risk-scoped');
+  assert.ok(packet.selectedAgents.length < 29);
+  assert.equal(packet.selectedTeams.includes('3D Asset Plan + Tencent Hunyuan Handoff'), true);
+  assert.equal(packet.selectedAgents.includes('Einstein'), false);
+  assert.equal(packet.selectedAgents.includes('Pauli'), false);
+});
+
 test('betterref-agents run structured writes visible dispatch log reports and supervisor merge', async () => {
   const out = path.join(await makeCase('run'), '.betterref-agents');
 
@@ -147,23 +180,35 @@ test('betterref-agents run structured writes visible dispatch log reports and su
   assert.equal(payload.runtimeMode, 'structured');
   assert.equal(payload.message, 'no runtime spawn occurred');
   assert.equal(await pathExists(path.join(out, 'run-log.md')), true);
+  assert.equal(await pathExists(path.join(out, 'context-pack.json')), true);
   assert.equal(await pathExists(path.join(out, 'supervisor-merge.json')), true);
+  const contextPack = JSON.parse(await readFile(path.join(out, 'context-pack.json'), 'utf8'));
+  assert.equal(contextPack.dispatchStrategy, 'parallel-by-team');
+  assert.equal(contextPack.reportFormat, 'concise-json');
+  assert.ok(contextPack.dispatchGroups.length >= 2);
+  assert.equal(contextPack.cachePolicy.reuseArtifacts.includes('.betterref-3d'), true);
   for (const name of ['dalton', 'lagrange']) {
     const reportPath = path.join(out, 'reports', `${name}.json`);
     assert.equal(await pathExists(reportPath), true);
     const report = JSON.parse(await readFile(reportPath, 'utf8'));
     assert.equal(report.schemaVersion, 'betterref.agents.specialist_report.v1');
     assert.equal(report.runtimeMode, 'structured');
+    assert.equal(report.reportFormat, 'concise-json');
     assert.equal(Array.isArray(report.facts), true);
     assert.equal(Array.isArray(report.evidence), true);
     assert.equal(Array.isArray(report.hardFails), true);
   }
   const log = await readFile(path.join(out, 'run-log.md'), 'utf8');
   assert.match(log, /runtimeMode=structured; no runtime spawn occurred/);
+  assert.match(log, /contextPack=.*context-pack\.json/);
+  assert.match(log, /dispatchStrategy=parallel-by-team/);
+  assert.match(log, /Dispatching 3D Asset Plan \+ Tencent Hunyuan Handoff in parallel/);
   assert.match(log, /\[Dalton\] report/);
   const merge = JSON.parse(await readFile(path.join(out, 'supervisor-merge.json'), 'utf8'));
   assert.equal(merge.schemaVersion, 'betterref.agents.supervisor_merge.v1');
   assert.equal(merge.runtimeMode, 'structured');
+  assert.equal(merge.dispatchStrategy, 'parallel-by-team');
+  assert.equal(merge.reportFormat, 'concise-json');
   assert.equal(merge.selectedAgents.includes('Dalton'), true);
   assert.equal(merge.reports.some((item) => item.agent === 'Dalton'), true);
 });

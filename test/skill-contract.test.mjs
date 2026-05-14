@@ -237,7 +237,14 @@ test('agent team guidance preserves the named 29-agent roster and visible workfl
     '.betterref-agents',
     'run-log.md',
     'supervisor-merge.json',
-    'no runtime spawn occurred'
+    'no runtime spawn occurred',
+    'parallel-by-team',
+    'Context Pack',
+    'concise JSON',
+    'full roster is explicit',
+    '.betterref-prd',
+    '.betterref-reference',
+    '.betterref-3d'
   ]) {
     assert.match(agentTeam, new RegExp(phrase.replace('.', '\\.')));
   }

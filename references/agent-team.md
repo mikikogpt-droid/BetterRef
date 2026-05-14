@@ -26,6 +26,10 @@ The supervisor must issue one packet before specialist work starts:
   "inputs": ["PRD.pdf", "reference-pack.json"],
   "selectedTeams": ["3D Asset Plan", "Final Verify 3D Evidence Gate"],
   "selectedAgents": ["Dalton", "Arendt", "Newton", "Ohm", "Lagrange", "Beauvoir", "Chandrasekhar"],
+  "dispatchStrategy": "parallel-by-team",
+  "reportFormat": "concise-json",
+  "contextPackPath": ".betterref-agents/context-pack.json",
+  "cachePolicy": { "reuseArtifacts": [".betterref-prd", ".betterref-reference", ".betterref-3d"] },
   "requiredOutputs": ["facts", "evidence", "uncertainties", "hardFails", "recommendedActions"],
   "blockingGates": ["ResultFile3Ds", "refinementEvidence", "robloxImportEvidence", "betterref-3d --verify"]
 }
@@ -127,17 +131,20 @@ Tier 3:
 ## Visible Agent Workflow
 
 1. The supervisor states the real requirement, selected teams, selected agents, `runtimeMode`, and evidence gates.
-2. The supervisor emits a dispatch log before analysis starts.
-3. Each selected agent returns a Specialist Report, even in `structured` mode.
-4. Review agents must cite the implementer output they reviewed.
-5. The supervisor merges reports, names conflicts, accepted assumptions, unresolved blockers, and next commands.
-6. Completion is blocked if required reports, evidence paths, or hard-fail checks are missing.
+2. The supervisor builds a Context Pack before dispatch so agents do not reread the same PRD/reference/3D facts.
+3. The supervisor emits `parallel-by-team` dispatch lines before analysis starts.
+4. Each selected agent returns a concise JSON Specialist Report, even in `structured` mode.
+5. Review agents must cite the implementer output they reviewed.
+6. The supervisor merges reports, names conflicts, accepted assumptions, unresolved blockers, and next commands.
+7. Completion is blocked if required reports, evidence paths, or hard-fail checks are missing.
 
 Example visible log:
 
 ```text
 [Supervisor] runtimeMode=structured; no runtime spawn occurred
-[Supervisor] Dispatching Dalton team: 3D Asset Plan + Tencent Hunyuan Handoff
+[Supervisor] contextPack=.betterref-agents/context-pack.json
+[Supervisor] dispatchStrategy=parallel-by-team
+[Supervisor] Dispatching 3D Asset Plan + Tencent Hunyuan Handoff in parallel: Dalton, Arendt, Newton, Ohm, Parfit, Dewey
 [Dalton] report -> .betterref-agents/reports/dalton.json
 [Arendt] spec review -> .betterref-agents/reports/arendt.json
 [Ohm] quality review -> .betterref-agents/reports/ohm.json
@@ -149,6 +156,7 @@ Example visible log:
 When file output is appropriate, write:
 
 ```text
+.betterref-agents/context-pack.json
 .betterref-agents/supervisor-packet.json
 .betterref-agents/run-log.md
 .betterref-agents/reports/<agent>.json
@@ -165,9 +173,11 @@ When file output is not appropriate, present the same packet, report, and merge 
 - Skill or contract changes: Einstein team.
 - Final release or push: Pauli, Hilbert, and Maxwell whole-feature review.
 
-Do not spawn or simulate every agent for every task. Select the smallest team that covers the risk. If the user explicitly asks for the complete named roster, run `betterref-agents --all-agents` and require all 29 specialist reports before merge.
+Do not spawn or simulate every agent for every task. Select the smallest team that covers the risk; the full roster is explicit only. If the user asks for the complete named roster, run `betterref-agents --all-agents` and require all 29 specialist reports before merge.
 
-Every specialist report must include facts, evidence, confidence, uncertainties, recommended actions, and hard fails.
+Reuse cached artifacts before asking agents to reread or recalc facts: `.betterref-prd`, `.betterref-reference`, `.betterref-3d`, and `.betterref-agents/supervisor-merge.json`. Refresh only when source inputs changed, required evidence is missing, or the previous merge has hard fails.
+
+Every specialist report must be concise JSON and include facts, evidence, confidence, uncertainties, recommended actions, and hard fails.
 
 ## Specialist Report Schema
 
