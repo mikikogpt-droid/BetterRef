@@ -67,7 +67,9 @@ test('SKILL.md documents reusable BetterRef command aliases for common project m
     'use $betterref imagegen assets',
     'use $betterref motion assets',
     'use $betterref browser evidence',
-    'use $betterref final gate'
+    'use $betterref final gate',
+    'use agents',
+    'ใช้ agents'
   ]) {
     assert.match(skill, new RegExp(alias.replace('$', '\\$')));
   }
