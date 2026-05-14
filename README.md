@@ -84,11 +84,13 @@ npx betterref-reference --pack reference-pack.json --out .betterref-reference --
 
 ## Hunyuan 3D
 
-Use `betterref-3d` to create `3d-asset-plan.json`, `hunyuan-request.json`, and `3d-verdict.json`. BetterRef uses Tencent Cloud Hunyuan3D API only. Use `TENCENTCLOUD_SECRET_ID` plus `TENCENTCLOUD_SECRET_KEY` for Tencent Cloud.
+Use `betterref-3d` to create `3d-asset-plan.json`, `hunyuan-request.json`, and `3d-verdict.json`. BetterRef uses signed Tencent HY 3D Global API only. Prefer Global Pro Model `3.1` when the reference pack has multiple views or the user asks for the latest/best model quality; use Rapid only as a single-view fallback. Use `TENCENTCLOUD_SECRET_ID` plus `TENCENTCLOUD_SECRET_KEY` for Tencent; on the Blender workstation, if env vars are absent, use the Blender MCP panel's Hunyuan official API credentials to submit the same signed Global request directly.
 
 ```bash
-npx betterref-3d --make-hunyuan-request --plan .betterref-3d/3d-asset-plan.json --out .betterref-3d --provider tencent --tencent-region ap-guangzhou --tencent-edition pro --tencent-model 3.1 --result-format GLB --enable-pbr true --face-count 50000 --json
+npx betterref-3d --make-hunyuan-request --plan .betterref-3d/3d-asset-plan.json --out .betterref-3d --provider tencent --tencent-endpoint hunyuan.intl.tencentcloudapi.com --tencent-region ap-singapore --tencent-edition pro --tencent-model 3.1 --result-format GLB --enable-pbr true --json
 ```
+
+For Pro multi-view jobs, keep request size under Tencent's 10 MB limit by resizing/compressing reference inputs for API submission, and use `MultiViewImages[].ViewImageBase64` for side/back/top/45-degree references.
 
 After Tencent returns `hunyuan-response.json`, create the post-Hunyuan refinement loop before final verification. Raw Hunyuan output is treated as source material; Roblox targets must show retopo/decimate evidence, baked texture/normal/PBR evidence, Roblox Studio import/preview evidence, and a fresh `betterref-3d --verify` pass:
 

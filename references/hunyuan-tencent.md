@@ -1,8 +1,10 @@
 # Tencent Hunyuan3D Provider
 
-BetterRef uses Tencent Cloud Hunyuan3D as the only Hunyuan3D provider. Do not route production 3D jobs through alternate wrappers.
+BetterRef uses Tencent Hunyuan3D as the only Hunyuan3D provider. Do not route production 3D jobs through alternate wrappers.
 
-## Tencent Cloud
+For 3D model requests, Tencent is not optional. If Tencent does not return a completed asset with matched `ResultFile3Ds`, the task is blocked. A local procedural mesh, Blender-only reconstruction, Hyper3D/Rodin result, Roblox generated mesh, downloaded marketplace model, or mock file may be useful as concept evidence, but it is not a BetterRef final model.
+
+## Tencent HY 3D Global
 
 Create the Tencent request metadata with:
 
@@ -11,18 +13,22 @@ betterref-3d --make-hunyuan-request \
   --plan .betterref-3d/3d-asset-plan.json \
   --out .betterref-3d \
   --provider tencent \
-  --tencent-region ap-guangzhou \
+  --tencent-endpoint hunyuan.intl.tencentcloudapi.com \
+  --tencent-region ap-singapore \
   --tencent-edition pro \
   --tencent-model 3.1 \
   --result-format GLB \
   --enable-pbr true \
-  --face-count 50000 \
   --json
 ```
 
-`pro` maps to `SubmitHunyuanTo3DProJob` and `QueryHunyuanTo3DProJob`. `rapid` maps to `SubmitHunyuanTo3DRapidJob` and `QueryHunyuanTo3DRapidJob`.
+Default to the official Tencent HY 3D Global Pro path with `Model: 3.1` when the user provides multiple view references or asks for the latest/best model quality. `pro` maps to `SubmitHunyuanTo3DProJob` and `QueryHunyuanTo3DProJob`; use `MultiViewImages[].ViewImageBase64` for side/back/top/45-degree refs after resizing inputs enough to keep the signed JSON request under Tencent's 10 MB limit.
 
-Use `TENCENTCLOUD_SECRET_ID` and `TENCENTCLOUD_SECRET_KEY` from the environment or a secure connector. Never commit raw Tencent credentials.
+Use Global Rapid only as a fallback when Pro is unavailable or the user supplies only one clean view. `rapid` maps to `SubmitHunyuanTo3DRapidJob` and `QueryHunyuanTo3DRapidJob`, but Rapid single-image output is not acceptable as final if it visibly melts the face, silhouette, armor, or required reference details.
+
+Do not default to the old/domestic `hunyuan3d.tencentcloudapi.com` path for this workstation. That path can return `ResourceUnavailable.NotExist` / billing-service activation errors even when the Tencent Global Rapid API works with the same account.
+
+Every Tencent submission must be a signed Tencent Cloud API 3.0 request to `https://hunyuan.intl.tencentcloudapi.com`. Use `TENCENTCLOUD_SECRET_ID` and `TENCENTCLOUD_SECRET_KEY` from the environment when available. On this workstation, if those env vars are absent, read the Blender MCP panel's Hunyuan official API `SecretId`/`SecretKey` and submit the signed Global API request directly. Do not fall back to Blender MCP legacy/domestic `generate_hunyuan3d_model` behavior when it returns `ResourceUnavailable.NotExist`. Never commit raw Tencent credentials.
 
 ## Required artifacts
 

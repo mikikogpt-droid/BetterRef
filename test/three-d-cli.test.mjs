@@ -77,9 +77,16 @@ async function writeHunyuanMetadata(dir, { id = 'model-001', targetPath = 'publi
     schemaVersion: 'betterref.hunyuan.request.v1',
     providers: ['tencent'],
     tencentCloud: {
-      endpoint: 'hunyuan3d.tencentcloudapi.com',
-      region: 'ap-guangzhou',
-      edition: 'pro'
+      endpoint: 'hunyuan.intl.tencentcloudapi.com',
+      region: 'ap-singapore',
+      edition: 'rapid',
+      submitAction: 'SubmitHunyuanTo3DRapidJob',
+      queryAction: 'QueryHunyuanTo3DRapidJob'
+    },
+    auth: {
+      type: 'tencentcloud-secret',
+      signedApi: true,
+      legacyMcpDisallowed: true
     },
     assets: [{ id, targetPath }]
   });
@@ -98,15 +105,20 @@ async function writeTencentHunyuanMetadata(dir, { id = 'model-001', targetPath =
     schemaVersion: 'betterref.hunyuan.request.v1',
     providers: ['tencent'],
     tencentCloud: {
-      endpoint: 'hunyuan3d.tencentcloudapi.com',
-      region: 'ap-guangzhou',
-      edition: 'pro',
-      submitAction: 'SubmitHunyuanTo3DProJob',
-      queryAction: 'QueryHunyuanTo3DProJob',
-      model: '3.1',
+      endpoint: 'hunyuan.intl.tencentcloudapi.com',
+      region: 'ap-singapore',
+      edition: 'rapid',
+      submitAction: 'SubmitHunyuanTo3DRapidJob',
+      queryAction: 'QueryHunyuanTo3DRapidJob',
+      model: null,
       resultFormat: 'GLB',
       enablePBR: true,
-      faceCount: 50000
+      faceCount: null
+    },
+    auth: {
+      type: 'tencentcloud-secret',
+      signedApi: true,
+      legacyMcpDisallowed: true
     },
     assets: [{ id, targetPath }]
   });
@@ -238,7 +250,7 @@ test('betterref-3d make-plan preserves PRD 3D asset ids and target paths', async
   assert.equal(plan.assets[0].requirement, 'Generate the product mascot as a GLB model.');
 });
 
-test('betterref-3d creates a Tencent Cloud Hunyuan request by default', async () => {
+test('betterref-3d creates a Tencent HY 3D Global Rapid request by default', async () => {
   const dir = await makeCase('hunyuan-tencent-default-request');
   const plan = path.join(dir, '3d-asset-plan.json');
   const out = path.join(dir, '3d-out');
@@ -287,9 +299,15 @@ test('betterref-3d creates a Tencent Cloud Hunyuan request by default', async ()
   assert.equal(request.auth.type, 'tencentcloud-secret');
   assert.deepEqual(request.auth.env, ['TENCENTCLOUD_SECRET_ID', 'TENCENTCLOUD_SECRET_KEY']);
   assert.equal(request.auth.available, true);
-  assert.equal(request.tencentCloud.endpoint, 'hunyuan3d.tencentcloudapi.com');
-  assert.equal(request.tencentCloud.region, 'ap-guangzhou');
-  assert.equal(request.tencentCloud.edition, 'pro');
+  assert.equal(request.auth.signedApi, true);
+  assert.equal(request.auth.legacyMcpDisallowed, true);
+  assert.equal(request.auth.workstationCredentialSources.includes('blender-scene-official-api'), true);
+  assert.match(request.auth.missingEnvGuidance, /Blender.*official API/i);
+  assert.equal(request.tencentCloud.endpoint, 'hunyuan.intl.tencentcloudapi.com');
+  assert.equal(request.tencentCloud.region, 'ap-singapore');
+  assert.equal(request.tencentCloud.edition, 'rapid');
+  assert.equal(request.tencentCloud.submitAction, 'SubmitHunyuanTo3DRapidJob');
+  assert.equal(request.tencentCloud.queryAction, 'QueryHunyuanTo3DRapidJob');
   assert.equal(request.assets.length, 1);
   assert.equal(request.assets[0].id, 'model-001');
   assert.equal(request.assets[0].sourceImage, sourceImage);
@@ -330,7 +348,7 @@ test('betterref-3d creates a Hunyuan request with the Tencent Cloud adapter', as
     '--provider',
     'tencent',
     '--tencent-region',
-    'ap-guangzhou',
+    'ap-singapore',
     '--tencent-edition',
     'pro',
     '--tencent-model',
@@ -357,8 +375,8 @@ test('betterref-3d creates a Hunyuan request with the Tencent Cloud adapter', as
   const request = JSON.parse(await readFile(path.join(out, 'hunyuan-request.json'), 'utf8'));
   assert.deepEqual(request.providers, ['tencent']);
   assert.deepEqual(request.tencentCloud, {
-    endpoint: 'hunyuan3d.tencentcloudapi.com',
-    region: 'ap-guangzhou',
+    endpoint: 'hunyuan.intl.tencentcloudapi.com',
+    region: 'ap-singapore',
     edition: 'pro',
     submitAction: 'SubmitHunyuanTo3DProJob',
     queryAction: 'QueryHunyuanTo3DProJob',
@@ -372,6 +390,35 @@ test('betterref-3d creates a Hunyuan request with the Tencent Cloud adapter', as
   assert.equal(request.auth.available, true);
   assert.equal(request.assets[0].provider, 'hunyuan');
   assert.equal(request.assets[0].targetPath, 'public/betterref-assets/model-001.glb');
+});
+
+test('betterref-3d rejects domestic Tencent Hunyuan endpoints', async () => {
+  const dir = await makeCase('hunyuan-domestic-endpoint-rejected');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const out = path.join(dir, '3d-out');
+
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [{ id: 'model-001', provider: 'hunyuan', targetPath: 'public/betterref-assets/model.glb' }]
+  });
+
+  const result = run3D([
+    '--make-hunyuan-request',
+    '--plan',
+    plan,
+    '--out',
+    out,
+    '--provider',
+    'tencent',
+    '--tencent-endpoint',
+    'hunyuan3d.tencentcloudapi.com',
+    '--json'
+  ]);
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /Signed Tencent HY 3D Global API is required/i);
+  assert.match(result.stderr, /hunyuan\.intl\.tencentcloudapi\.com/i);
 });
 
 test('betterref-3d rejects unusable Hunyuan provider options', async () => {
@@ -554,6 +601,59 @@ test('betterref-3d verify exits 0 when model evidence passes', async () => {
 
   const verdict = JSON.parse(await readFile(path.join(out, '3d-verdict.json'), 'utf8'));
   assert.equal(verdict.verdict, 'pass');
+});
+
+test('betterref-3d verify rejects non-Tencent model sources', async () => {
+  const dir = await makeCase('verify-non-tencent-source');
+  const project = path.join(dir, 'project');
+  const plan = path.join(dir, '3d-asset-plan.json');
+  const evidence = path.join(dir, '3d-evidence.json');
+  const out = path.join(dir, '3d-out');
+  const { modelRelative, renderRelative } = await writeModelAndRender(project);
+  await writeJson(plan, {
+    schemaVersion: 'betterref.3d.asset.plan.v1',
+    threeDRequired: true,
+    assets: [
+      {
+        id: 'model-001',
+        status: 'pass',
+        provider: 'blender-procedural',
+        targetFormat: 'glb',
+        targetPath: modelRelative
+      }
+    ]
+  });
+  await writeJson(evidence, {
+    schemaVersion: 'betterref.3d.evidence.v1',
+    assets: [
+      {
+        id: 'model-001',
+        status: 'completed',
+        modelPath: modelRelative,
+        meshStats: { vertexCount: 240, faceCount: 120 },
+        renders: [renderRelative]
+      }
+    ]
+  });
+
+  const result = run3D([
+    '--verify',
+    '--plan',
+    plan,
+    '--evidence',
+    evidence,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 1);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
+  assert.equal(payload.assets[0].tencentOnlySourcePresent, false);
+  assert.equal(payload.blockingReasons.some((item) => /not sourced from Tencent Hunyuan3D/i.test(item)), true);
 });
 
 test('betterref-3d verify requires Hunyuan request and response metadata', async () => {
@@ -988,8 +1088,8 @@ test('betterref-3d verify rejects Tencent Cloud Hunyuan metadata without result 
     schemaVersion: 'betterref.hunyuan.request.v1',
     providers: ['tencent'],
     tencentCloud: {
-      endpoint: 'hunyuan3d.tencentcloudapi.com',
-      region: 'ap-guangzhou',
+      endpoint: 'hunyuan.intl.tencentcloudapi.com',
+      region: 'ap-singapore',
       edition: 'pro',
       submitAction: 'SubmitHunyuanTo3DProJob',
       queryAction: 'QueryHunyuanTo3DProJob'
@@ -1217,8 +1317,8 @@ test('betterref-3d verify rejects Tencent Cloud Hunyuan metadata without DONE st
     schemaVersion: 'betterref.hunyuan.request.v1',
     providers: ['tencent'],
     tencentCloud: {
-      endpoint: 'hunyuan3d.tencentcloudapi.com',
-      region: 'ap-guangzhou',
+      endpoint: 'hunyuan.intl.tencentcloudapi.com',
+      region: 'ap-singapore',
       edition: 'pro',
       submitAction: 'SubmitHunyuanTo3DProJob',
       queryAction: 'QueryHunyuanTo3DProJob'
@@ -1387,7 +1487,7 @@ test('betterref-3d verify rejects placeholder Hunyuan metadata without matched a
   await writeJson(request, {
     schemaVersion: 'betterref.hunyuan.request.v1',
     providers: ['tencent'],
-    tencentCloud: { endpoint: 'hunyuan3d.tencentcloudapi.com' }
+    tencentCloud: { endpoint: 'hunyuan.intl.tencentcloudapi.com' }
   });
   await writeJson(response, {
     schemaVersion: 'betterref.hunyuan.response.v1',

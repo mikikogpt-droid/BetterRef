@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
 import { normalizeExtractedPrdText } from '../lib/prd.mjs';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
@@ -42,6 +43,35 @@ async function pathExists(filePath) {
   } catch {
     return false;
   }
+}
+
+async function makePngBuffer(width, height, color = { r: 18, g: 22, b: 64 }) {
+  return sharp({
+    create: {
+      width,
+      height,
+      channels: 3,
+      background: color
+    }
+  }).png().toBuffer();
+}
+
+async function writePdfWithImage(filePath, lines, imageBuffer) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 48 });
+    const stream = doc.pipe(createWriteStream(filePath));
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+    doc.fontSize(18).text('ONETAPGG PRD');
+    doc.moveDown();
+    doc.fontSize(11);
+    for (const line of lines) {
+      doc.text(line);
+    }
+    doc.moveDown();
+    doc.image(imageBuffer, { width: 420 });
+    doc.end();
+  });
 }
 
 test('normalizes Thai PRD text before building prompts and checklists', () => {
@@ -184,6 +214,160 @@ test('betterref-prd converts a PRD PDF into BetterRef control artifacts', async 
   assert.match(runbook, /imagegen/);
   assert.match(runbook, /autoAssetQuality/);
   assert.equal(await pathExists(path.join(out, 'AGENTS.md')), false);
+});
+
+test('betterref-prd keeps reference crop dimensions out of the production viewport', async () => {
+  const dir = await makeCase('viewport-contract');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(dir, 'prd-out');
+  await writePdf(pdf, [
+    'Viewport Contract: 1920 x 1080.',
+    'Reference diff only: 1067 x 599 for home-dashboard-ref.png / PDF crop evidence.',
+    'Additional desktop evidence: 1440 x 900 and 1366 x 768.',
+    'Mobile evidence: 390 x 844.',
+    'Build normal page scroll behavior and footer, but this homepage reference is single viewport.',
+    'Visual requirements: header, hero, premium game cards.'
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.viewport, '1920x1080');
+  assert.equal(summary.viewportSource, 'prd');
+  assert.equal(summary.longReference, false);
+  assert.deepEqual(summary.referenceDiffViewport, {
+    width: 1067,
+    height: 599,
+    role: 'reference_diff_evidence_only'
+  });
+  assert.deepEqual(summary.additionalDesktopViewports, [
+    { width: 1440, height: 900 },
+    { width: 1366, height: 768 }
+  ]);
+  assert.deepEqual(summary.mobileViewport, { width: 390, height: 844 });
+
+  const guardConfig = JSON.parse(await readFile(path.join(out, 'betterref.guard.json'), 'utf8'));
+  assert.deepEqual(guardConfig.targetViewport, { width: 1920, height: 1080 });
+  assert.equal(guardConfig.referenceViewportRole, 'reference_diff_evidence_only');
+  assert.deepEqual(guardConfig.referenceViewport, { width: 1067, height: 599 });
+});
+
+test('betterref-prd extracts embedded PDF reference images as evidence artifacts', async () => {
+  const dir = await makeCase('reference-image-extract');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(project, '.betterref-prd');
+  await mkdir(project, { recursive: true });
+  await writePdfWithImage(pdf, [
+    'Viewport: 1920x1080.',
+    'Required screens: Homepage.',
+    'Design Reference Screens: Reference 01 Home Dashboard.',
+    'Visual requirements: premium hero image and code-native cards.'
+  ], await makePngBuffer(1200, 675));
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.match(payload.artifacts.referenceManifestPath, /manifest\.json$/);
+  assert.equal(payload.artifacts.referenceImages.length, 1);
+
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.referenceImages.length, 1);
+  assert.deepEqual(summary.referenceImages[0].nativeSize, { width: 1200, height: 675 });
+  assert.equal(summary.referenceImages[0].role, 'reference evidence only, not shipped UI');
+  assert.equal(await pathExists(path.join(project, '.betterref-references', 'home-dashboard-ref.png')), true);
+
+  const agents = await readFile(path.join(project, 'AGENTS.md'), 'utf8');
+  assert.match(agents, /Extracted reference images: 1/);
+});
+
+test('betterref-prd decomposes ONETAPGG reference-backed assets into unique slots', async () => {
+  const dir = await makeCase('reference-asset-decomposition');
+  const project = path.join(dir, 'project');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(project, '.betterref-prd');
+  await mkdir(project, { recursive: true });
+  await writePdfWithImage(pdf, [
+    'Viewport Contract: 1920 x 1080.',
+    'Required screens: Homepage, Catalog, Promotions, Account Dashboard.',
+    'Design Reference Screens: ONETAPGG home dashboard, top-up catalog, reward games, events dashboard.',
+    'Visual requirements: 3D hero logo, cyber background texture, game covers, recommendation covers, reward cards, event cards.',
+    'Hard fail: do not use PDF render, screenshot, reference crop, or full-page mockup as shipped UI.'
+  ], await makePngBuffer(1536, 864));
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--project',
+    project,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+
+  const assetPlan = JSON.parse(await readFile(path.join(out, 'asset-plan.json'), 'utf8'));
+  const targetPaths = assetPlan.assets.map((asset) => asset.targetPath);
+  const roles = assetPlan.assets.map((asset) => asset.role);
+  assert.equal(assetPlan.imagegenRequired, true);
+  assert.equal(assetPlan.assets.length >= 20, true);
+  assert.equal(new Set(targetPaths).size, targetPaths.length);
+  assert.equal(roles.includes('brand-logo'), true);
+  assert.equal(roles.includes('hero-emblem'), true);
+  assert.equal(roles.includes('hero-background'), true);
+  assert.equal(targetPaths.includes('public/betterref-assets/game-cover-01.png'), true);
+  assert.equal(targetPaths.includes('public/betterref-assets/reward-card-01.png'), true);
+  assert.equal(targetPaths.includes('public/betterref-assets/event-card-01.png'), true);
+  assert.equal(assetPlan.assets.some((asset) => asset.referenceEvidence?.length > 0), true);
+  assert.equal(assetPlan.assets.some((asset) => /raster-asset/.test(asset.targetPath)), false);
+
+  const guardConfig = JSON.parse(await readFile(path.join(out, 'betterref.guard.json'), 'utf8'));
+  assert.equal(guardConfig.minRenderedAssets >= 8, true);
+});
+
+test('betterref-prd does not treat full-page mockup hard-fail wording as long-page reference mode', async () => {
+  const dir = await makeCase('long-reference-hardfail-wording');
+  const pdf = path.join(dir, 'prd.pdf');
+  const out = path.join(dir, 'prd-out');
+  await writePdf(pdf, [
+    'Viewport: 1920x1080.',
+    'Hard fail: do not use PDF render, screenshot, reference crop, or full-page mockup as shipped UI.',
+    'Desktop capture: native viewport screenshot, full-page screenshot and section screenshots only when there is a long-page reference.',
+    'Visual requirements: homepage hero, cards, and footer sections.'
+  ]);
+
+  const result = spawnSync(process.execPath, [
+    prdBin,
+    '--pdf',
+    pdf,
+    '--out',
+    out,
+    '--json'
+  ], { cwd: repoRoot, encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const summary = JSON.parse(await readFile(path.join(out, 'prd-summary.json'), 'utf8'));
+  assert.equal(summary.longReference, false);
 });
 
 test('betterref-prd creates project AGENTS.md with mandatory skill contract when --project is provided', async () => {
@@ -455,7 +639,10 @@ test('betterref-prd detects Hunyuan 3D model requirements separately from raster
   assert.match(runbook, /betterref-3d --make-plan/);
   assert.match(runbook, /betterref-3d --make-hunyuan-request/);
   assert.match(runbook, /--provider tencent/);
+  assert.match(runbook, /Signed Tencent HY 3D Global API/i);
   assert.match(runbook, /TENCENTCLOUD_SECRET_ID/);
+  assert.match(runbook, /Blender MCP Hunyuan official API credentials/i);
+  assert.match(runbook, /ResultFile3Ds/i);
   assert.match(runbook, /--three-d \.betterref-3d\/3d-verdict\.json/);
   assert.match(runbook, /--require guard,prd,longpage,assetplan,browser,3d/);
 });

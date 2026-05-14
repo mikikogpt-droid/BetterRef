@@ -19,7 +19,7 @@ Every visual item must be classified before implementation:
 | Logo or known brand asset | official/local asset |
 | Glass, 3D, cinematic hero, textured background, premium raster still | `imagegen` or sourced production asset |
 | Animated cinematic hero, motion logo, reveal, loop, WebM/MP4, shader transition | `hyperframes` composition rendered through `hyperframes-cli` |
-| 3D model from object/product/character/prop reference | `betterref-reference` analysis, `betterref-3d` plan, real mesh evidence |
+| 3D model from object/product/character/prop reference | Tencent-only path: `betterref-reference`, `betterref-3d`, Tencent `ResultFile3Ds`, then mesh evidence |
 | PDF render, screenshot, reference crop, Figma export | reference-only evidence |
 
 Never call the result done when any hard-fail ledger item exists. A score of 98-100 still fails if the UI is fake, blurry, non-scrollable, clipped, in the wrong state, or made from the reference itself.
@@ -41,7 +41,7 @@ Never call the result done when any hard-fail ledger item exists. A score of 98-
 | Reference image supplied for deep copying | Run `betterref-reference` and require `reference-analysis.json` before planning. |
 | Reference Pack supplied for 3D/game asset | Run `betterref-reference --pack` and require an Asset Brief that separates mesh and texture refs. |
 | Reference contains object/product/character/prop for 3D | Create 3D brief and run `betterref-3d` handoff. |
-| Hunyuan 3D requested | Use Tencent Cloud API only: `--provider tencent`, request/response metadata, and `ResultFile3Ds`. |
+| Hunyuan 3D requested | Tencent HY 3D Global only: prefer Pro 3.1 multi-view; Rapid fallback; require metadata/`ResultFile3Ds`; otherwise blocked. |
 | Raw Hunyuan/Tencent model returned for Roblox | Run post-Hunyuan refine; require baked maps, Roblox import/preview, and rerun verify. |
 | Auto production 3D requested | Run `--auto-refine`, `--roblox-upload`, then `--verify`. |
 | Work is PRD + visual + 3D | Use Visible Agent Mode; supervisor merges reports. |
@@ -55,7 +55,7 @@ When the user says `use $betterref start project`, `use BetterRef start project`
 3. Use `using-superpowers` and `karpathy-guidelines` together with this skill; prefer installed skill names or `CODEX_HOME`, not a machine-specific absolute path.
 4. Classify every visual as `code-native UI`, `imagegen asset`, `HyperFrames asset`, `existing asset`, or `reference-only`.
 5. Never ship a PDF render, screenshot, reference crop, or browser chrome as UI.
-6. For 3D, glass, cinematic, hero, texture, or premium raster work, create an imagegen handoff and use built-in `image_gen`.
+6. For 3D-looking raster/hero art, glass, cinematic, texture, or premium stills, use `image_gen`; for real 3D model/mesh work, use signed Tencent HY 3D Global API and `ResultFile3Ds`.
 7. For motion, animated, WebM/MP4, cinematic reveal, or shader work, use HyperFrames with CLI and browser evidence.
 8. Require fresh browser evidence before calling a phase complete.
 9. Follow `.betterref-run/next-actions.md` until final verdict passes; never say 100% until PRD checklist, browser evidence, asset evidence, guard, and final verify all pass.
@@ -86,7 +86,7 @@ For deep PRD/reference/3D work, use `references/agent-team.md` plus `betterref-a
 
 ## Reference Intelligence And 3D
 
-Reference Intelligence starts with `betterref-reference`: analysis, checklist, negative prompts, 3D brief. 3D chain: Reference Pack -> Asset Brief -> Tencent main image -> Tencent job -> refine plan -> auto-refine -> roblox-upload -> verify. Use Tencent Cloud only; require `ResultFile3Ds`, mesh/load evidence, triangle-budget/baked-material evidence, Roblox evidence, and no flat 2D billboard. Expanded Agent Team must start from a Supervisor Packet and merge specialist facts, confidence, uncertainties, evidence, actions, and hard fails. See `references/reference-intelligence.md`, `references/reference-to-3d.md`, `references/hunyuan-tencent.md`, and `references/agent-team.md`.
+Reference Intelligence starts with `betterref-reference`: analysis, checklist, negative prompts, 3D brief. 3D chain: Reference Pack -> Asset Brief -> Tencent main image -> signed Tencent HY 3D Global job -> refine plan -> auto-refine -> roblox-upload -> verify. Tencent only; require signed Global metadata, `ResultFile3Ds`, mesh/load evidence, triangle-budget/baked-material evidence, Roblox evidence, and no flat 2D billboard. Local procedural, Hyper3D/Rodin, or Blender-made meshes are never substitutes; if Tencent fails after the Global Rapid path is tried, stop blocked. Expanded Agent Team uses a Supervisor Packet and merges evidence/actions/hard fails. See `references/reference-intelligence.md`, `references/reference-to-3d.md`, `references/hunyuan-tencent.md`, and `references/agent-team.md`.
 
 ## PRD To Web Loop
 
@@ -122,6 +122,8 @@ The verdict must be `fail` or `revise` if any item is true:
 - A complex hero/raster asset is visibly lower quality, has rectangular edges, wrong crop, weak lighting/depth, low measured sharpness, or blurred scaling.
 - An animated/cinematic motion asset is faked as a static screenshot, lacks HyperFrames lint/validate/inspect/render evidence, or is not rendered as a video/WebM in fresh browser evidence.
 - An asset-heavy PRD page has too few rendered production assets in browser evidence.
+- A 3D/model task lacks signed Tencent HY 3D Global request metadata.
+- A 3D/model task uses a non-Tencent mesh as final output instead of Tencent `ResultFile3Ds`.
 - Rendered asset dimensions exceed native image dimensions.
 - A generated/source asset is marked pass but does not appear in fresh browser evidence from the actual app.
 - The report uses a high score to override a PRD gap or real UI defect.
@@ -147,9 +149,9 @@ Capture both a native full-page screenshot and section/viewport screenshots. Com
 
 ## Tool Use
 
-Start with local assets, project scripts, browser tools, DOM measurement, screenshot capture, pixel/SSIM diff, image dimensions, asset sharpness checks, fonts, icon libraries, `imagegen`, and HyperFrames. Use `imagegen` for complex static raster work. Use HyperFrames for animated/cinematic motion assets, reveal loops, shader transitions, or video/WebM deliverables. Name the gap before adding a tool.
+Start with local assets, project scripts, browser tools, DOM measurement, screenshot capture, pixel/SSIM diff, image dimensions, asset sharpness checks, fonts, icon libraries, `imagegen`, and HyperFrames. Use `imagegen` for complex static raster work and HyperFrames for animated/cinematic motion assets. Name the gap before adding a tool.
 
-Use `@chrome` first when it is connected; it is the real user-browser truth source. Chrome MCP or browser automation can establish route, viewport, scroll, console, font, image scale, DOM text, interactive count, DOM box truth, and real screenshot files. `betterref-run --browser-handoff .betterref-run/chrome-handoff.json` ingests that handoff and continues through diff, long-page, guard, and final verify. `betterref-chrome-bridge` converts `@chrome`/Chrome MCP handoff JSON into BetterRef browser evidence and regions, and rejects metadata-only handoffs without real viewport screenshot files. `betterref-chrome --full-page --section-screenshots` writes `.betterref/browser-evidence.json`, `.betterref/chrome-full-page.png`, and `.betterref/sections/*.png`; `betterref-guard` can use `autoAssetQuality` to map browser image URLs back to local `public` assets for sharpness checks. `betterref-longpage` auto-crops browser chrome from the reference and diffs full-page plus sections. Pass browser evidence and long-page report into `betterref-guard`/`betterref-verify` so browser hard fails cannot be hidden by a high pixel score. Final verification treats empty, malformed, or metadata-only Chrome browser evidence as a hard fail; a claim that Chrome was checked is not evidence.
+Use `@chrome` first when connected; it is the real user-browser truth source. `betterref-run --browser-handoff`, `betterref-chrome-bridge`, `betterref-chrome`, and `betterref-longpage` handle browser evidence, regions, full-page/section captures, and long-page diffs. Pass browser evidence into `betterref-guard`/`betterref-verify`; empty, malformed, or metadata-only browser evidence is a hard fail.
 
 Use `hyperframes-registry` only as an accelerator when a reusable block/component directly fits the required motion asset; registry blocks do not replace lint/validate/inspect/render evidence. Use `website-to-hyperframes` after the website exists when the deliverable is a promo/product-tour video from the built site, not as a substitute for PRD-to-web UI implementation.
 
@@ -159,13 +161,9 @@ Use `betterref-eval` for benchmark suites. A pressure fixture should declare the
 
 A completion claim must include:
 
-- PRD/checklist status.
-- Reference source and current screenshot source.
-- Viewport/device scale and same-state status.
-- Visual verdict with score, pass/revise/fail, and hard-fail status.
-- BetterRef report path, guard report path, browser evidence path, asset plan path, final JSON verdict path, final HTML verdict path, and evidence bundle path.
-- Imagegen and HyperFrames request/evidence paths when generated assets were required.
-- Top remaining differences and next edits when score is below pass.
+- PRD/checklist status, reference/current screenshot source, and same-state viewport.
+- Visual verdict with score, pass/revise/fail, hard-fail status, and top remaining differences.
+- BetterRef report, guard report, browser evidence, asset plan, final JSON/HTML verdict, evidence bundle, and generated-asset evidence paths.
 - Tool inventory and escalations used.
 
 Do not say "100%" unless all PRD criteria, visual criteria, and hard-fail ledger items are verified.

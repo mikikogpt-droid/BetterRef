@@ -75,9 +75,16 @@ async function writePassingThreeDVerdict(project, generatedAt = '2026-05-12T00:0
     schemaVersion: 'betterref.hunyuan.request.v1',
     providers: ['tencent'],
     tencentCloud: {
-      endpoint: 'hunyuan3d.tencentcloudapi.com',
-      region: 'ap-guangzhou',
-      edition: 'pro'
+      endpoint: 'hunyuan.intl.tencentcloudapi.com',
+      region: 'ap-singapore',
+      edition: 'rapid',
+      submitAction: 'SubmitHunyuanTo3DRapidJob',
+      queryAction: 'QueryHunyuanTo3DRapidJob'
+    },
+    auth: {
+      type: 'tencentcloud-secret',
+      signedApi: true,
+      legacyMcpDisallowed: true
     },
     assets: [
       {
@@ -118,6 +125,7 @@ async function writePassingThreeDVerdict(project, generatedAt = '2026-05-12T00:0
         renderEvidencePresent: true,
         materialEvidenceRequired: false,
         materialEvidencePresent: false,
+        signedTencentGlobalApiPresent: true,
         requestMetadataPresent: true,
         responseMetadataPresent: true,
         failures: []
@@ -422,6 +430,8 @@ test('betterref-run blocks on required Hunyuan 3D handoff before browser verific
   assert.match(actions, /betterref-reference/);
   assert.match(actions, /betterref-3d --make-plan/);
   assert.match(actions, /betterref-3d --make-hunyuan-request/);
+  assert.match(actions, /signed Tencent HY 3D Global API/i);
+  assert.match(actions, /Blender MCP panel Hunyuan official API credentials/i);
   assert.match(actions, /betterref-3d --verify/);
 });
 

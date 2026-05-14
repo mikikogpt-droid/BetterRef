@@ -31,7 +31,7 @@ The supervisor must issue one packet before specialist work starts:
   "contextPackPath": ".betterref-agents/context-pack.json",
   "cachePolicy": { "reuseArtifacts": [".betterref-prd", ".betterref-reference", ".betterref-3d"] },
   "requiredOutputs": ["facts", "evidence", "uncertainties", "hardFails", "recommendedActions"],
-  "blockingGates": ["ResultFile3Ds", "refinementEvidence", "robloxImportEvidence", "betterref-3d --verify"]
+  "blockingGates": ["signedTencentGlobalApi", "ResultFile3Ds", "refinementEvidence", "robloxImportEvidence", "betterref-3d --verify"]
 }
 ```
 
@@ -117,7 +117,7 @@ Tier 2:
 - Layout Agent
 - Asset Agent
 - 3D Shape Agent
-- Hunyuan API Agent: prepares Tencent Cloud Hunyuan3D request/response metadata and flags missing provider output evidence.
+- Hunyuan API Agent: prepares signed Tencent HY 3D Global request/response metadata and flags missing provider output evidence.
 - 3D QA Agent
 - Accessibility/UX Agent
 

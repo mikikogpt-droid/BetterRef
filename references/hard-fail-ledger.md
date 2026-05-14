@@ -81,6 +81,8 @@ Current `betterref-3d` evidence codes include `asset_pending`, `missing_model_fi
 - Missing mesh stats: fail as `missing_mesh_stats`; passed models need vertex/face/material counts.
 - Missing turntable/multi-angle proof: fail as `missing_render_evidence` when fidelity requires multi-angle render evidence.
 - Missing Hunyuan request/response metadata: treat as an evidence-integrity hard fail and do not accept the model until provider/request/response metadata is recorded.
+- Unsigned, domestic, legacy, or MCP-only Hunyuan path: treat as missing request metadata unless the request proves signed Tencent HY 3D Global API (`hunyuan.intl.tencentcloudapi.com`) and matched Tencent actions.
+- Non-Tencent source accepted as final: fail; local procedural, Blender-only, Hyper3D/Rodin, marketplace, or Roblox-generated meshes are concept evidence only.
 - Raw Hunyuan/Tencent output accepted as final: fail as `missing_post_hunyuan_refinement` until Blender/manual refinement evidence exists.
 - Roblox triangle budget exceeded: fail as `roblox_triangle_budget_exceeded`; raw high-poly output is not Roblox-ready.
 - Missing Roblox upload/import proof: fail as `missing_roblox_import_evidence` until Open Cloud upload evidence or Studio import/preview evidence exists.

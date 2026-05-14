@@ -155,10 +155,13 @@ test('SKILL.md documents reference intelligence, Hunyuan 3D, and expanded agent 
   assert.match(skill, /betterref-reference/);
   assert.match(skill, /betterref-3d/);
   assert.match(skill, /Hunyuan 3D/i);
-  assert.match(skill, /Tencent Cloud/i);
+  assert.match(skill, /Tencent HY 3D Global/i);
+  assert.match(skill, /Tencent only/i);
+  assert.match(skill, /Global Rapid path is tried, stop blocked/i);
   assert.match(skill, /--auto-refine/i);
   assert.match(skill, /--roblox-upload/i);
-  assert.match(skill, /Reference Pack -> Asset Brief -> Tencent main image -> Tencent job -> refine plan -> auto-refine -> roblox-upload -> verify/i);
+  assert.match(skill, /signed Tencent HY 3D Global job/i);
+  assert.match(skill, /signed Global metadata/i);
   assert.match(skill, /Supervisor Packet/i);
   assert.match(skill, /Expanded Agent Team/i);
   assert.match(skill, /3D model/i);
@@ -257,6 +260,8 @@ test('reference-to-3d guidance scores mesh and texture refs with uncertainty gat
   }
   assert.match(referenceTo3D, /single-view/i);
   assert.match(referenceTo3D, /must not invent/i);
+  assert.match(referenceTo3D, /Tencent-only production rule/i);
+  assert.match(referenceTo3D, /Non-Tencent mesh accepted as the final BetterRef 3D model/i);
 });
 
 test('pressure tests cover 3D and expanded-agent failure modes', async () => {

@@ -45,9 +45,9 @@ Options:
   --poll-attempts          Roblox operation poll attempts, default 30.
   --format                 Target 3D format for generated assets, default glb.
   --provider               Hunyuan provider; only tencent is supported.
-  --tencent-endpoint       Tencent Cloud Hunyuan3D endpoint host, default hunyuan3d.tencentcloudapi.com.
-  --tencent-region         Tencent Cloud region, default ap-guangzhou.
-  --tencent-edition        Tencent Hunyuan3D API edition: pro or rapid, default pro.
+  --tencent-endpoint       Tencent HY 3D endpoint host, default hunyuan.intl.tencentcloudapi.com.
+  --tencent-region         Tencent HY 3D region, default ap-singapore.
+  --tencent-edition        Tencent Hunyuan3D API edition: pro or rapid, default rapid.
   --tencent-model          Tencent Hunyuan3D model version, default 3.1 for pro.
   --result-format          Tencent output format, default GLB.
   --enable-pbr             Tencent PBR material generation flag, default true for pro.

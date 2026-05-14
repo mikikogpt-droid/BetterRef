@@ -853,6 +853,7 @@ test('betterref-verify lets 3D verdict own pending Hunyuan model assets', async 
         materialEvidenceRequired: false,
         materialEvidencePresent: false,
         hunyuanMetadataRequired: true,
+        signedTencentGlobalApiPresent: true,
         requestMetadataPresent: true,
         responseMetadataPresent: true,
         failures: []

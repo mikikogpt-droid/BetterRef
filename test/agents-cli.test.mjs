@@ -86,6 +86,8 @@ test('betterref-agents plan creates a supervisor packet for PRD reference and Te
   for (const name of ['Plato', 'Dalton', 'Lagrange', 'Descartes', 'Laplace']) {
     assert.equal(packet.selectedAgents.includes(name), true);
   }
+  assert.equal(packet.blockingGates.includes('signedTencentGlobalApi'), true);
+  assert.equal(packet.blockingGates.includes('ResultFile3Ds'), true);
 });
 
 test('betterref-agents can force the full named 29-agent roster', async () => {
