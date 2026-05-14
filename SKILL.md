@@ -44,7 +44,7 @@ Never call the result done when any hard-fail ledger item exists. A score of 98-
 | Hunyuan 3D requested | Use Tencent Cloud API only: `--provider tencent`, request/response metadata, and `ResultFile3Ds`. |
 | Raw Hunyuan/Tencent model returned for Roblox | Run post-Hunyuan refine; require baked maps, Roblox import/preview, and rerun verify. |
 | Auto production 3D requested | Run `--auto-refine`, `--roblox-upload`, then `--verify`. |
-| Work is PRD + visual + 3D | Use expanded tiered agent team; supervisor merges specialist reports. |
+| Work is PRD + visual + 3D | Use Visible Agent Mode; supervisor merges reports. |
 
 ## Start Project Command
 
@@ -78,7 +78,11 @@ Treat these user phrases as BetterRef workflows:
 | `use $betterref final gate` | Produce final verdict paths and fail if PRD, visual, guard, browser, asset, long-page, or hard-fail evidence is incomplete. |
 | `use $betterref analyze reference` | Analyze a reference image into measured facts, uncertainties, visual checklist, 3D brief, and negative prompts. |
 | `use $betterref 3d model` | Route modelable references into 3D asset plan, Hunyuan handoff, and 3D evidence verification. |
-| `use $betterref agent team` | Use the tiered BetterRef Supervisor agent architecture for deep PRD/reference/3D work. |
+| `use $betterref agent team` | Use Visible Agent Mode and the named roster. |
+
+## Named 29-Agent Roster
+
+For deep PRD/reference/3D work, use `references/agent-team.md`. Select the smallest team, issue a Supervisor Packet, show dispatch, require reports, merge, and state `runtimeMode`. If no subagents ran, say no runtime spawn occurred.
 
 ## Reference Intelligence And 3D
 

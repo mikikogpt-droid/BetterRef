@@ -184,6 +184,62 @@ test('agent team guidance defines operational supervisor packets and specialist 
   assert.match(agentTeam, /Supervisor Merge/i);
 });
 
+test('agent team guidance preserves the named 29-agent roster and visible workflow', async () => {
+  const skill = await readFile(skillPath, 'utf8');
+  const agentTeam = await readFile(path.join(repoRoot, 'references', 'agent-team.md'), 'utf8');
+  assert.match(skill, /Named 29-Agent Roster/i);
+  assert.match(skill, /Visible Agent Mode/i);
+  for (const name of [
+    'Plato',
+    'Volta',
+    'Sagan',
+    'Curie',
+    'Dalton',
+    'Arendt',
+    'Newton',
+    'Ohm',
+    'Parfit',
+    'Dewey',
+    'Lagrange',
+    'Beauvoir',
+    'Chandrasekhar',
+    'Ramanujan',
+    'Wegener',
+    'Descartes',
+    'Tesla',
+    'Leibniz',
+    'Gibbs',
+    'Jason',
+    'Laplace',
+    'Boole',
+    'Sartre',
+    'Einstein',
+    'Gauss',
+    'Lorentz',
+    'Pauli',
+    'Hilbert',
+    'Maxwell'
+  ]) {
+    assert.match(agentTeam, new RegExp(name));
+  }
+  for (const phrase of [
+    'Reference Intelligence CLI',
+    '3D Asset Plan',
+    'Final Verify 3D Evidence Gate',
+    'PRD Extraction',
+    'Run Orchestrator',
+    'Skill Docs',
+    'Final Whole-Feature Review',
+    'runtimeMode',
+    '.betterref-agents',
+    'run-log.md',
+    'supervisor-merge.json',
+    'no runtime spawn occurred'
+  ]) {
+    assert.match(agentTeam, new RegExp(phrase.replace('.', '\\.')));
+  }
+});
+
 test('reference-to-3d guidance scores mesh and texture refs with uncertainty gates', async () => {
   const referenceTo3D = await readFile(path.join(repoRoot, 'references', 'reference-to-3d.md'), 'utf8');
   for (const key of ['meshSuitabilityScore', 'textureSuitabilityScore', 'ambiguityScore', 'hiddenSides', 'uncertaintyPolicy']) {
@@ -195,7 +251,7 @@ test('reference-to-3d guidance scores mesh and texture refs with uncertainty gat
 
 test('pressure tests cover 3D and expanded-agent failure modes', async () => {
   const pressureTests = await readFile(path.join(repoRoot, 'references', 'pressure-tests.md'), 'utf8');
-  for (const id of ['BR-PRESSURE-017', 'BR-PRESSURE-018', 'BR-PRESSURE-019', 'BR-PRESSURE-020', 'BR-PRESSURE-021', 'BR-PRESSURE-022', 'BR-PRESSURE-023', 'BR-PRESSURE-024', 'BR-PRESSURE-025']) {
+  for (const id of ['BR-PRESSURE-017', 'BR-PRESSURE-018', 'BR-PRESSURE-019', 'BR-PRESSURE-020', 'BR-PRESSURE-021', 'BR-PRESSURE-022', 'BR-PRESSURE-023', 'BR-PRESSURE-024', 'BR-PRESSURE-025', 'BR-PRESSURE-026']) {
     assert.match(pressureTests, new RegExp(id));
   }
   assert.match(pressureTests, /flat 2D billboard/i);
@@ -205,5 +261,6 @@ test('pressure tests cover 3D and expanded-agent failure modes', async () => {
   assert.match(pressureTests, /Auto Production 3D/i);
   assert.match(pressureTests, /Supervisor Packet/i);
   assert.match(pressureTests, /single-view/i);
+  assert.match(pressureTests, /runtimeMode/i);
   assert.match(pressureTests, /specialist confidence/i);
 });
