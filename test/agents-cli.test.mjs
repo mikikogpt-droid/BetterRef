@@ -167,6 +167,163 @@ test('betterref-agents keeps visible agent team requests risk-scoped unless full
   assert.equal(packet.selectedAgents.includes('Pauli'), false);
 });
 
+test('betterref-agents plan includes OpenClaw scoped-write executor policy', async () => {
+  const out = path.join(await makeCase('openclaw-plan'), '.betterref-agents');
+
+  const result = runAgents([
+    '--plan',
+    '--task',
+    'Use OpenClaw agents for a Tencent Hunyuan 3D Roblox reference workflow.',
+    '--runtime-mode',
+    'spawned',
+    '--executor',
+    'openclaw',
+    '--write-mode',
+    'scoped-write',
+    '--max-concurrency',
+    '3',
+    '--out',
+    out,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const packet = JSON.parse(await readFile(path.join(out, 'supervisor-packet.json'), 'utf8'));
+  assert.equal(packet.runtimeMode, 'spawned');
+  assert.equal(packet.executor.name, 'openclaw');
+  assert.equal(packet.executor.kind, 'external');
+  assert.equal(packet.spawnPolicy.maxConcurrentAgents, 3);
+  assert.equal(packet.writePolicy.mode, 'scoped-write');
+  assert.equal(packet.writePolicy.mergeOwner, 'BetterRef Supervisor');
+  assert.equal(packet.writePolicy.defaultAgentAccess, 'deny');
+  assert.ok(packet.writePolicy.deniedActions.includes('git push'));
+  const daltonGroup = packet.dispatchGroups.find((group) => group.team === '3D Asset Plan + Tencent Hunyuan Handoff');
+  assert.ok(daltonGroup);
+  assert.equal(daltonGroup.writeMode, 'scoped-write');
+  assert.ok(daltonGroup.writeScopes.includes('.betterref-3d/**'));
+  assert.ok(daltonGroup.writeScopes.includes('assets/models/**'));
+  const contextPack = JSON.parse(await readFile(path.join(out, 'context-pack.json'), 'utf8'));
+  assert.equal(contextPack.executor.name, 'openclaw');
+  assert.equal(contextPack.writePolicy.mode, 'scoped-write');
+});
+
+test('betterref-agents run can execute OpenClaw-compatible external agent jobs with scoped writes', async () => {
+  const root = await makeCase('openclaw-run');
+  const out = path.join(root, '.betterref-agents');
+  const fakeExecutor = path.join(root, 'fake-openclaw.mjs');
+  await writeFile(fakeExecutor, `
+import { readFile } from 'node:fs/promises';
+const job = JSON.parse(await readFile(process.argv.at(-1), 'utf8'));
+const report = {
+  schemaVersion: 'betterref.agents.specialist_report.v1',
+  taskId: job.taskId,
+  assetId: job.assetId,
+  runtimeMode: job.runtimeMode,
+  reportFormat: job.reportFormat,
+  team: job.team,
+  agent: job.agent,
+  role: job.role,
+  status: 'pass',
+  facts: [{
+    claim: job.agent + ' executed through fake OpenClaw with scoped write policy.',
+    evidence: job.jobPath,
+    confidence: 'high'
+  }],
+  evidence: [job.jobPath],
+  confidence: 'high',
+  uncertainties: [],
+  recommendedActions: ['merge through BetterRef Supervisor'],
+  touchedPaths: ['SKILL.md'],
+  hardFails: []
+};
+console.log('fake OpenClaw completed ' + job.agent);
+console.log(JSON.stringify(report));
+`);
+
+  const result = runAgents([
+    '--run',
+    '--task',
+    'Use OpenClaw agents for skill docs contract work.',
+    '--runtime-mode',
+    'spawned',
+    '--executor',
+    'openclaw',
+    '--executor-command',
+    process.execPath,
+    '--executor-arg',
+    fakeExecutor,
+    '--write-mode',
+    'scoped-write',
+    '--out',
+    out,
+    '--json'
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.runtimeMode, 'spawned');
+  assert.equal(payload.message, 'external executor reported');
+  assert.equal(await pathExists(path.join(out, 'jobs', 'einstein.json')), true);
+  assert.equal(await pathExists(path.join(out, 'transcripts', 'einstein.jsonl')), true);
+  assert.equal(await pathExists(path.join(out, 'reports', 'einstein.json')), true);
+  const job = JSON.parse(await readFile(path.join(out, 'jobs', 'einstein.json'), 'utf8'));
+  assert.equal(job.executor.name, 'openclaw');
+  assert.equal(job.writePolicy.mode, 'scoped-write');
+  assert.ok(job.allowedWritePaths.includes('SKILL.md'));
+  const report = JSON.parse(await readFile(path.join(out, 'reports', 'einstein.json'), 'utf8'));
+  assert.equal(report.runtimeMode, 'spawned');
+  assert.equal(report.agent, 'Einstein');
+  assert.deepEqual(report.touchedPaths, ['SKILL.md']);
+  const log = await readFile(path.join(out, 'run-log.md'), 'utf8');
+  assert.match(log, /executor=openclaw/);
+  assert.match(log, /writeMode=scoped-write/);
+  assert.match(log, /\[Einstein\] external report/);
+});
+
+test('betterref-agents report rejects write-capable reports that touch paths outside scope', async () => {
+  const out = path.join(await makeCase('reject-out-of-scope-write'), '.betterref-agents');
+  await writeJson(path.join(out, 'supervisor-packet.json'), {
+    schemaVersion: 'betterref.agents.supervisor_packet.v1',
+    taskId: 'betterref-task-001',
+    assetId: 'asset-001',
+    runtimeMode: 'spawned',
+    task: 'Skill docs and agent-team contract',
+    selectedTeams: ['Skill Docs + Agent-Team Contract'],
+    selectedAgents: ['Einstein'],
+    executor: { name: 'openclaw', kind: 'external' },
+    writePolicy: {
+      mode: 'scoped-write',
+      deniedActions: ['git push'],
+      mergeOwner: 'BetterRef Supervisor'
+    },
+    blockingGates: []
+  });
+  await writeJson(path.join(out, 'reports', 'einstein.json'), {
+    schemaVersion: 'betterref.agents.specialist_report.v1',
+    taskId: 'betterref-task-001',
+    assetId: 'asset-001',
+    runtimeMode: 'spawned',
+    team: 'Skill Docs + Agent-Team Contract',
+    agent: 'Einstein',
+    role: 'Skill Docs + Agent-Team Contract lead',
+    status: 'pass',
+    facts: [],
+    evidence: ['reports/einstein.json'],
+    confidence: 'high',
+    uncertainties: [],
+    recommendedActions: [],
+    touchedPaths: ['package.json'],
+    hardFails: []
+  });
+
+  const result = runAgents(['--report', '--out', out, '--json']);
+
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.passed, false);
+  assert.ok(payload.blockingReasons.some((item) => /package\.json.*outside allowedWritePaths/i.test(item)));
+});
+
 test('betterref-agents run structured writes visible dispatch log reports and supervisor merge', async () => {
   const out = path.join(await makeCase('run'), '.betterref-agents');
 

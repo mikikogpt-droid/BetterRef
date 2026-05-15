@@ -28,6 +28,8 @@ The supervisor must issue one packet before specialist work starts:
   "selectedAgents": ["Dalton", "Arendt", "Newton", "Ohm", "Lagrange", "Beauvoir", "Chandrasekhar"],
   "dispatchStrategy": "parallel-by-team",
   "reportFormat": "concise-json",
+  "executor": { "name": "openclaw", "kind": "external", "outputContract": "stdout-json-specialist-report" },
+  "writePolicy": { "mode": "scoped-write", "defaultAgentAccess": "deny", "mergeOwner": "BetterRef Supervisor" },
   "spawnPolicy": { "mode": "batched-waves", "maxConcurrentAgents": 4 },
   "contextPackPath": ".betterref-agents/context-pack.json",
   "cachePolicy": { "reuseArtifacts": [".betterref-prd", ".betterref-reference", ".betterref-3d"] },
@@ -35,6 +37,26 @@ The supervisor must issue one packet before specialist work starts:
   "blockingGates": ["signedTencentGlobalApi", "ResultFile3Ds", "refinementEvidence", "robloxImportEvidence", "betterref-3d --verify"]
 }
 ```
+
+## External Executor And Write Modes
+
+External execution is allowed when the user explicitly asks for agents to run outside Codex or when Codex spawn limits block useful parallelism. The supported OpenClaw handoff is:
+
+```bash
+betterref-agents --run --runtime-mode spawned --executor openclaw --write-mode scoped-write --max-concurrency 4 --task "Reference Pack to Roblox-ready Tencent Hunyuan 3D asset"
+```
+
+The executor layer must not turn every agent loose on the repository. The BetterRef Supervisor owns the merge, commit, push, and release boundary. Each external job receives `allowedWritePaths`, denied actions, the Context Pack path, and the required JSON report schema. Jobs that need broad edits must use the narrowest write mode that can finish the work:
+
+| Write mode | Agent power | Use when |
+|---|---|---|
+| `read-only` | Reads context and writes only reports. | First-pass analysis or unknown executor trust. |
+| `propose-patch` | Writes patch artifacts under `.betterref-agents/patches/**`. | Changes need review before apply. |
+| `scoped-write` | Writes only team-owned `allowedWritePaths`. | Normal OpenClaw production work. |
+| `production-write` | Writes team-owned production paths and must return touched paths plus verification evidence. | Mature executors with stable tests. |
+| `release` | Supervisor-only release actions. | Final commit/push/publish after merge passes. |
+
+Denied actions for non-supervisor agents include `git push`, destructive reset, deleting outside the workspace, editing secrets or env files, and committing without a BetterRef Supervisor merge. If OpenClaw or another executor is missing, the run is `blocked`; do not pretend it was `spawned`.
 
 ## Named 29-Agent Roster
 
@@ -143,6 +165,7 @@ Example visible log:
 
 ```text
 [Supervisor] runtimeMode=structured; no runtime spawn occurred
+[Supervisor] executor=structured; writeMode=read-only
 [Supervisor] contextPack=.betterref-agents/context-pack.json
 [Supervisor] dispatchStrategy=parallel-by-team
 [Supervisor] spawnPolicy=batched-waves; maxConcurrentAgents=4
@@ -161,6 +184,8 @@ When file output is appropriate, write:
 .betterref-agents/context-pack.json
 .betterref-agents/supervisor-packet.json
 .betterref-agents/run-log.md
+.betterref-agents/jobs/<agent>.json
+.betterref-agents/transcripts/<agent>.jsonl
 .betterref-agents/reports/<agent>.json
 .betterref-agents/supervisor-merge.json
 ```

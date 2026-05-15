@@ -61,16 +61,17 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .b
 
 ## Visible Agent Team
 
-Use `betterref-agents` when BetterRef needs the named 29-agent roster to be visible instead of implied. The current CLI runs deterministic `structured` mode: no subagents are spawned, but the context pack, `parallel-by-team` dispatch log, batched-wave spawn policy, concise JSON reports, and merge artifact are auditable. By default it selects the smallest risk-scoped team; use `--all-agents` only when the user asks for the full 29-agent roster.
+Use `betterref-agents` when BetterRef needs the named 29-agent roster to be visible instead of implied. The default CLI runs deterministic `structured` mode: no subagents are spawned, but the context pack, `parallel-by-team` dispatch log, batched-wave spawn policy, concise JSON reports, and merge artifact are auditable. For real external execution, use OpenClaw with `--executor openclaw --write-mode scoped-write`; each job receives `allowedWritePaths`, writes transcripts, and returns through the BetterRef Supervisor merge. By default it selects the smallest risk-scoped team; use `--all-agents` only when the user asks for the full 29-agent roster.
 
 ```bash
 npx betterref-agents --run --task "Reference Pack to Roblox-ready Tencent Hunyuan 3D asset" --out .betterref-agents --json
+npx betterref-agents --run --runtime-mode spawned --executor openclaw --write-mode scoped-write --task "OpenClaw agents refine BetterRef 3D evidence" --out .betterref-agents --json
 npx betterref-agents --run --task "Full BetterRef named 29-agent roster audit" --all-agents --out .betterref-agents --json
 npx betterref-agents --status --out .betterref-agents --json
 npx betterref-agents --report --out .betterref-agents --json
 ```
 
-The output lives in `.betterref-agents/context-pack.json`, `.betterref-agents/supervisor-packet.json`, `.betterref-agents/run-log.md`, `.betterref-agents/reports/*.json`, and `.betterref-agents/supervisor-merge.json`. It reuses `.betterref-prd`, `.betterref-reference`, `.betterref-3d`, and prior agent merges unless evidence is stale or failing. When 3D work is detected, `betterref-run` creates these artifacts and `betterref-verify --require agents` validates the merge and report files.
+The output lives in `.betterref-agents/context-pack.json`, `.betterref-agents/supervisor-packet.json`, `.betterref-agents/run-log.md`, `.betterref-agents/jobs/*.json`, `.betterref-agents/transcripts/*.jsonl`, `.betterref-agents/reports/*.json`, and `.betterref-agents/supervisor-merge.json`. It reuses `.betterref-prd`, `.betterref-reference`, `.betterref-3d`, and prior agent merges unless evidence is stale or failing. When 3D work is detected, `betterref-run` creates these artifacts and `betterref-verify --require agents` validates the merge and report files.
 
 ## Reference Intelligence
 

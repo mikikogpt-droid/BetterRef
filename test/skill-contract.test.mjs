@@ -189,6 +189,25 @@ test('agent team guidance defines operational supervisor packets and specialist 
   assert.match(agentTeam, /Supervisor Merge/i);
 });
 
+test('agent team guidance documents external executor write modes and OpenClaw handoff', async () => {
+  const skill = await readFile(skillPath, 'utf8');
+  const readme = await readFile(readmePath, 'utf8');
+  const agentTeam = await readFile(path.join(repoRoot, 'references', 'agent-team.md'), 'utf8');
+  for (const text of [skill, readme, agentTeam]) {
+    assert.match(text, /OpenClaw/i);
+    assert.match(text, /--executor openclaw/i);
+    assert.match(text, /--write-mode scoped-write/i);
+    assert.match(text, /allowedWritePaths/i);
+    assert.match(text, /BetterRef Supervisor/i);
+  }
+  assert.match(agentTeam, /read-only/i);
+  assert.match(agentTeam, /propose-patch/i);
+  assert.match(agentTeam, /production-write/i);
+  assert.match(agentTeam, /release/i);
+  assert.match(agentTeam, /git push/i);
+  assert.match(agentTeam, /transcripts\/<agent>\.jsonl/i);
+});
+
 test('agent team guidance preserves the named 29-agent roster and visible workflow', async () => {
   const skill = await readFile(skillPath, 'utf8');
   const agentTeam = await readFile(path.join(repoRoot, 'references', 'agent-team.md'), 'utf8');

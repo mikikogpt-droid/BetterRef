@@ -82,7 +82,7 @@ Treat these user phrases as BetterRef workflows:
 
 ## Named 29-Agent Roster
 
-For PRD/reference/3D work, use `references/agent-team.md` plus `betterref-agents`: risk-scoped by default, all 29 only on explicit full-roster request. Emit Context Pack, `parallel-by-team` dispatch, batched-wave spawn policy, concise JSON reports, cache reuse, merge, `runtimeMode`, and no-spawn notice.
+For PRD/reference/3D work, use `references/agent-team.md` plus `betterref-agents`: risk-scoped by default, all 29 only on explicit full-roster request. Emit Context Pack, `parallel-by-team` dispatch, batched-wave spawn policy, concise JSON reports, cache reuse, merge, `runtimeMode`, and no-spawn notice. For OpenClaw external execution, use `--executor openclaw --write-mode scoped-write`; every job must include `allowedWritePaths` and return through BetterRef Supervisor merge.
 
 ## Reference Intelligence And 3D
 

@@ -22,6 +22,11 @@ Options:
   --out                   Output directory. Default .betterref-agents.
   --project               Project root; default out becomes <project>/.betterref-agents.
   --runtime-mode          spawned, structured, or blocked. Default structured.
+  --executor              structured, codex, or openclaw. Default structured for structured mode.
+  --executor-command      External executor command. For OpenClaw tests/adapters, job path is appended.
+  --executor-arg          Extra external executor argument. Repeatable.
+  --write-mode            read-only, propose-patch, scoped-write, production-write, or release. Default read-only.
+  --max-concurrency       Max spawned/external jobs at once. Default 4.
   --all-agents            Force the full named 29-agent roster.
   --input                 Input artifact path. Repeatable.
   --json                  Print JSON to stdout.
@@ -64,6 +69,11 @@ async function main() {
       projectDir: values.project,
       assetId: values['asset-id'],
       runtimeMode: values['runtime-mode'] || 'structured',
+      executor: values.executor,
+      executorCommand: values['executor-command'],
+      executorArgs: values['executor-arg'],
+      writeMode: values['write-mode'] || 'read-only',
+      maxConcurrency: values['max-concurrency'],
       allAgents: flags.has('all-agents') || flags.has('all'),
       inputs: values.input
     };
