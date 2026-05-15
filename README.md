@@ -61,7 +61,7 @@ npx betterref-prd --pdf PRD.pdf --out .betterref-prd --project . --config-out .b
 
 ## Visible Agent Team
 
-Use `betterref-agents` when BetterRef needs the named 29-agent roster to be visible instead of implied. The current CLI runs deterministic `structured` mode: no subagents are spawned, but the context pack, `parallel-by-team` dispatch log, concise JSON reports, and merge artifact are auditable. By default it selects the smallest risk-scoped team; use `--all-agents` only when the user asks for the full 29-agent roster.
+Use `betterref-agents` when BetterRef needs the named 29-agent roster to be visible instead of implied. The current CLI runs deterministic `structured` mode: no subagents are spawned, but the context pack, `parallel-by-team` dispatch log, batched-wave spawn policy, concise JSON reports, and merge artifact are auditable. By default it selects the smallest risk-scoped team; use `--all-agents` only when the user asks for the full 29-agent roster.
 
 ```bash
 npx betterref-agents --run --task "Reference Pack to Roblox-ready Tencent Hunyuan 3D asset" --out .betterref-agents --json

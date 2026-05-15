@@ -245,6 +245,10 @@ test('agent team guidance preserves the named 29-agent roster and visible workfl
     'Context Pack',
     'concise JSON',
     'full roster is explicit',
+    'batched waves',
+    'max 4 concurrent',
+    'never spawn all 29 at once',
+    'spawn unavailable',
     '.betterref-prd',
     '.betterref-reference',
     '.betterref-3d'

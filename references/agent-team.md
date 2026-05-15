@@ -28,6 +28,7 @@ The supervisor must issue one packet before specialist work starts:
   "selectedAgents": ["Dalton", "Arendt", "Newton", "Ohm", "Lagrange", "Beauvoir", "Chandrasekhar"],
   "dispatchStrategy": "parallel-by-team",
   "reportFormat": "concise-json",
+  "spawnPolicy": { "mode": "batched-waves", "maxConcurrentAgents": 4 },
   "contextPackPath": ".betterref-agents/context-pack.json",
   "cachePolicy": { "reuseArtifacts": [".betterref-prd", ".betterref-reference", ".betterref-3d"] },
   "requiredOutputs": ["facts", "evidence", "uncertainties", "hardFails", "recommendedActions"],
@@ -144,6 +145,7 @@ Example visible log:
 [Supervisor] runtimeMode=structured; no runtime spawn occurred
 [Supervisor] contextPack=.betterref-agents/context-pack.json
 [Supervisor] dispatchStrategy=parallel-by-team
+[Supervisor] spawnPolicy=batched-waves; maxConcurrentAgents=4
 [Supervisor] Dispatching 3D Asset Plan + Tencent Hunyuan Handoff in parallel: Dalton, Arendt, Newton, Ohm, Parfit, Dewey
 [Dalton] report -> .betterref-agents/reports/dalton.json
 [Arendt] spec review -> .betterref-agents/reports/arendt.json
@@ -174,6 +176,8 @@ When file output is not appropriate, present the same packet, report, and merge 
 - Final release or push: Pauli, Hilbert, and Maxwell whole-feature review.
 
 Do not spawn or simulate every agent for every task. Select the smallest team that covers the risk; the full roster is explicit only. If the user asks for the complete named roster, run `betterref-agents --all-agents` and require all 29 specialist reports before merge.
+
+Codex real subagent spawning must use batched waves, max 4 concurrent agents; never spawn all 29 at once. Run team leads first, then reviewers, then final reviewers. If spawn unavailable or rate-limited, say spawn unavailable and fall back to `structured` evidence instead of claiming spawned work.
 
 Reuse cached artifacts before asking agents to reread or recalc facts: `.betterref-prd`, `.betterref-reference`, `.betterref-3d`, and `.betterref-agents/supervisor-merge.json`. Refresh only when source inputs changed, required evidence is missing, or the previous merge has hard fails.
 

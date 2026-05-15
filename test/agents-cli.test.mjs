@@ -75,6 +75,9 @@ test('betterref-agents plan creates a supervisor packet for PRD reference and Te
   assert.equal(packet.dispatchStrategy, 'parallel-by-team');
   assert.equal(packet.reportFormat, 'concise-json');
   assert.equal(packet.fullRosterPolicy, 'explicit-only');
+  assert.equal(packet.spawnPolicy.mode, 'batched-waves');
+  assert.equal(packet.spawnPolicy.maxConcurrentAgents, 4);
+  assert.match(packet.spawnPolicy.fullRosterStrategy, /never spawn all 29/i);
   assert.equal(packet.contextPackPath.endsWith('context-pack.json'), true);
   assert.deepEqual(packet.cachePolicy.reuseArtifacts, [
     '.betterref-prd',
@@ -187,6 +190,7 @@ test('betterref-agents run structured writes visible dispatch log reports and su
   const contextPack = JSON.parse(await readFile(path.join(out, 'context-pack.json'), 'utf8'));
   assert.equal(contextPack.dispatchStrategy, 'parallel-by-team');
   assert.equal(contextPack.reportFormat, 'concise-json');
+  assert.equal(contextPack.spawnPolicy.mode, 'batched-waves');
   assert.ok(contextPack.dispatchGroups.length >= 2);
   assert.equal(contextPack.cachePolicy.reuseArtifacts.includes('.betterref-3d'), true);
   for (const name of ['dalton', 'lagrange']) {
@@ -204,6 +208,7 @@ test('betterref-agents run structured writes visible dispatch log reports and su
   assert.match(log, /runtimeMode=structured; no runtime spawn occurred/);
   assert.match(log, /contextPack=.*context-pack\.json/);
   assert.match(log, /dispatchStrategy=parallel-by-team/);
+  assert.match(log, /spawnPolicy=batched-waves/);
   assert.match(log, /Dispatching 3D Asset Plan \+ Tencent Hunyuan Handoff in parallel/);
   assert.match(log, /\[Dalton\] report/);
   const merge = JSON.parse(await readFile(path.join(out, 'supervisor-merge.json'), 'utf8'));
@@ -211,6 +216,7 @@ test('betterref-agents run structured writes visible dispatch log reports and su
   assert.equal(merge.runtimeMode, 'structured');
   assert.equal(merge.dispatchStrategy, 'parallel-by-team');
   assert.equal(merge.reportFormat, 'concise-json');
+  assert.equal(merge.spawnPolicy.mode, 'batched-waves');
   assert.equal(merge.selectedAgents.includes('Dalton'), true);
   assert.equal(merge.reports.some((item) => item.agent === 'Dalton'), true);
 });
